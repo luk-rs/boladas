@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dev: API",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["-C", "apps/api", "dev"],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: App",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["-C", "apps/boladas", "dev"],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: App",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["-C", "apps/boladas", "build"]
+    },
+    {
+      "label": "Build: API",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["-C", "apps/api", "build"]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "boladas-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "build": "wrangler deploy --dry-run",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240129.0",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.30.1"
+  }
+}

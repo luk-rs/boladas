@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Open Boladas App",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/boladas"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Dev: API + App",
+      "configurations": ["Open Boladas App"],
+      "preLaunchTask": "Dev: App"
+    }
+  ]
+}

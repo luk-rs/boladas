@@ -1,0 +1,6 @@
+name = "boladas-api"
+main = "src/index.ts"
+compatibility_date = "2025-12-15"
+
+[vars]
+ALLOWED_ORIGIN = "http://localhost:5173"
