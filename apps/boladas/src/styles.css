@@ -43,17 +43,38 @@ body {
   color: #f87171;
 }
 
-.providers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 12px;
+.auth .muted {
+  margin-top: 0;
 }
 
-.magic {
+.providers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.provider-button {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #0b1220;
+  border: 1px solid #1f2937;
+  color: #f9fafb;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.provider-button img {
+  width: 20px;
+  height: 20px;
+}
+
+.provider-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .row {

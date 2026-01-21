@@ -9,14 +9,12 @@ type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
-] as const;
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8787";
 
 export default function App() {
   const [random, setRandom] = useState<RandomPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState("");
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -93,14 +91,9 @@ export default function App() {
     };
   }, []);
 
-  const signInWithProvider = async (provider: "google" | "facebook" | "azure" | "apple") => {
+  const signInWithProvider = async () => {
     if (!supabase) return;
-    await supabase.auth.signInWithOAuth({ provider });
-  };
-
-  const sendMagicLink = async () => {
-    if (!supabase || !email) return;
-    await supabase.auth.signInWithOtp({ email });
+    await supabase.auth.signInWithOAuth({ provider: "google" });
   };
 
   const signOut = async () => {
@@ -156,7 +149,7 @@ export default function App() {
         <p className="muted">Updates every 5 seconds.</p>
       </section>
 
-      <section className="card">
+      <section className="card auth">
         <h2>Auth</h2>
         {!supabase && (
           <p className="error">Supabase not configured. Set env vars.</p>
@@ -168,21 +161,24 @@ export default function App() {
           </div>
         ) : (
           <>
-            <div className="providers">
-              {providers.map((p) => (
-                <button key={p.id} onClick={() => signInWithProvider(p.id)}>
-                  Continue with {p.label}
-                </button>
-              ))}
-            </div>
-            <div className="magic">
-              <input
-                type="email"
-                placeholder="you@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <button onClick={sendMagicLink}>Send magic link</button>
+            <p className="muted">Sign in with</p>
+            <div className="providers-grid">
+              <button className="provider-button" onClick={signInWithProvider}>
+                <img src="/assets/providers/google.svg" alt="Google" />
+                <span>Google</span>
+              </button>
+              <button className="provider-button disabled" disabled>
+                <img src="/assets/providers/facebook.svg" alt="Meta" />
+                <span>Meta</span>
+              </button>
+              <button className="provider-button disabled" disabled>
+                <img src="/assets/providers/microsoft.svg" alt="Microsoft" />
+                <span>Microsoft</span>
+              </button>
+              <button className="provider-button disabled" disabled>
+                <img src="/assets/providers/apple.svg" alt="Apple" />
+                <span>Apple</span>
+              </button>
             </div>
           </>
         )}
