@@ -62,6 +62,24 @@ body {
   align-items: center;
   gap: 10px;
 }
+.install {
+  text-align: center;
+}
+
+.install-guide {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.install-image {
+  max-width: 260px;
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+  border: 1px solid #1f2937;
+  background: #0b1220;
+}
 
 input {
   background: #0b1220;

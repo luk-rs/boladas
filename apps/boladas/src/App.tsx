@@ -5,12 +5,10 @@ type RandomPayload = {
   value: number;
   timestamp: string;
 };
-
-const providers = [
-  { id: "google", label: "Google" },
-  { id: "facebook", label: "Meta" },
-  { id: "azure", label: "Microsoft" },
-  { id: "apple", label: "Apple" },
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
 ] as const;
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8787";
@@ -20,9 +18,43 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [canInstall, setCanInstall] = useState(false);
 
   const pollingUrl = useMemo(() => `${apiUrl.replace(/\/$/, "")}/random`, []);
 
+  useEffect(() => {
+    const checkInstalled = () => {
+      const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
+      const isIOSStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+      setIsInstalled(isStandalone || isIOSStandalone);
+    };
+
+    checkInstalled();
+    const media = window.matchMedia("(display-mode: standalone)");
+    const handleChange = () => checkInstalled();
+    media.addEventListener?.("change", handleChange);
+    window.addEventListener("appinstalled", checkInstalled);
+
+    return () => {
+      media.removeEventListener?.("change", handleChange);
+      window.removeEventListener("appinstalled", checkInstalled);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+      setCanInstall(true);
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
   useEffect(() => {
     let isMounted = true;
 
@@ -75,6 +107,13 @@ export default function App() {
     if (!supabase) return;
     await supabase.auth.signOut();
   };
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    await installPrompt.userChoice;
+    setInstallPrompt(null);
+    setCanInstall(false);
+  };
 
   return (
     <div className="page">
@@ -82,6 +121,26 @@ export default function App() {
         <h1>Boladas</h1>
         <p>React PWA + Workers API + Supabase Auth</p>
       </header>
+      {!isInstalled && (
+        <section className="card install">
+          <h2>Install</h2>
+          <p className="muted">Install the app to continue.</p>
+          {canInstall && installPrompt ? (
+            <button onClick={handleInstall}>Install app</button>
+          ) : (
+            <div className="install-guide">
+              <img
+                src="/assets/install/install-guide.svg"
+                alt="Install guidance"
+                className="install-image"
+              />
+              <p className="muted">
+                Use your browser menu to add this app to your home screen.
+              </p>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className="card">
         <h2>API random</h2>

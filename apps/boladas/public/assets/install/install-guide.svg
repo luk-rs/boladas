@@ -1,0 +1,18 @@
+<svg width="720" height="480" viewBox="0 0 720 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="480" rx="32" fill="#0B1220"/>
+  <rect x="48" y="64" width="624" height="96" rx="18" fill="#111827" stroke="#1F2937" stroke-width="2"/>
+  <rect x="78" y="96" width="220" height="12" rx="6" fill="#9CA3AF"/>
+  <rect x="48" y="188" width="624" height="200" rx="24" fill="#111827" stroke="#1F2937" stroke-width="2"/>
+  <rect x="88" y="228" width="300" height="14" rx="7" fill="#9CA3AF"/>
+  <rect x="88" y="254" width="220" height="12" rx="6" fill="#374151"/>
+  <rect x="88" y="280" width="260" height="12" rx="6" fill="#374151"/>
+  <rect x="88" y="306" width="180" height="12" rx="6" fill="#374151"/>
+  <g>
+    <circle cx="560" cy="268" r="56" fill="#1D4ED8"/>
+    <path d="M560 238C567.732 238 574 244.268 574 252V268H588C595.732 268 602 274.268 602 282C602 289.732 595.732 296 588 296H532C524.268 296 518 289.732 518 282C518 274.268 524.268 268 532 268H546V252C546 244.268 552.268 238 560 238Z" fill="white"/>
+    <path d="M560 210C568.837 210 576 217.163 576 226C576 234.837 568.837 242 560 242C551.163 242 544 234.837 544 226C544 217.163 551.163 210 560 210Z" fill="white"/>
+  </g>
+  <text x="360" y="434" fill="#9CA3AF" font-family="Inter, system-ui, sans-serif" font-size="20" text-anchor="middle">
+    Open the browser menu and choose “Install”
+  </text>
+</svg>
