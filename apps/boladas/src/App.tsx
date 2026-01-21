@@ -21,6 +21,7 @@ export default function App() {
   const [canInstall, setCanInstall] = useState(false);
 
   const pollingUrl = useMemo(() => `${apiUrl.replace(/\/$/, "")}/random`, []);
+  const isAuthed = Boolean(sessionEmail);
 
   useEffect(() => {
     const checkInstalled = () => {
@@ -54,8 +55,13 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
-    let isMounted = true;
+    if (!isInstalled || !isAuthed) {
+      setRandom(null);
+      setError(null);
+      return;
+    }
 
+    let isMounted = true;
     const fetchRandom = async () => {
       try {
         const res = await fetch(pollingUrl);
@@ -76,7 +82,7 @@ export default function App() {
       isMounted = false;
       clearInterval(id);
     };
-  }, [pollingUrl]);
+  }, [pollingUrl, isInstalled, isAuthed]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -114,6 +120,7 @@ export default function App() {
         <h1>Boladas</h1>
         <p>React PWA + Workers API + Supabase Auth</p>
       </header>
+
       {!isInstalled && (
         <section className="card install">
           <h2>Install</h2>
@@ -135,54 +142,57 @@ export default function App() {
         </section>
       )}
 
-      <section className="card">
-        <h2>API random</h2>
-        {error && <p className="error">{error}</p>}
-        {random ? (
-          <div className="random">
-            <div className="value">{random.value}</div>
-            <div className="timestamp">{random.timestamp}</div>
-          </div>
-        ) : (
-          <p>Loading…</p>
-        )}
-        <p className="muted">Updates every 5 seconds.</p>
-      </section>
+      {isInstalled && !isAuthed && (
+        <section className="card auth">
+          <h2>Sign in</h2>
+          {!supabase && (
+            <p className="error">Supabase not configured. Set env vars.</p>
+          )}
+          {supabase && (
+            <>
+              <p className="muted">Sign in with</p>
+              <div className="providers-grid">
+                <button className="provider-button" onClick={signInWithProvider}>
+                  <img src="/assets/providers/google.svg" alt="Google" />
+                  <span>Google</span>
+                </button>
+                <button className="provider-button disabled" disabled>
+                  <img src="/assets/providers/facebook.svg" alt="Meta" />
+                  <span>Meta</span>
+                </button>
+                <button className="provider-button disabled" disabled>
+                  <img src="/assets/providers/microsoft.svg" alt="Microsoft" />
+                  <span>Microsoft</span>
+                </button>
+                <button className="provider-button disabled" disabled>
+                  <img src="/assets/providers/apple.svg" alt="Apple" />
+                  <span>Apple</span>
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
-      <section className="card auth">
-        <h2>Auth</h2>
-        {!supabase && (
-          <p className="error">Supabase not configured. Set env vars.</p>
-        )}
-        {sessionEmail ? (
+      {isInstalled && isAuthed && (
+        <section className="card">
           <div className="row">
-            <span>Signed in as {sessionEmail}</span>
+            <h2>API random</h2>
             <button onClick={signOut}>Sign out</button>
           </div>
-        ) : (
-          <>
-            <p className="muted">Sign in with</p>
-            <div className="providers-grid">
-              <button className="provider-button" onClick={signInWithProvider}>
-                <img src="/assets/providers/google.svg" alt="Google" />
-                <span>Google</span>
-              </button>
-              <button className="provider-button disabled" disabled>
-                <img src="/assets/providers/facebook.svg" alt="Meta" />
-                <span>Meta</span>
-              </button>
-              <button className="provider-button disabled" disabled>
-                <img src="/assets/providers/microsoft.svg" alt="Microsoft" />
-                <span>Microsoft</span>
-              </button>
-              <button className="provider-button disabled" disabled>
-                <img src="/assets/providers/apple.svg" alt="Apple" />
-                <span>Apple</span>
-              </button>
+          <p className="muted">Signed in as {sessionEmail}</p>
+          {error && <p className="error">{error}</p>}
+          {random ? (
+            <div className="random">
+              <div className="value">{random.value}</div>
+              <div className="timestamp">{random.timestamp}</div>
             </div>
-          </>
-        )}
-      </section>
+          ) : (
+            <p>Loading…</p>
+          )}
+          <p className="muted">Updates every 5 seconds.</p>
+        </section>
+      )}
     </div>
   );
 }
