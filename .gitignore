@@ -21,6 +21,8 @@ apps/boladas/.env.development.local
 
 # Supabase
 supabase/.temp
+supabase/.branches
+supabase/.env
 
 # Docker volumes (persistent data)
 docker/volumes/db/data/
