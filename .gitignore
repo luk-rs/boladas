@@ -1,12 +1,26 @@
+# Dependencies
 node_modules
+
+# Build outputs
 dist
+apps/boladas/dev-dist
+
+# Environment files
 .env
 .env.*
 !.env.example
 apps/boladas/.env
 apps/boladas/.env.local
 apps/boladas/.env.development.local
-apps/boladas/dev-dist
+
+# System files
 .DS_Store
+
+# Cloudflare
 .wrangler
+
+# Supabase
 supabase/.temp
+
+# Docker volumes (persistent data)
+docker/volumes/db/data/
