@@ -26,6 +26,13 @@ type TeamMemberRow = {
   profiles?: { email: string | null; display_name: string | null } | null;
   roles: { role: string }[];
 };
+type TeamRequest = {
+  id: string;
+  name: string;
+  status: string;
+  requested_by: string;
+  created_at: string;
+};
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8787";
 const LAST_TEAM_KEY = "boladas:last_team_id";
@@ -51,8 +58,11 @@ export default function App() {
   const [allTeams, setAllTeams] = useState<{ id: string; name: string }[]>([]);
   const [systemTeamName, setSystemTeamName] = useState("");
   const [teamNameInput, setTeamNameInput] = useState("");
+  const [teamRequestName, setTeamRequestName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRoles, setInviteRoles] = useState<string[]>(["member"]);
+  const [myRequests, setMyRequests] = useState<TeamRequest[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<TeamRequest[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -244,17 +254,45 @@ export default function App() {
     setTeamInvites(data ?? []);
   };
 
+  const loadMyRequests = async () => {
+    const client = supabase;
+    if (!client || !sessionUserId) return;
+    const { data, error } = await client
+      .from("team_requests")
+      .select("*")
+      .eq("requested_by", sessionUserId);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setMyRequests(data ?? []);
+  };
+
+  const loadPendingRequests = async () => {
+    const client = supabase;
+    if (!client || !isSystemAdmin) return;
+    const { data, error } = await client.from("team_requests").select("*").eq("status", "pending");
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setPendingRequests(data ?? []);
+  };
+
   useEffect(() => {
     if (!sessionUserId) return;
     void loadMemberships();
     void loadRoles();
+    void loadMyRequests();
   }, [sessionUserId]);
   useEffect(() => {
     if (!isSystemAdmin) {
       setAllTeams([]);
+      setPendingRequests([]);
       return;
     }
     void loadAllTeams();
+    void loadPendingRequests();
   }, [isSystemAdmin]);
 
   useEffect(() => {
@@ -337,6 +375,27 @@ export default function App() {
     localStorage.setItem(LAST_TEAM_KEY, teamData.id);
   };
 
+  const requestTeam = async () => {
+    const client = supabase;
+    if (!client) return;
+    setError(null);
+    setStatus(null);
+    if (!teamRequestName.trim()) {
+      setError("Team name is required.");
+      return;
+    }
+    const { error: reqError } = await client.rpc("create_team_request", {
+      p_name: teamRequestName.trim(),
+    });
+    if (reqError) {
+      setError(reqError.message);
+      return;
+    }
+    setTeamRequestName("");
+    setStatus("Request submitted.");
+    await loadMyRequests();
+  };
+
   const createSystemTeam = async () => {
     const client = supabase;
     if (!client || !sessionUserId) return;
@@ -356,6 +415,31 @@ export default function App() {
     setSystemTeamName("");
     setStatus("Team created.");
     await loadAllTeams();
+  };
+
+  const approveRequest = async (requestId: string) => {
+    const client = supabase;
+    if (!client) return;
+    const { error } = await client.rpc("approve_team_request", { p_request_id: requestId });
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setStatus("Request approved.");
+    await loadPendingRequests();
+    await loadMemberships();
+  };
+
+  const denyRequest = async (requestId: string) => {
+    const client = supabase;
+    if (!client) return;
+    const { error } = await client.rpc("deny_team_request", { p_request_id: requestId });
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setStatus("Request denied.");
+    await loadPendingRequests();
   };
 
   const deleteTeam = async (teamId: string) => {
@@ -580,16 +664,27 @@ export default function App() {
 
       {isInstalled && isAuthed && memberships.length === 0 && (
         <section className="card">
-          <h2>Create a team</h2>
-          <p className="muted">Registration is only allowed for teams.</p>
+          <h2>Request a team</h2>
+          <p className="muted">Submit a team creation request. A system admin must approve it.</p>
           <div className="row">
             <input
-              value={teamNameInput}
-              onChange={(event) => setTeamNameInput(event.target.value)}
+              value={teamRequestName}
+              onChange={(event) => setTeamRequestName(event.target.value)}
               placeholder="Team name"
             />
-            <button onClick={createTeam}>Create team</button>
+            <button onClick={requestTeam}>Request team</button>
           </div>
+          {myRequests.length > 0 && (
+            <div className="stack">
+              <h4 className="muted">Your requests</h4>
+              {myRequests.map((req) => (
+                <div key={req.id} className="row">
+                  <span>{req.name}</span>
+                  <span className="muted">Status: {req.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
       {isInstalled && isAuthed && memberships.length > 0 && !activeTeamId && (
@@ -613,7 +708,7 @@ export default function App() {
       {isInstalled && isAuthed && isSystemAdmin && (
         <section className="card">
           <h2>System admin</h2>
-          <p className="muted">Manage all teams.</p>
+          <p className="muted">Manage all teams and approve requests.</p>
           <div className="row">
             <input
               value={systemTeamName}
@@ -627,6 +722,22 @@ export default function App() {
               <div key={team.id} className="row">
                 <span>{team.name}</span>
                 <button onClick={() => deleteTeam(team.id)}>Delete</button>
+              </div>
+            ))}
+          </div>
+          <h3>Pending team requests</h3>
+          {pendingRequests.length === 0 && <p className="muted">None pending.</p>}
+          <div className="stack">
+            {pendingRequests.map((req) => (
+              <div key={req.id} className="row">
+                <div className="stack">
+                  <strong>{req.name}</strong>
+                  <span className="muted">Requested by: {req.requested_by}</span>
+                </div>
+                <div className="row">
+                  <button onClick={() => approveRequest(req.id)}>Approve</button>
+                  <button onClick={() => denyRequest(req.id)}>Deny</button>
+                </div>
               </div>
             ))}
           </div>

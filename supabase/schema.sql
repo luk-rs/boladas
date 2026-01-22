@@ -64,6 +64,14 @@ create table if not exists public.invites (
   accepted_at timestamptz,
   accepted_by uuid references auth.users(id) on delete set null
 );
+-- Team creation requests (pending approval by system admin)
+create table if not exists public.team_requests (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  requested_by uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending','approved','denied')),
+  created_at timestamptz not null default now()
+);
 
 alter table public.profiles enable row level security;
 alter table public.teams enable row level security;
@@ -71,6 +79,7 @@ alter table public.team_members enable row level security;
 alter table public.roles enable row level security;
 alter table public.team_member_roles enable row level security;
 alter table public.invites enable row level security;
+alter table public.team_requests enable row level security;
 
 create or replace function public.is_system_admin()
 returns boolean
@@ -151,6 +160,84 @@ begin
   end if;
 
   return new;
+end;
+$$;
+
+create or replace function public.create_team_request(p_name text)
+returns public.team_requests
+language plpgsql
+security definer
+as $$
+declare
+  v_req public.team_requests%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+  insert into public.team_requests (name, requested_by)
+  values (p_name, auth.uid())
+  returning * into v_req;
+  return v_req;
+end;
+$$;
+
+create or replace function public.approve_team_request(p_request_id uuid)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+  v_req public.team_requests%rowtype;
+  v_team_id uuid;
+  v_member_id uuid;
+begin
+  if not public.is_system_admin() then
+    raise exception 'Not authorized';
+  end if;
+
+  select * into v_req from public.team_requests
+  where id = p_request_id and status = 'pending';
+
+  if not found then
+    raise exception 'Request not found or already processed';
+  end if;
+
+  insert into public.teams (name, created_by)
+  values (v_req.name, v_req.requested_by)
+  returning id into v_team_id;
+
+  insert into public.team_members (team_id, user_id)
+  values (v_team_id, v_req.requested_by)
+  returning id into v_member_id;
+
+  insert into public.team_member_roles (team_member_id, role)
+  values (v_member_id, 'member')
+  on conflict do nothing;
+
+  insert into public.team_member_roles (team_member_id, role)
+  values (v_member_id, 'team_admin')
+  on conflict do nothing;
+
+  update public.team_requests
+  set status = 'approved'
+  where id = p_request_id;
+
+  return v_team_id;
+end;
+$$;
+
+create or replace function public.deny_team_request(p_request_id uuid)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  if not public.is_system_admin() then
+    raise exception 'Not authorized';
+  end if;
+  update public.team_requests
+  set status = 'denied'
+  where id = p_request_id and status = 'pending';
 end;
 $$;
 
@@ -454,3 +541,24 @@ create policy "invites_update_admin"
 create policy "invites_delete_admin"
   on public.invites for delete
   using (public.can_manage_team(team_id));
+
+-- Team requests: users can create/read own; system admins manage all
+create policy "team_requests_select_own"
+  on public.team_requests for select
+  using (requested_by = auth.uid());
+
+create policy "team_requests_insert_own"
+  on public.team_requests for insert
+  with check (requested_by = auth.uid());
+
+create policy "team_requests_select_admin"
+  on public.team_requests for select
+  using (public.is_system_admin());
+
+create policy "team_requests_update_admin"
+  on public.team_requests for update
+  using (public.is_system_admin());
+
+create policy "team_requests_delete_admin"
+  on public.team_requests for delete
+  using (public.is_system_admin());
