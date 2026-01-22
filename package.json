@@ -7,7 +7,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "pnpm -C apps/boladas dev",
+    "dev": "node scripts/dev.mjs",
     "dev:api": "pnpm -C apps/api dev",
     "dev:app": "pnpm -C apps/boladas dev",
     "build": "pnpm -C apps/boladas build && pnpm -C apps/api build",
