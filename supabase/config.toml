@@ -1,8 +1,3 @@
-[project]
-# Reference ID for your Supabase project
-# Get this from: https://supabase.com/dashboard/project/_/settings/general
-project_id = "YOUR_PROJECT_REF"
-
 [api]
 enabled = true
 port = 54321
