@@ -3,6 +3,10 @@ dist
 .env
 .env.*
 !.env.example
+apps/boladas/.env
+apps/boladas/.env.local
+apps/boladas/.env.development.local
+apps/boladas/dev-dist
 .DS_Store
 .wrangler
 supabase/.temp
