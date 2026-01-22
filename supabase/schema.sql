@@ -446,9 +446,11 @@ create policy "teams_insert_owner"
   on public.teams for insert
   with check (created_by = auth.uid());
 create policy "teams_update_system_admin"
-create policy "teams_update_owner"
   on public.teams for update
   using (public.is_system_admin());
+create policy "teams_update_owner"
+  on public.teams for update
+  using (created_by = auth.uid());
 
 create policy "teams_delete_system_admin"
   on public.teams for delete
