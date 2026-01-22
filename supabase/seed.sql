@@ -7,7 +7,21 @@
 
 -- insert into public.teams (name, created_by)
 -- values ('Demo Team', '00000000-0000-0000-0000-000000000000');
-
--- insert into public.team_members (team_id, user_id, role)
--- select t.id, '00000000-0000-0000-0000-000000000000', 'owner'
--- from public.teams t where t.name = 'Demo Team';
+--
+-- insert into public.team_members (team_id, user_id)
+-- select t.id, '00000000-0000-0000-0000-000000000000'
+-- from public.teams t where t.name = 'Demo Team'
+-- returning id;
+--
+-- -- Add base role + team admin role
+-- insert into public.team_member_roles (team_member_id, role)
+-- select tm.id, 'member'
+-- from public.team_members tm
+-- join public.teams t on t.id = tm.team_id
+-- where t.name = 'Demo Team';
+--
+-- insert into public.team_member_roles (team_member_id, role)
+-- select tm.id, 'team_admin'
+-- from public.team_members tm
+-- join public.teams t on t.id = tm.team_id
+-- where t.name = 'Demo Team';
