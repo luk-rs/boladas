@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+const isDev = process.env.NODE_ENV !== "production";
 
 export default defineConfig({
   plugins: [
@@ -13,8 +14,8 @@ export default defineConfig({
       },
       includeAssets: ["favicon.svg", "pwa-192x192.png", "pwa-512x512.png"],
       manifest: {
-        name: "Boladas",
-        short_name: "Boladas",
+        name: isDev ? "Boladas.dev" : "Boladas",
+        short_name: isDev ? "Boladas.dev" : "Boladas",
         theme_color: "#111827",
         background_color: "#111827",
         display: "standalone",
