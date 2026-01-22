@@ -69,7 +69,7 @@ env.POSTGRES_PORT ??= "5432";
 env.KONG_HTTP_PORT ??= "8000";
 env.KONG_HTTPS_PORT ??= "8443";
 
-env.PGRST_DB_SCHEMAS ??= "public,storage,graphql_public";
+env.PGRST_DB_SCHEMAS ??= "public,storage";
 
 env.SITE_URL ??= "http://localhost:5173";
 env.ADDITIONAL_REDIRECT_URLS ??= "http://localhost:5173,http://localhost:4173";
