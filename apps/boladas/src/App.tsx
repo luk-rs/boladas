@@ -61,6 +61,36 @@ export default function App() {
   const error = authError || teamError || memberError || healthError;
   const status = teamStatus || memberStatus || healthStatus;
 
+  // Popup Callback Logic
+  const isPopup = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("popup") === "true";
+  }, []);
+
+  useEffect(() => {
+    if (isPopup && isAuthed) {
+      // If we are in the popup and have authenticated, close the window.
+      // The session is shared via localStorage, so the main window will pick it up.
+      window.close();
+    }
+  }, [isPopup, isAuthed]);
+
+  if (isPopup) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <p>Authentication successful. Closing...</p>
+      </div>
+    );
+  }
+
   // Invite Token Logic
   const inviteToken = useMemo(() => {
     if (typeof window === "undefined") return null;
@@ -85,7 +115,9 @@ export default function App() {
       <Header />
       <InstallPrompt />
 
-      {isInstalled && !isAuthed && <SignIn inviteToken={inviteToken} />}
+      {isInstalled && !isAuthed && (
+        <SignIn inviteToken={inviteToken} error={authError} />
+      )}
 
       {isInstalled && isAuthed && (
         <>

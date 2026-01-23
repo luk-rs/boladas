@@ -1,24 +1,31 @@
-import type { Provider } from "@supabase/supabase-js";
+import { useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { RegistrationForm } from "./RegistrationForm";
 
-const providerButtons: { id: Provider; label: string; icon: string }[] = [
-  { id: "google", label: "Google", icon: "/assets/providers/google.svg" },
-  { id: "facebook", label: "Meta", icon: "/assets/providers/facebook.svg" },
-  { id: "azure", label: "Microsoft", icon: "/assets/providers/microsoft.svg" },
-  { id: "apple", label: "Apple", icon: "/assets/providers/apple.svg" },
-];
+export function SignIn({
+  inviteToken,
+  error,
+}: {
+  inviteToken: string | null;
+  error?: string | null;
+}) {
+  const [showRegistration, setShowRegistration] = useState(false);
 
-export function SignIn({ inviteToken }: { inviteToken: string | null }) {
-  const signInWithProvider = async (provider: Provider) => {
+  // Standard redirect login for normal sign-in (not creating a team)
+  const signInWithGoogle = async () => {
     if (!supabase) return;
     const redirectTo = inviteToken
       ? `${window.location.origin}/?invite=${encodeURIComponent(inviteToken)}`
       : window.location.origin;
     await supabase.auth.signInWithOAuth({
-      provider,
+      provider: "google",
       options: { redirectTo },
     });
   };
+
+  if (showRegistration) {
+    return <RegistrationForm onCancel={() => setShowRegistration(false)} />;
+  }
 
   return (
     <section className="card auth">
@@ -31,20 +38,33 @@ export function SignIn({ inviteToken }: { inviteToken: string | null }) {
           <p className="muted">
             {inviteToken
               ? "Sign in to accept your invite."
-              : "Sign in with one of the providers below."}
+              : "Sign in with Google."}
           </p>
-          <div className="providers-grid">
-            {providerButtons.map((provider) => (
-              <button
-                key={provider.id}
-                className="provider-button"
-                onClick={() => signInWithProvider(provider.id)}
-              >
-                <img src={provider.icon} alt={provider.label} />
-                <span>{provider.label}</span>
-              </button>
-            ))}
+
+          <div
+            className="providers-grid"
+            style={{ gridTemplateColumns: "1fr" }}
+          >
+            <button
+              className="provider-button"
+              onClick={signInWithGoogle}
+              style={{ justifyContent: "center" }}
+            >
+              <img src="/assets/providers/google.svg" alt="Google" />
+              <span>Google</span>
+            </button>
           </div>
+
+          {error && <p className="error">{error}</p>}
+
+          {!inviteToken && (
+            <div style={{ marginTop: "2rem", textAlign: "center" }}>
+              <p className="muted">Need a new team?</p>
+              <button onClick={() => setShowRegistration(true)}>
+                Create Team
+              </button>
+            </div>
+          )}
         </>
       )}
     </section>

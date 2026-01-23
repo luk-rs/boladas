@@ -16,4 +16,6 @@ export type TeamRequest = {
 export type Team = {
   id: string;
   name: string;
+  season_start?: string;
+  holiday_start?: string;
 };
