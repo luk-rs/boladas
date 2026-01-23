@@ -29,22 +29,34 @@ export function useAuth() {
       if (registrationData && !processingRegistration.current) {
         processingRegistration.current = true;
         try {
-          const { name, seasonStart, holidayStart } =
+          const { name, seasonStart, holidayStart, gameDefinitions } =
             JSON.parse(registrationData);
-          // Call RPC to register team
-          const { error: rpcError } = await supabase.rpc("register_team", {
+
+          console.log("🚀 RPC Call: register_team", {
             p_name: name,
             p_season_start: seasonStart,
             p_holiday_start: holidayStart,
+            p_game_definitions: gameDefinitions,
+          });
+
+          // Call RPC to register team
+          const { error: rpcError } = await supabase.rpc("register_team", {
+            p_name: name,
+            p_season_start: String(seasonStart),
+            p_holiday_start: holidayStart ? String(holidayStart) : null,
+            p_game_definitions: gameDefinitions || [],
           });
 
           if (rpcError) throw rpcError;
 
           // Clear storage after success
           localStorage.removeItem("boladas:registration_data");
-        } catch (err) {
+        } catch (err: any) {
           console.error("Registration failed:", err);
-          setError("Failed to complete team registration.");
+          setError(err.message || "Failed to complete team registration.");
+          // Rollback: clear data and logout so they can try again or see error on login screen
+          localStorage.removeItem("boladas:registration_data");
+          await signOut();
         } finally {
           processingRegistration.current = false;
         }

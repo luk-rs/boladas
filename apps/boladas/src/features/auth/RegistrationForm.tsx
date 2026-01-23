@@ -1,16 +1,41 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
+import { WheelDatePicker } from "../../components/ui/WheelDatePicker";
+import { WheelTimePicker } from "../../components/ui/WheelTimePicker";
+import { WheelDayOfWeekPicker } from "../../components/ui/WheelDayOfWeekPicker";
 
 export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
   const [formData, setFormData] = useState({
     name: "",
     seasonStart: "",
     holidayStart: "",
+    gameDefinitions: [] as { dayOfWeek: number; startTime: string }[],
   });
   const [status, setStatus] = useState<
     "idle" | "authenticating" | "registering" | "success"
   >("idle");
   const [error, setError] = useState<string | null>(null);
+
+  const [activePicker, setActivePicker] = useState<
+    "seasonStart" | "holidayStart" | "addGame" | null
+  >(null);
+  const [newGame, setNewGame] = useState({ dayOfWeek: 1, startTime: "19:00" });
+
+  const formatDate = (isoDate: string) => {
+    if (!isoDate) return "dd/mm";
+    const parts = isoDate.split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}`;
+    }
+    return "dd/mm";
+  };
+
+  const isFormValid =
+    formData.name &&
+    formData.seasonStart &&
+    formData.gameDefinitions.length > 0;
+
+  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
   useEffect(() => {
     if (status !== "authenticating" || !supabase) return;
@@ -149,16 +174,13 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
               <label className="text-xs font-bold text-[var(--text-secondary)] uppercase px-1">
                 Data Início da Temporada
               </label>
-              <input
-                type="date"
-                value={formData.seasonStart}
-                onChange={(e) =>
-                  setFormData({ ...formData, seasonStart: e.target.value })
-                }
-                onKeyDown={(e) => e.preventDefault()}
-                onClick={(e) => e.currentTarget.showPicker()}
-                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium cursor-pointer"
-              />
+              <div
+                onClick={() => setActivePicker("seasonStart")}
+                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center"
+              >
+                <span>{formatDate(formData.seasonStart)}</span>
+                <span className="text-lg opacity-40">📅</span>
+              </div>
             </div>
 
             <div className="space-y-1">
@@ -170,16 +192,64 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
                   Opcional
                 </span>
               </div>
-              <input
-                type="date"
-                value={formData.holidayStart}
-                onChange={(e) =>
-                  setFormData({ ...formData, holidayStart: e.target.value })
-                }
-                onKeyDown={(e) => e.preventDefault()}
-                onClick={(e) => e.currentTarget.showPicker()}
-                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium cursor-pointer"
-              />
+              <div
+                onClick={() => setActivePicker("holidayStart")}
+                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center"
+              >
+                <span>{formatDate(formData.holidayStart)}</span>
+                <span className="text-lg opacity-40">📅</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center px-1">
+                <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">
+                  Horário dos Jogos
+                </label>
+                <button
+                  onClick={() => setActivePicker("addGame")}
+                  className="text-[10px] font-black bg-primary-500 text-white px-3 py-1 rounded-full shadow-md active:scale-95"
+                >
+                  + ADICIONAR
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {formData.gameDefinitions.length === 0 ? (
+                  <p className="text-[10px] text-center text-[var(--text-secondary)] py-2 italic opacity-60">
+                    Nenhum jogo definido. Adicione pelo menos um.
+                  </p>
+                ) : (
+                  formData.gameDefinitions.map((game, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between bg-[var(--bg-app)] p-3 rounded-xl border border-[var(--border-color)]"
+                    >
+                      <div className="flex gap-2 items-center">
+                        <span className="text-xs font-bold text-primary-600 bg-primary-100 px-2 py-0.5 rounded-lg">
+                          {dayNames[game.dayOfWeek]}
+                        </span>
+                        <span className="text-sm font-medium text-[var(--text-primary)]">
+                          {game.startTime}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            gameDefinitions: formData.gameDefinitions.filter(
+                              (_, i) => i !== idx,
+                            ),
+                          })
+                        }
+                        className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
 
@@ -193,13 +263,18 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
 
           <div className="pt-2 space-y-4">
             <button
+              disabled={!isFormValid}
               onClick={handleGoogleSignIn}
-              className="group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-white dark:bg-slate-800 py-4 font-bold text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 transition-all hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg active:scale-95"
+              className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl py-4 font-bold transition-all active:scale-95 ${
+                isFormValid
+                  ? "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg"
+                  : "bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60"
+              }`}
             >
               <img
                 src="/assets/providers/google.svg"
                 alt="Google"
-                className="h-6 w-6 transition-transform group-hover:scale-110"
+                className={`h-6 w-6 transition-transform ${isFormValid ? "group-hover:scale-110" : "grayscale opacity-50"}`}
               />
               <span>Registrar com Google</span>
             </button>
@@ -213,6 +288,63 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
           </div>
         </section>
       </div>
+
+      {/* Date Picker Bottom Sheet / Overlay */}
+      {activePicker && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
+          <div className="animate-in slide-in-from-bottom duration-300 w-full max-w-[450px] mx-auto bg-[var(--bg-app)] rounded-t-3xl p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6 px-1">
+              <h3 className="font-bold text-lg text-[var(--text-primary)]">
+                {activePicker === "seasonStart" && "Início da Temporada"}
+                {activePicker === "holidayStart" && "Início das Férias"}
+                {activePicker === "addGame" && "Novo Horário de Jogo"}
+              </h3>
+              <button
+                onClick={() => {
+                  if (activePicker === "addGame") {
+                    setFormData({
+                      ...formData,
+                      gameDefinitions: [...formData.gameDefinitions, newGame],
+                    });
+                  }
+                  setActivePicker(null);
+                }}
+                className="bg-primary-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary-600/20 active:scale-95"
+              >
+                Concluir
+              </button>
+            </div>
+
+            {activePicker === "addGame" ? (
+              <div className="flex gap-4">
+                <div className="flex-[2]">
+                  <WheelDayOfWeekPicker
+                    value={newGame.dayOfWeek}
+                    onChange={(v) => setNewGame({ ...newGame, dayOfWeek: v })}
+                  />
+                </div>
+                <div className="flex-[3]">
+                  <WheelTimePicker
+                    value={newGame.startTime}
+                    onChange={(v) => setNewGame({ ...newGame, startTime: v })}
+                  />
+                </div>
+              </div>
+            ) : (
+              <WheelDatePicker
+                showYear={false}
+                value={
+                  (formData as any)[activePicker] ||
+                  new Date().toISOString().split("T")[0]
+                }
+                onChange={(val) =>
+                  setFormData({ ...formData, [activePicker]: val })
+                }
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
