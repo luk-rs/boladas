@@ -36,15 +36,16 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     });
     setMemberships(mapped);
 
-    // Only set active team if not already set, or validate existing
-    if (!activeTeamId) {
-      const storedTeam = localStorage.getItem(LAST_TEAM_KEY);
-      if (storedTeam && mapped.some((m) => m.teamId === storedTeam)) {
-        setActiveTeamId(storedTeam);
-      } else if (mapped.length === 1) {
-        setActiveTeamId(mapped[0].teamId);
-      }
-    }
+    // Only set active team IF it was passed or logic requires it, but for now we want to start with NO active team
+    // unless there is strictly only one? NO, user wants list even then likely.
+    // Retaining logic: if 1 team, maybe auto-select?
+    // User said: "just list them to me". So NO auto-select.
+    // However, I will keep the state management, just remove the localStorage init.
+
+    // if (!activeTeamId && mapped.length === 1) {
+    //   setActiveTeamId(mapped[0].teamId);
+    // }
+    // Actually, forcing list view even for 1 team seems to be the request.
   }, [userId, activeTeamId]);
 
   const loadMyRequests = useCallback(async () => {
@@ -132,8 +133,8 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
 
     setStatus("Team created.");
     await loadMemberships();
-    setActiveTeamId(teamData.id);
-    localStorage.setItem(LAST_TEAM_KEY, teamData.id);
+    // Do NOT auto-select. Let user see list.
+    // setActiveTeamId(teamData.id);
   };
 
   const requestTeam = async (name: string) => {
@@ -157,7 +158,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
 
   const handleTeamSelection = (teamId: string) => {
     setActiveTeamId(teamId);
-    localStorage.setItem(LAST_TEAM_KEY, teamId);
+    // No localStorage
   };
 
   // Admin functions
@@ -240,7 +241,14 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     createTeam,
     requestTeam,
     voteTeam: handleTeamSelection, // Renaming for clarity if needed, but handleTeamSelection is fine
-    setActiveTeamId: handleTeamSelection,
+    setActiveTeamId: (id: string | null) => {
+      if (id) {
+        setActiveTeamId(id);
+        // No localStorage
+      } else {
+        setActiveTeamId(null);
+      }
+    },
     createSystemTeam,
     deleteTeam,
     approveRequest,

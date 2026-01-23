@@ -51,18 +51,56 @@ export function DashboardPage() {
         <RequestTeam onRequest={requestTeam} myRequests={myRequests} />
       )}
 
-      {/* Team Selection */}
-      {memberships.length > 0 && (
-        <TeamSelector
-          memberships={memberships}
-          activeTeamId={activeTeamId}
-          onSelect={setActiveTeamId}
-        />
+      {/* Team Selection List (when no active team) */}
+      {memberships.length > 0 && !activeTeamId && (
+        <div className="team-grid">
+          <h2 className="mb-4">My Teams</h2>
+          <div
+            style={{
+              display: "grid",
+              gap: "1rem",
+              gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
+            }}
+          >
+            {memberships.map((m) => (
+              <div
+                key={m.teamId}
+                className="card action-card"
+                onClick={() => setActiveTeamId(m.teamId)}
+                style={{
+                  cursor: "pointer",
+                  border: "1px solid #333",
+                  padding: "1.5rem",
+                }}
+              >
+                <h3>{m.teamName}</h3>
+                <p className="muted">{m.roles.join(", ")}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Active Team Dashboard */}
       {activeTeamId && activeMembership && (
         <section className="card">
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1rem",
+            }}
+          >
+            <h2>{activeMembership.teamName}</h2>
+            <button
+              className="provider-button"
+              onClick={() => setActiveTeamId(null)}
+            >
+              Back to Teams
+            </button>
+          </div>
+
           <p className="muted">Roles: {activeMembership.roles.join(", ")}</p>
           <div className="row">
             <span>Base role:</span>
