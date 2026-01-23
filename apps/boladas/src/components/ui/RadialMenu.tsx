@@ -73,11 +73,11 @@ export function RadialMenu({ items, position = "right" }: RadialMenuProps) {
         {/* Trigger Button */}
         <button
           onClick={toggleMenu}
-          className={`relative z-[101] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-primary-600 text-2xl text-white shadow-lg transition-transform duration-300 active:scale-90 ${
-            isOpen ? "rotate-45" : "rotate-0"
+          className={`relative z-[101] flex h-14 w-14 cursor-pointer items-center justify-center rounded-full bg-[var(--bg-surface)]/60 backdrop-blur-xl border border-white/30 dark:border-white/10 text-2xl shadow-xl transition-all duration-300 active:scale-95 ${
+            isOpen ? "rotate-180" : "rotate-0"
           }`}
         >
-          +
+          🧭
         </button>
       </div>
 
