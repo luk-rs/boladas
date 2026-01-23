@@ -12,16 +12,12 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
   >("idle");
   const [error, setError] = useState<string | null>(null);
 
-  // Monitor for successful login during "authenticating" state
   useEffect(() => {
     if (status !== "authenticating" || !supabase) return;
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // If we signed in successfully, we just wait.
-      // useAuth will handle the registration (via localStorage) and eventually set isAuthed=true.
-      // When isAuthed=true in App.tsx, this component will be unmounted.
       if (event === "SIGNED_IN" && session) {
         setStatus("registering");
       }
@@ -32,7 +28,7 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
 
   const handleGoogleSignIn = async () => {
     if (!formData.name || !formData.seasonStart || !formData.holidayStart) {
-      setError("All fields are required.");
+      setError("Todos os campos são obrigatórios.");
       return;
     }
     if (!supabase) return;
@@ -40,20 +36,15 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
     setError(null);
     setStatus("authenticating");
 
-    // Check if running in PWA standalone mode
     const isStandalone = window.matchMedia(
       "(display-mode: standalone)",
     ).matches;
-
-    // Always save registration data to localStorage to persist across OAuth/Redirect
-    // This allows useAuth to pick it up and complete the registration.
     localStorage.setItem("boladas:registration_data", JSON.stringify(formData));
 
-    // Get the auth URL (redirection to our popup callback)
     const { data, error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        skipBrowserRedirect: !isStandalone, // Use popup for browser, redirect for PWA
+        skipBrowserRedirect: !isStandalone,
         redirectTo: isStandalone
           ? window.location.origin
           : `${window.location.origin}?popup=true`,
@@ -66,7 +57,6 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
       return;
     }
 
-    // If Popup mode (data.url exists if skipBrowserRedirect is true)
     if (!isStandalone && data?.url) {
       const width = 500;
       const height = 600;
@@ -81,104 +71,144 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
     }
   };
 
-  if (status === "authenticating") {
+  if (status === "authenticating" || status === "registering") {
     return (
-      <section className="card auth" style={{ textAlign: "center" }}>
-        <h2>Authenticating...</h2>
-        <div className="spinner" style={{ margin: "2rem auto" }}></div>
-        <p>Please complete sign-in in the popup window.</p>
-        <button onClick={() => setStatus("idle")} style={{ marginTop: "1rem" }}>
-          Cancel
-        </button>
-      </section>
-    );
-  }
-
-  if (status === "registering") {
-    return (
-      <section className="card auth" style={{ textAlign: "center" }}>
-        <h2>Creating Team...</h2>
-        <div className="spinner" style={{ margin: "2rem auto" }}></div>
-        <p>Setting up your workspace.</p>
-      </section>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 p-6">
+        <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-surface)] p-8 shadow-mui text-center space-y-6 animate-pulse">
+          <div className="flex justify-center">
+            <div className="h-16 w-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+            {status === "authenticating"
+              ? "Autenticando..."
+              : "Criando Time..."}
+          </h2>
+          <p className="text-[var(--text-secondary)]">
+            {status === "authenticating"
+              ? "Complete o login na janela que se abriu."
+              : "Estamos preparando seu novo espaço de jogo."}
+          </p>
+          {status === "authenticating" && (
+            <button
+              onClick={() => setStatus("idle")}
+              className="text-sm font-bold text-primary-500 hover:text-primary-600 underline"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+      </div>
     );
   }
 
   if (status === "success") {
     return (
-      <section className="card auth" style={{ textAlign: "center" }}>
-        <h2>Success!</h2>
-        <p>Team created successfully.</p>
-      </section>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 p-6">
+        <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-surface)] p-8 shadow-mui text-center space-y-4">
+          <div className="text-5xl">✅</div>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] text-green-500">
+            Sucesso!
+          </h2>
+          <p className="text-[var(--text-secondary)]">
+            Seu time foi criado com sucesso.
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <section className="card auth">
-      <h2>Create and Register Team</h2>
-      <div className="stack">
-        <div className="row">
-          <label>Team Name</label>
-          <input
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="e.g. Dream Team"
-          />
-        </div>
-        <div className="row">
-          <label>Season Start</label>
-          <input
-            type="date"
-            value={formData.seasonStart}
-            onChange={(e) =>
-              setFormData({ ...formData, seasonStart: e.target.value })
-            }
-          />
-        </div>
-        <div className="row">
-          <div className="stack" style={{ gap: "0.2rem" }}>
-            <label>Holiday Start</label>
-            <small className="muted" style={{ fontSize: "0.8em" }}>
-              End deferred from next season start
-            </small>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 p-6">
+      <div className="w-full max-w-sm z-10 animate-in fade-in zoom-in duration-500">
+        <section className="rounded-3xl bg-[var(--bg-surface)] p-8 shadow-mui space-y-6">
+          <header className="text-center">
+            <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+              Registrar Novo Time
+            </h2>
+            <p className="mt-2 text-xs text-[var(--text-secondary)] uppercase tracking-widest font-bold">
+              Configurações iniciais
+            </p>
+          </header>
+
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-[var(--text-secondary)] uppercase px-1">
+                Nome do Time
+              </label>
+              <input
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="Ex: Dream Team FC"
+                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-[var(--text-secondary)] uppercase px-1">
+                Data Início da Temporada
+              </label>
+              <input
+                type="date"
+                value={formData.seasonStart}
+                onChange={(e) =>
+                  setFormData({ ...formData, seasonStart: e.target.value })
+                }
+                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between px-1">
+                <label className="text-xs font-bold text-[var(--text-secondary)] uppercase">
+                  Início das Férias
+                </label>
+                <span className="text-[10px] text-primary-500 font-bold uppercase">
+                  Opcional
+                </span>
+              </div>
+              <input
+                type="date"
+                value={formData.holidayStart}
+                onChange={(e) =>
+                  setFormData({ ...formData, holidayStart: e.target.value })
+                }
+                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium"
+              />
+            </div>
           </div>
-          <input
-            type="date"
-            value={formData.holidayStart}
-            onChange={(e) =>
-              setFormData({ ...formData, holidayStart: e.target.value })
-            }
-          />
-        </div>
+
+          {error && (
+            <div className="rounded-xl bg-red-50 p-3 border border-red-100">
+              <p className="text-xs text-red-600 font-bold text-center">
+                {error}
+              </p>
+            </div>
+          )}
+
+          <div className="pt-2 space-y-4">
+            <button
+              onClick={handleGoogleSignIn}
+              className="group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-white dark:bg-slate-800 py-4 font-bold text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 transition-all hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg active:scale-95"
+            >
+              <img
+                src="/assets/providers/google.svg"
+                alt="Google"
+                className="h-6 w-6 transition-transform group-hover:scale-110"
+              />
+              <span>Registrar com Google</span>
+            </button>
+
+            <button
+              onClick={onCancel}
+              className="w-full py-3 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              Voltar para o Login
+            </button>
+          </div>
+        </section>
       </div>
-
-      {error && <p className="error">{error}</p>}
-
-      <p className="muted" style={{ textAlign: "center", marginTop: "1rem" }}>
-        Sign up with:
-      </p>
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <button
-          className="provider-button"
-          onClick={handleGoogleSignIn}
-          style={{ width: "100%", justifyContent: "center" }}
-        >
-          <img src="/assets/providers/google.svg" alt="Google" />
-          <span>Google</span>
-        </button>
-      </div>
-
-      <button
-        onClick={onCancel}
-        style={{
-          marginTop: "1rem",
-          background: "transparent",
-          border: "1px solid currentColor",
-          width: "100%",
-        }}
-      >
-        Cancel
-      </button>
-    </section>
+    </div>
   );
 }
