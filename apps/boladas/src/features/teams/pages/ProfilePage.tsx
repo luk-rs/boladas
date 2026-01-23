@@ -4,10 +4,14 @@ import { useAuth } from "../../auth/useAuth";
 export function ProfilePage() {
   const { signOut } = useAuth();
   const [menuPosition, setMenuPosition] = useState<"left" | "right">("right");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    const saved = localStorage.getItem("menu-position") as "left" | "right";
-    if (saved) setMenuPosition(saved);
+    const savedPos = localStorage.getItem("menu-position") as "left" | "right";
+    if (savedPos) setMenuPosition(savedPos);
+
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark";
+    if (savedTheme) setTheme(savedTheme);
   }, []);
 
   const togglePosition = (pos: "left" | "right") => {
@@ -16,82 +20,100 @@ export function ProfilePage() {
     window.dispatchEvent(new Event("menu-position-change"));
   };
 
+  const toggleTheme = (newTheme: "light" | "dark") => {
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+    window.dispatchEvent(new Event("theme-change"));
+  };
+
   return (
-    <div className="page-content">
-      <h2>Perfil</h2>
-      <div style={{ textAlign: "center", margin: "2rem 0" }}>
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: "50%",
-            background: "#ccc",
-            margin: "0 auto",
-          }}
-        ></div>
-        <h3>Avatar Name</h3>
-        <p>Position</p>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <header className="text-center">
+        <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+          Perfil
+        </h2>
+        <div className="mt-6 flex justify-center">
+          <div className="h-24 w-24 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 border-4 border-[var(--bg-surface)] shadow-lg">
+            <span className="text-4xl">👤</span>
+          </div>
+        </div>
+        <h3 className="mt-4 text-xl font-semibold text-[var(--text-primary)]">
+          Usuário Boladas
+        </h3>
+        <p className="text-sm text-[var(--text-secondary)]">Atacante</p>
+      </header>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-3 gap-4 rounded-2xl bg-[var(--bg-surface)] p-6 shadow-mui">
+        {[
+          { label: "Pots", value: "66" },
+          { label: "Jogos", value: "23" },
+          { label: "Assists", value: "54" },
+        ].map((stat) => (
+          <div key={stat.label} className="text-center">
+            <div className="text-xl font-bold text-primary-600 dark:text-primary-400">
+              {stat.value}
+            </div>
+            <div className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">
+              {stat.label}
+            </div>
+          </div>
+        ))}
       </div>
-      <div
-        className="row"
-        style={{ justifyContent: "space-around", textAlign: "center" }}
-      >
-        <div>
-          <strong>66</strong>
-          <br />
-          Pots
+
+      {/* Settings Sections */}
+      <div className="space-y-6">
+        {/* Menu Position */}
+        <div className="rounded-2xl bg-[var(--bg-surface)] p-6 shadow-mui space-y-4">
+          <h4 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+            Acessibilidade: Menu
+          </h4>
+          <div className="flex gap-2">
+            {(["left", "right"] as const).map((pos) => (
+              <button
+                key={pos}
+                onClick={() => togglePosition(pos)}
+                className={`flex-1 rounded-xl py-3 text-sm font-medium transition-all ${
+                  menuPosition === pos
+                    ? "bg-primary-600 text-white shadow-md shadow-primary-600/20"
+                    : "bg-[var(--bg-app)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
+                }`}
+              >
+                {pos === "left" ? "Esquerdo" : "Direito"}
+              </button>
+            ))}
+          </div>
         </div>
-        <div>
-          <strong>23</strong>
-          <br />
-          Jogos
-        </div>
-        <div>
-          <strong>54</strong>
-          <br />
-          Assists
+
+        {/* Theme Settings */}
+        <div className="rounded-2xl bg-[var(--bg-surface)] p-6 shadow-mui space-y-4">
+          <h4 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">
+            Aparência
+          </h4>
+          <div className="flex gap-2">
+            {(["light", "dark"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => toggleTheme(t)}
+                className={`flex-1 rounded-xl py-3 text-sm font-medium transition-all ${
+                  theme === t
+                    ? "bg-primary-600 text-white shadow-md shadow-primary-600/20"
+                    : "bg-[var(--bg-app)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
+                }`}
+              >
+                {t === "light" ? "☀️ Claro" : "🌙 Escuro"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div style={{ marginTop: "2rem", textAlign: "center" }}>
-        <h4>Menu Position</h4>
-        <div style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
-          <button
-            onClick={() => togglePosition("left")}
-            style={{
-              padding: "0.5rem 1rem",
-              background: menuPosition === "left" ? "#007bff" : "#eee",
-              color: menuPosition === "left" ? "#fff" : "#333",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Left
-          </button>
-          <button
-            onClick={() => togglePosition("right")}
-            style={{
-              padding: "0.5rem 1rem",
-              background: menuPosition === "right" ? "#007bff" : "#eee",
-              color: menuPosition === "right" ? "#fff" : "#333",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
-          >
-            Right
-          </button>
-        </div>
-      </div>
-
-      <div style={{ marginTop: "3rem", textAlign: "center" }}>
+      <div className="pt-4">
         <button
-          className="provider-button"
           onClick={signOut}
-          style={{ background: "#ff4444", color: "white", width: "100%" }}
+          className="w-full rounded-2xl bg-red-500 py-4 font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95"
         >
-          Sign Out
+          Sair da Conta
         </button>
       </div>
     </div>

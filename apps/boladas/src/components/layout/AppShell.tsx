@@ -12,21 +12,40 @@ export function AppShell() {
   const title = activeTeam?.teamName ?? "Boladas";
 
   const [menuPosition, setMenuPosition] = useState<"left" | "right">("right");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    // Load initial position
-    const saved = localStorage.getItem("menu-position") as "left" | "right";
-    if (saved) setMenuPosition(saved);
+    // Load initial preferences
+    const savedPos = localStorage.getItem("menu-position") as "left" | "right";
+    if (savedPos) setMenuPosition(savedPos);
 
-    // Listen for changes
-    const handleChange = () => {
+    const savedTheme = localStorage.getItem("theme") as "light" | "dark";
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.classList.toggle("dark", savedTheme === "dark");
+    }
+
+    // Listen for position changes
+    const handlePosChange = () => {
       const saved = localStorage.getItem("menu-position") as "left" | "right";
       if (saved) setMenuPosition(saved);
     };
 
-    window.addEventListener("menu-position-change", handleChange);
+    // Listen for theme changes
+    const handleThemeChange = () => {
+      const saved = localStorage.getItem("theme") as "light" | "dark";
+      if (saved) {
+        setTheme(saved);
+        document.documentElement.classList.toggle("dark", saved === "dark");
+      }
+    };
+
+    window.addEventListener("menu-position-change", handlePosChange);
+    window.addEventListener("theme-change", handleThemeChange);
+
     return () => {
-      window.removeEventListener("menu-position-change", handleChange);
+      window.removeEventListener("menu-position-change", handlePosChange);
+      window.removeEventListener("theme-change", handleThemeChange);
     };
   }, []);
 
@@ -39,28 +58,12 @@ export function AppShell() {
   ];
 
   return (
-    <div className="team-shell">
+    <div className="mobile-shell">
       <TopBar title={title} />
-      <main className="content">
+      <main className="flex-1 overflow-y-auto p-4 pb-24">
         <Outlet context={{ activeTeam }} />
       </main>
       <RadialMenu items={menuItems} position={menuPosition} />
-
-      <style>{`
-        .team-shell {
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          background-color: #f5f5f5;
-        }
-        /* TopBar styles are likely global or handled within TopBar, but keeping layout specific here if needed */
-        .content {
-          flex: 1;
-          overflow-y: auto;
-          padding: 1rem;
-          padding-bottom: 80px; /* Space for content to not be hidden behind menu if needed */
-        }
-      `}</style>
     </div>
   );
 }

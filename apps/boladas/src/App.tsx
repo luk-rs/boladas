@@ -29,15 +29,10 @@ export default function App() {
 
   if (isPopup) {
     return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}
-      >
-        <p>Authentication successful. Closing...</p>
+      <div className="flex items-center justify-center h-screen bg-[var(--bg-app)]">
+        <p className="text-[var(--text-secondary)] animate-pulse">
+          Authentication successful. Closing...
+        </p>
       </div>
     );
   }
