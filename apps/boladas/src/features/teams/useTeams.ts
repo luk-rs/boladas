@@ -55,7 +55,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     if (!supabase || !userId) return;
     const { data, error } = await supabase
       .from("team_requests")
-      .select("*")
+      .select("id, team_name, status, requested_at")
       .eq("requested_by", userId);
     if (error) setError(error.message);
     else setMyRequests(data ?? []);
@@ -72,7 +72,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
 
     const { data: reqs, error: reqsError } = await supabase
       .from("team_requests")
-      .select("*")
+      .select("id, team_name, requested_by, requested_at, status")
       .eq("status", "pending");
     if (reqsError) setError(reqsError.message);
     else setPendingRequests(reqs ?? []);

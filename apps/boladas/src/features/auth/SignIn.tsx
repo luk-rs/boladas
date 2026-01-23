@@ -10,17 +10,33 @@ export function SignIn({
   error?: string | null;
 }) {
   const [showRegistration, setShowRegistration] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Standard redirect login for normal sign-in (not creating a team)
   const signInWithGoogle = async () => {
     if (!supabase) return;
-    const redirectTo = inviteToken
-      ? `${window.location.origin}/?invite=${encodeURIComponent(inviteToken)}`
-      : window.location.origin;
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo },
-    });
+    try {
+      setLoading(true);
+      setAuthError(null);
+
+      const redirectTo = inviteToken
+        ? `${window.location.origin}/?invite=${encodeURIComponent(inviteToken)}`
+        : window.location.origin;
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo },
+      });
+
+      if (error) throw error;
+    } catch (err) {
+      console.error("Login error:", err);
+      setAuthError(
+        err instanceof Error ? err.message : "Erro ao conectar com Google",
+      );
+      setLoading(false);
+    }
   };
 
   if (showRegistration) {
@@ -67,19 +83,30 @@ export function SignIn({
             <div className="space-y-4 pt-2">
               <button
                 onClick={signInWithGoogle}
-                className="group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-white dark:bg-slate-800 py-4 font-bold text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 transition-all hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg active:scale-95"
+                disabled={loading}
+                className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-white dark:bg-slate-800 py-4 font-bold text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 transition-all ${
+                  loading
+                    ? "opacity-70 cursor-not-allowed"
+                    : "hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg active:scale-95"
+                }`}
               >
-                <img
-                  src="/assets/providers/google.svg"
-                  alt="Google"
-                  className="h-6 w-6 transition-transform group-hover:scale-110"
-                />
-                <span>Continuar com Google</span>
+                {loading ? (
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                ) : (
+                  <img
+                    src="/assets/providers/google.svg"
+                    alt="Google"
+                    className="h-6 w-6 transition-transform group-hover:scale-110"
+                  />
+                )}
+                <span>
+                  {loading ? "Conectando..." : "Continuar com Google"}
+                </span>
               </button>
 
-              {error && (
-                <p className="text-sm font-medium text-red-500 animate-bounce">
-                  {error}
+              {(error || authError) && (
+                <p className="text-sm font-medium text-red-500 animate-bounce text-center">
+                  {error || authError}
                 </p>
               )}
             </div>
