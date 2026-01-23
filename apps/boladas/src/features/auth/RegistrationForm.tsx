@@ -52,8 +52,8 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
   }, [status]);
 
   const handleGoogleSignIn = async () => {
-    if (!formData.name || !formData.seasonStart || !formData.holidayStart) {
-      setError("Todos os campos são obrigatórios.");
+    if (!formData.name || !formData.seasonStart) {
+      setError("O nome do time e a data de início são obrigatórios.");
       return;
     }
     if (!supabase) return;
@@ -305,6 +305,22 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
                     setFormData({
                       ...formData,
                       gameDefinitions: [...formData.gameDefinitions, newGame],
+                    });
+                  } else if (
+                    activePicker === "seasonStart" &&
+                    !formData.seasonStart
+                  ) {
+                    setFormData({
+                      ...formData,
+                      seasonStart: new Date().toISOString().split("T")[0],
+                    });
+                  } else if (
+                    activePicker === "holidayStart" &&
+                    !formData.holidayStart
+                  ) {
+                    setFormData({
+                      ...formData,
+                      holidayStart: new Date().toISOString().split("T")[0],
                     });
                   }
                   setActivePicker(null);
