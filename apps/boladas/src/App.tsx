@@ -49,10 +49,8 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Page>
-        <Header />
-        <InstallPrompt />
-        {/* Only show content if installed (based on original logic which hid everything if not installed? 
+      <InstallPrompt />
+      {/* Only show content if installed (based on original logic which hid everything if not installed? 
             Original logic: {isInstalled && ...}. 
             Wait, original logic allowed install prompt. 
             If PWA is NOT installed, we might want to ONLY show install prompt?
@@ -60,9 +58,8 @@ export default function App() {
             Actually the usePWAInstall hook logic ensures 'isInstalled' flag or similar.
             Let's assume the router handles the view, and Layout handles the prompt. 
          */}
-        <AppRoutes />
-        <GlobalInviteHandler />
-      </Page>
+      <AppRoutes />
+      <GlobalInviteHandler />
     </BrowserRouter>
   );
 }
