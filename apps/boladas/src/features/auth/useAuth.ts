@@ -110,7 +110,7 @@ export function useAuth() {
     };
   }, [checkAccess]);
 
-  // Sync profile
+  // Sync profile (only if it doesn't exist)
   useEffect(() => {
     const client = supabase;
     if (!client || !sessionUserId) return;
@@ -118,12 +118,23 @@ export function useAuth() {
       const { data: userData } = await client.auth.getUser();
       const user = userData.user;
       if (!user) return;
-      await client.from("profiles").upsert({
-        id: user.id,
-        email: user.email,
-        display_name:
-          user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-      });
+
+      // Check if profile exists first
+      const { data: existing } = await client
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      // Only upsert if profile doesn't exist
+      if (!existing) {
+        await client.from("profiles").upsert({
+          id: user.id,
+          email: user.email,
+          display_name:
+            user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
+        });
+      }
     };
     void upsertProfile();
   }, [sessionUserId]);
