@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../auth/useAuth";
 import { useTeams } from "../useTeams";
 import { CollapsibleSection } from "../../../components/ui/CollapsibleSection";
+import { Toggle } from "../../../components/ui/Toggle";
 
 export function ProfilePage() {
   const { signOut, sessionUserId } = useAuth();
@@ -81,7 +82,6 @@ export function ProfilePage() {
                     {m.roles.join(", ")}
                   </p>
                 </div>
-                {/* Future: Add 'Select' or 'Leave' buttons here */}
               </div>
             ))
           ) : (
@@ -97,50 +97,21 @@ export function ProfilePage() {
 
       {/* Settings Sections */}
       <CollapsibleSection title="Configurações">
-        <div className="space-y-6">
-          {/* Menu Position */}
-          <div className="space-y-2">
-            <h5 className="text-xs font-bold text-[var(--text-secondary)] uppercase">
-              Acessibilidade: Menu
-            </h5>
-            <div className="flex gap-2">
-              {(["left", "right"] as const).map((pos) => (
-                <button
-                  key={pos}
-                  onClick={() => togglePosition(pos)}
-                  className={`flex-1 rounded-xl py-3 text-sm font-medium transition-all ${
-                    menuPosition === pos
-                      ? "bg-primary-600 text-white shadow-md shadow-primary-600/20"
-                      : "bg-[var(--bg-app)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
-                  }`}
-                >
-                  {pos === "left" ? "Esquerdo" : "Direito"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Theme Settings */}
-          <div className="space-y-2">
-            <h5 className="text-xs font-bold text-[var(--text-secondary)] uppercase">
-              Aparência
-            </h5>
-            <div className="flex gap-2">
-              {(["light", "dark"] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => toggleTheme(t)}
-                  className={`flex-1 rounded-xl py-3 text-sm font-medium transition-all ${
-                    theme === t
-                      ? "bg-primary-600 text-white shadow-md shadow-primary-600/20"
-                      : "bg-[var(--bg-app)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]"
-                  }`}
-                >
-                  {t === "light" ? "☀️ Claro" : "🌙 Escuro"}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="space-y-4 divide-y divide-[var(--border-color)]">
+          <Toggle
+            label="Menu à Direita"
+            subLabel="Alternar posição do menu radial"
+            checked={menuPosition === "right"}
+            onChange={(checked) => togglePosition(checked ? "right" : "left")}
+            icon="↕️"
+          />
+          <Toggle
+            label="Tema Escuro"
+            subLabel="Habilitar aparência escura"
+            checked={theme === "dark"}
+            onChange={(checked) => toggleTheme(checked ? "dark" : "light")}
+            icon={theme === "dark" ? "🌙" : "☀️"}
+          />
         </div>
       </CollapsibleSection>
 
