@@ -1,21 +1,8 @@
+import { handleRandom } from "./features/random";
+import { corsHeaders } from "./shared/cors";
+
 export interface Env {
   ALLOWED_ORIGIN?: string;
-}
-
-function corsHeaders(origin?: string): HeadersInit {
-  return {
-    "Access-Control-Allow-Origin": origin ?? "*",
-    "Access-Control-Allow-Methods": "GET,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-}
-
-function randomPayload() {
-  const value = Math.floor(Math.random() * 1_000_000);
-  return {
-    value,
-    timestamp: new Date().toISOString(),
-  };
 }
 
 export default {
@@ -27,10 +14,8 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }
 
-    if (url.pathname === "/random" && request.method === "GET") {
-      return Response.json(randomPayload(), {
-        headers: corsHeaders(origin),
-      });
+    if (url.pathname === "/random" || url.pathname === "/random/") {
+      return handleRandom(request, origin);
     }
 
     return new Response("Not found", { status: 404 });
