@@ -257,5 +257,20 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     approveRequest,
     denyRequest,
     acceptInvite,
+    createGenericInvite: async (teamId: string) => {
+      if (!supabase) return null;
+      setError(null);
+      const { data, error: inviteError } = await supabase.rpc(
+        "create_generic_invite",
+        {
+          p_team_id: teamId,
+        },
+      );
+      if (inviteError) {
+        setError(inviteError.message);
+        return null;
+      }
+      return data as string;
+    },
   };
 }

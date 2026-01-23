@@ -8,10 +8,14 @@ import { GamesPage } from "./features/teams/pages/GamesPage";
 import { StandingsPage } from "./features/teams/pages/StandingsPage";
 import { StatsPage } from "./features/teams/pages/StatsPage";
 import { ProfilePage } from "./features/teams/pages/ProfilePage";
+import { TeamSettingsPage } from "./features/teams/pages/TeamSettingsPage";
+import { JoinPage } from "./features/invites/JoinPage";
 
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/join/:token" element={<JoinPage />} />
+
       {/* Public Routes */}
       <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
@@ -26,6 +30,7 @@ export function AppRoutes() {
           <Route path="/standings" element={<StandingsPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/team-settings" element={<TeamSettingsPage />} />
         </Route>
 
         <Route path="/admin" element={<SystemAdminPage />} />

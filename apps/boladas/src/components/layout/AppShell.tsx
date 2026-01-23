@@ -68,13 +68,33 @@ export function AppShell() {
     { id: "profile", label: "Perfil", icon: "👤", path: "/profile" },
   ];
 
+  const isAdminOrManager = activeTeam?.roles.some((r) =>
+    ["team_admin", "manager"].includes(r),
+  );
+
+  const backofficeItems = isAdminOrManager
+    ? [
+        {
+          id: "settings",
+          label: "Configurações",
+          icon: "⚙️",
+          path: "/team-settings",
+        },
+        // Future: Add Roster
+      ]
+    : undefined;
+
   return (
     <div className="mobile-shell">
       <TopBar title={title} />
       <main className="flex-1 overflow-y-auto p-4 pb-24">
         <Outlet context={{ activeTeam }} />
       </main>
-      <RadialMenu items={menuItems} position={menuPosition} />
+      <RadialMenu
+        items={menuItems}
+        backofficeItems={backofficeItems}
+        position={menuPosition}
+      />
     </div>
   );
 }

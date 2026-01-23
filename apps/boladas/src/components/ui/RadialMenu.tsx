@@ -11,10 +11,15 @@ export interface RadialMenuItem {
 
 interface RadialMenuProps {
   items: RadialMenuItem[];
+  backofficeItems?: RadialMenuItem[];
   position?: "left" | "right";
 }
 
-export function RadialMenu({ items, position = "right" }: RadialMenuProps) {
+export function RadialMenu({
+  items,
+  backofficeItems,
+  position = "right",
+}: RadialMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,6 +32,7 @@ export function RadialMenu({ items, position = "right" }: RadialMenuProps) {
       style={{ [position]: "2rem" }}
     >
       <div className="relative">
+        {/* Inner Ring */}
         {items.map((item, index) => {
           const angleRange = 100;
           const step = angleRange / (items.length - 1 || 1);
@@ -62,6 +68,7 @@ export function RadialMenu({ items, position = "right" }: RadialMenuProps) {
                 opacity: isOpen ? 1 : 0,
                 pointerEvents: isOpen ? "auto" : "none",
                 zIndex: 102,
+                transitionDelay: isOpen ? `${index * 50}ms` : "0ms",
               }}
               title={item.label + (item.disabled ? " (Bloqueado)" : "")}
             >
@@ -69,6 +76,56 @@ export function RadialMenu({ items, position = "right" }: RadialMenuProps) {
             </button>
           );
         })}
+
+        {/* Outer Ring (Backoffice) */}
+        {backofficeItems &&
+          backofficeItems.map((item, index) => {
+            const angleRange = 90; // Slightly narrower range for outer ring to keep it reachable
+            const step = angleRange / (backofficeItems.length - 1 || 1);
+            // Offset angle slightly so they don't overlap perfectly with inner ring lines if same count
+            const offset = 5;
+            const currentAngle =
+              position === "right"
+                ? 180 - step * index - offset
+                : 0 + step * index + offset;
+
+            const radian = (currentAngle * Math.PI) / 180;
+            const radius = 180; // Larger radius
+            const x = isOpen ? Math.cos(radian) * radius : 0;
+            const y = isOpen ? -Math.sin(radian) * radius : 0;
+            const isActive = location.pathname.includes(item.path);
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.disabled) return;
+                  navigate(item.path);
+                  setIsOpen(false);
+                }}
+                disabled={item.disabled}
+                className={`absolute bottom-0 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-color)] shadow-xl transition-all duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] ${
+                  item.disabled
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+                    : "active:scale-95 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 " +
+                      (isActive
+                        ? "bg-amber-500 text-white"
+                        : "bg-[var(--bg-surface)] text-[var(--text-primary)]")
+                }`}
+                style={{
+                  [position]: 0,
+                  transform: `translate(${x}px, ${y}px)`,
+                  opacity: isOpen ? 1 : 0,
+                  pointerEvents: isOpen ? "auto" : "none",
+                  zIndex: 101, // Behind inner ring slightly
+                  transitionDelay: isOpen ? `${index * 50 + 100}ms` : "0ms", // Staggered after inner ring
+                }}
+                title={item.label}
+              >
+                <span className="text-sm">{item.icon}</span>
+              </button>
+            );
+          })}
 
         {/* Trigger Button */}
         <button

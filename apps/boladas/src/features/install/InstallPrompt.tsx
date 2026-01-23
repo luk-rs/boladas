@@ -3,7 +3,7 @@ import { usePWAInstall } from "./usePWAInstall";
 export function InstallPrompt() {
   const { isInstalled, canInstall, promptInstall } = usePWAInstall();
 
-  if (isInstalled) return null;
+  if (isInstalled || window.location.pathname.startsWith("/join")) return null;
 
   return (
     <section className="card install">
