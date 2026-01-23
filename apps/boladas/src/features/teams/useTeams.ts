@@ -49,7 +49,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     //   setActiveTeamId(mapped[0].teamId);
     // }
     // Actually, forcing list view even for 1 team seems to be the request.
-  }, [userId, activeTeamId]);
+  }, [userId]);
 
   const loadMyRequests = useCallback(async () => {
     if (!supabase || !userId) return;
