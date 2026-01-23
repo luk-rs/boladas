@@ -81,11 +81,10 @@ function GlobalInviteHandler() {
     if (inviteToken && isAuthed) {
       void acceptInvite(inviteToken).then((teamId) => {
         if (teamId) {
+          // Clean up URL without reloading - state will update automatically
           const url = new URL(window.location.href);
           url.searchParams.delete("invite");
           window.history.replaceState({}, "", url.toString());
-          // Optional: Reload or navigate
-          window.location.reload();
         }
       });
     }
