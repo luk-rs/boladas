@@ -10,5 +10,9 @@ export function PublicRoute() {
     return <Navigate to="/" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <div className="mobile-shell">
+      <Outlet />
+    </div>
+  );
 }

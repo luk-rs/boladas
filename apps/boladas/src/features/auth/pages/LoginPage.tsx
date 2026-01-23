@@ -12,9 +12,5 @@ export function LoginPage() {
     return params.get("invite");
   }, []);
 
-  return (
-    <div className="login-page">
-      <SignIn inviteToken={inviteToken} error={error} />
-    </div>
-  );
+  return <SignIn inviteToken={inviteToken} error={error} />;
 }

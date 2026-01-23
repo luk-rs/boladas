@@ -155,7 +155,9 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
                 onChange={(e) =>
                   setFormData({ ...formData, seasonStart: e.target.value })
                 }
-                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium"
+                onKeyDown={(e) => e.preventDefault()}
+                onClick={(e) => e.currentTarget.showPicker()}
+                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium cursor-pointer"
               />
             </div>
 
@@ -174,7 +176,9 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
                 onChange={(e) =>
                   setFormData({ ...formData, holidayStart: e.target.value })
                 }
-                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium"
+                onKeyDown={(e) => e.preventDefault()}
+                onClick={(e) => e.currentTarget.showPicker()}
+                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium cursor-pointer"
               />
             </div>
           </div>
