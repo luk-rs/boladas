@@ -14,13 +14,16 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
   const [status, setStatus] = useState<string | null>(null);
 
   const loadMemberships = useCallback(async () => {
+    // console.log("🔄 Loading Memberships for:", userId);
     if (!supabase || !userId) return;
+
     const { data, error: fetchError } = await supabase
       .from("team_members")
       .select("id, team_id, team:teams(id,name), roles:team_member_roles(role)")
       .eq("user_id", userId);
 
     if (fetchError) {
+      console.error("❌ Error loading memberships:", fetchError);
       setError(fetchError.message);
       return;
     }

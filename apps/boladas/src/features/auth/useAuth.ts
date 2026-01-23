@@ -16,45 +16,60 @@ export function useAuth() {
   const processingRegistration = useRef(false);
 
   // Handle post-login access check
-  const checkAccess = useCallback(async (userId: string) => {
-    if (!supabase) return;
+  const checkAccess = useCallback(
+    async (userId: string) => {
+      if (!supabase) return;
 
-    // Access Check: Must be System Admin OR belong to a team
-    // 1. Check System Admin
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_system_admin")
-      .eq("id", userId)
-      .maybeSingle();
+      // Access Check: Must be System Admin OR belong to a team
+      // 1. Check System Admin
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_system_admin")
+        .eq("id", userId)
+        .maybeSingle();
 
-    if (profile?.is_system_admin) {
-      setIsSystemAdmin(true);
-      setLoading(false);
-      return; // Success
-    }
+      if (profile?.is_system_admin) {
+        setIsSystemAdmin(true);
+        setLoading(false);
+        return; // Success
+      }
 
-    // 2. Check Team Membership
-    const { count, error: countError } = await supabase
-      .from("team_members")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId);
+      // 2. Check Team Membership
+      const { count, error: countError } = await supabase
+        .from("team_members")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
 
-    if (countError) {
-      setError(countError.message);
-      setLoading(false);
-      return;
-    }
+      if (countError) {
+        setError(countError.message);
+        setLoading(false);
+        return;
+      }
 
-    if (count === 0) {
-      // NOTE: We do NOT force logout here anymore, because they might be
-      // in the process of registering a team (handled by usePendingRegistration).
-      // We just leave them authenticated but without team access yet.
-      setLoading(false);
-    } else {
-      // Success
-      setLoading(false);
-    }
-  }, []);
+      if (count === 0) {
+        // Strict Mode Logic:
+        // Users MUST have a team.
+        // Exception: They are currently in the middle of a registration flow (Pending Registration).
+        const pendingReg = localStorage.getItem("boladas:registration_data");
+
+        if (pendingReg) {
+          // Allow temporary access to complete registration
+          setLoading(false);
+        } else {
+          // Unauthorized: No team and no pending registration
+          console.warn(
+            "⛔ Access Denied: User has no teams and no pending registration.",
+          );
+          setError("Access denied. You must be part of a team to login.");
+          await signOut();
+        }
+      } else {
+        // Success
+        setLoading(false);
+      }
+    },
+    [signOut],
+  );
 
   useEffect(() => {
     const client = supabase;

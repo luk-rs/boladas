@@ -1,4 +1,4 @@
-# ADR 011: Styling Strategy & Guidelines
+# ADR-011: Styling Strategy & Guidelines
 
 ## Context
 

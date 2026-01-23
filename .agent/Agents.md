@@ -33,3 +33,9 @@ This document outlines the core styling and layout rules for the Boladas applica
 
 - **LocalStorage**: User preferences like `menu-position` and `theme` must be persisted in `localStorage`.
 - **Events**: Use `menu-position-change` and `theme-change` custom events to synchronize state across the app.
+
+## 6. Architecture & ADRs
+
+- **Team Prerequisite**: A user MUST be part of at least one team to be logged in.
+  - Exception: Users with a `boladas:registration_data` tag in local storage (Pending Registration) are allowed temporary access to complete the team creation process.
+- **ADR Management**: Architectural Decision Records must be placed in `.docs/ADRs/` and follow the format `ADR-NNN-short-title.md` (e.g., `ADR-012-strict-team-membership.md`).
