@@ -1,4 +1,8 @@
+import { useAuth } from "../../auth/useAuth";
+
 export function ProfilePage() {
+  const { signOut } = useAuth();
+
   return (
     <div className="page-content">
       <h2>Perfil</h2>
@@ -34,6 +38,16 @@ export function ProfilePage() {
           <br />
           Assists
         </div>
+      </div>
+
+      <div style={{ marginTop: "3rem", textAlign: "center" }}>
+        <button
+          className="provider-button"
+          onClick={signOut}
+          style={{ background: "#ff4444", color: "white", width: "100%" }}
+        >
+          Sign Out
+        </button>
       </div>
     </div>
   );
