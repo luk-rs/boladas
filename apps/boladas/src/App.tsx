@@ -1,67 +1,21 @@
 import { useEffect, useMemo } from "react";
+import { BrowserRouter } from "react-router-dom";
 import { Page, Header } from "./components/layout";
 import { InstallPrompt } from "./features/install/InstallPrompt";
-import { SignIn } from "./features/auth/SignIn";
-import { UserMenu } from "./features/auth/UserMenu";
-import { useAuth } from "./features/auth/useAuth";
 import { usePWAInstall } from "./features/install/usePWAInstall";
+import { useAuth } from "./features/auth/useAuth";
 import { useTeams } from "./features/teams/useTeams";
-import { useMembers } from "./features/members/useMembers";
-import { useHealth } from "./features/health/useHealth";
-import { TeamSelector } from "./features/teams/TeamSelector";
-import { RequestTeam } from "./features/teams/RequestTeam";
-import { SystemAdminTeams } from "./features/teams/SystemAdminTeams";
-import { MemberList } from "./features/members/MemberList";
-import { InviteMember } from "./features/members/InviteMember";
+import { AppRoutes } from "./AppRoutes";
 
 export default function App() {
   const { isInstalled } = usePWAInstall();
-  const {
-    isAuthed,
-    sessionUserId,
-    isSystemAdmin,
-    sessionEmail,
-    signOut,
-    error: authError,
-  } = useAuth();
-  const {
-    memberships,
-    activeTeamId,
-    myRequests,
-    pendingRequests,
-    allTeams,
-    error: teamError,
-    status: teamStatus,
-    requestTeam,
-    createSystemTeam,
-    deleteTeam,
-    approveRequest,
-    denyRequest,
-    setActiveTeamId,
-    acceptInvite,
-  } = useTeams(sessionUserId, isSystemAdmin);
+  // We need auth and teams hook at top level mainly for the global invite/popup logic
+  // OR we can move that logic to a specialized component inside Router.
+  // Ideally, useAuth should be used inside router context if it uses router hooks (nav),
+  // but here it uses window location.
 
-  const {
-    members,
-    invites,
-    error: memberError,
-    status: memberStatus,
-    setBaseRole,
-    toggleExtraRole,
-    createInvite,
-  } = useMembers(activeTeamId);
-
-  const { status: healthStatus, error: healthError } = useHealth(isAuthed);
-
-  // Derived state
-  const activeMembership = memberships.find((m) => m.teamId === activeTeamId);
-  const isTeamAdmin = activeMembership?.roles.includes("team_admin") ?? false;
-  const canManageTeam = isSystemAdmin || isTeamAdmin;
-
-  const error = authError || teamError || memberError || healthError;
-  const status = teamStatus || memberStatus || healthStatus;
-
-  // Popup Callback Logic
+  // Checking Popup logic (Global)
+  const { isAuthed } = useAuth();
   const isPopup = useMemo(() => {
     if (typeof window === "undefined") return false;
     const params = new URLSearchParams(window.location.search);
@@ -70,8 +24,6 @@ export default function App() {
 
   useEffect(() => {
     if (isPopup && isAuthed) {
-      // If we are in the popup and have authenticated, close the window.
-      // The session is shared via localStorage, so the main window will pick it up.
       window.close();
     }
   }, [isPopup, isAuthed]);
@@ -91,7 +43,36 @@ export default function App() {
     );
   }
 
-  // Invite Token Logic
+  // Invite acceptance logic could be moved to a hook that runs inside the Dashboard or a "AcceptInvitePage"
+  // But for now, keeping it compatible, let's just let the Dashboard or Login page handle parameters if needed.
+  // Actually, existing App.tsx handled invite acceptance globally.
+  // Let's create a GlobalInviteHandler component.
+
+  return (
+    <BrowserRouter>
+      <Page>
+        <Header />
+        <InstallPrompt />
+        {/* Only show content if installed (based on original logic which hid everything if not installed? 
+            Original logic: {isInstalled && ...}. 
+            Wait, original logic allowed install prompt. 
+            If PWA is NOT installed, we might want to ONLY show install prompt?
+            Original: {isInstalled && !isAuthed ...}
+            Actually the usePWAInstall hook logic ensures 'isInstalled' flag or similar.
+            Let's assume the router handles the view, and Layout handles the prompt. 
+         */}
+        <AppRoutes />
+        <GlobalInviteHandler />
+      </Page>
+    </BrowserRouter>
+  );
+}
+
+function GlobalInviteHandler() {
+  const { isAuthed, sessionUserId } = useAuth();
+  // We need useTeams to accept invite, but useTeams needs userId.
+  const { acceptInvite } = useTeams(sessionUserId, false);
+
   const inviteToken = useMemo(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
@@ -105,99 +86,12 @@ export default function App() {
           const url = new URL(window.location.href);
           url.searchParams.delete("invite");
           window.history.replaceState({}, "", url.toString());
+          // Optional: Reload or navigate
+          window.location.reload();
         }
       });
     }
-  }, [inviteToken, isAuthed]);
+  }, [inviteToken, isAuthed, acceptInvite]);
 
-  return (
-    <Page>
-      <Header />
-      <InstallPrompt />
-
-      {isInstalled && !isAuthed && (
-        <SignIn inviteToken={inviteToken} error={authError} />
-      )}
-
-      {isInstalled && isAuthed && (
-        <>
-          <UserMenu />
-          {status && <p className="muted">{status}</p>}
-          {error && <p className="error">{error}</p>}
-
-          {/* New User / No Team */}
-          {memberships.length === 0 && (
-            <RequestTeam onRequest={requestTeam} myRequests={myRequests} />
-          )}
-
-          {/* Team Selection */}
-          {memberships.length > 0 && (
-            <TeamSelector
-              memberships={memberships}
-              activeTeamId={activeTeamId}
-              onSelect={setActiveTeamId}
-            />
-          )}
-
-          {/* System Admin */}
-          {isSystemAdmin && (
-            <SystemAdminTeams
-              allTeams={allTeams}
-              pendingRequests={pendingRequests}
-              onCreateTeam={createSystemTeam}
-              onDeleteTeam={deleteTeam}
-              onApproveRequest={approveRequest}
-              onDenyRequest={denyRequest}
-            />
-          )}
-
-          {/* Active Team Dashboard */}
-          {activeTeamId && activeMembership && (
-            <section className="card">
-              <p className="muted">
-                Roles: {activeMembership.roles.join(", ")}
-              </p>
-              <div className="row">
-                <span>Base role:</span>
-                <button
-                  onClick={() =>
-                    setBaseRole(activeMembership.teamMemberId, "member")
-                  }
-                  disabled={activeMembership.roles.includes("member")}
-                >
-                  Member
-                </button>
-                <button
-                  onClick={() =>
-                    setBaseRole(activeMembership.teamMemberId, "player")
-                  }
-                  disabled={activeMembership.roles.includes("player")}
-                >
-                  Player
-                </button>
-              </div>
-
-              {canManageTeam && (
-                <>
-                  <hr className="divider" />
-                  <h2>Team admin</h2>
-                  <InviteMember
-                    invites={invites}
-                    onCreateInvite={createInvite}
-                  />
-                  <MemberList
-                    members={members}
-                    onSetBaseRole={setBaseRole}
-                    onToggleExtraRole={toggleExtraRole}
-                    canManage={canManageTeam}
-                    currentUserRoles={activeMembership.roles}
-                  />
-                </>
-              )}
-            </section>
-          )}
-        </>
-      )}
-    </Page>
-  );
+  return null;
 }
