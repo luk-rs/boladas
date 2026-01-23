@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import { InstallPrompt } from "./features/install/InstallPrompt";
 import { usePWAInstall } from "./features/install/usePWAInstall";
 import { useAuth } from "./features/auth/useAuth";
+import { usePendingRegistration } from "./features/auth/usePendingRegistration";
 import { useTeams } from "./features/teams/useTeams";
 import { AppRoutes } from "./AppRoutes";
 
@@ -55,8 +56,14 @@ export default function App() {
          */}
       <AppRoutes />
       <GlobalInviteHandler />
+      <GlobalRegistrationHandler />
     </BrowserRouter>
   );
+}
+
+function GlobalRegistrationHandler() {
+  usePendingRegistration();
+  return null;
 }
 
 function GlobalInviteHandler() {

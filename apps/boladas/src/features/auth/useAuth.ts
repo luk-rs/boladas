@@ -16,89 +16,45 @@ export function useAuth() {
   const processingRegistration = useRef(false);
 
   // Handle post-login access check
-  const handlePostLogin = useCallback(
-    async (userId: string) => {
-      if (!supabase) return;
+  const checkAccess = useCallback(async (userId: string) => {
+    if (!supabase) return;
 
-      // Check for pending registration (For PWA Redirect Flow)
-      const registrationData = localStorage.getItem(
-        "boladas:registration_data",
-      );
+    // Access Check: Must be System Admin OR belong to a team
+    // 1. Check System Admin
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_system_admin")
+      .eq("id", userId)
+      .maybeSingle();
 
-      // Prevent duplicate registration calls
-      if (registrationData && !processingRegistration.current) {
-        processingRegistration.current = true;
-        try {
-          const { name, seasonStart, holidayStart, gameDefinitions } =
-            JSON.parse(registrationData);
+    if (profile?.is_system_admin) {
+      setIsSystemAdmin(true);
+      setLoading(false);
+      return; // Success
+    }
 
-          console.log("🚀 RPC Call: register_team", {
-            p_name: name,
-            p_season_start: seasonStart,
-            p_holiday_start: holidayStart,
-            p_game_definitions: gameDefinitions,
-          });
+    // 2. Check Team Membership
+    const { count, error: countError } = await supabase
+      .from("team_members")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
 
-          // Call RPC to register team
-          const { error: rpcError } = await supabase.rpc("register_team", {
-            p_name: name,
-            p_season_start: String(seasonStart),
-            p_holiday_start: holidayStart ? String(holidayStart) : null,
-            p_game_definitions: gameDefinitions || [],
-          });
+    if (countError) {
+      setError(countError.message);
+      setLoading(false);
+      return;
+    }
 
-          if (rpcError) throw rpcError;
-
-          // Clear storage after success
-          localStorage.removeItem("boladas:registration_data");
-        } catch (err: any) {
-          console.error("Registration failed:", err);
-          setError(err.message || "Failed to complete team registration.");
-          // Rollback: clear data and logout so they can try again or see error on login screen
-          localStorage.removeItem("boladas:registration_data");
-          await signOut();
-        } finally {
-          processingRegistration.current = false;
-        }
-      }
-
-      // Access Check: Must be System Admin OR belong to a team
-      // 1. Check System Admin
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_system_admin")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (profile?.is_system_admin) {
-        setIsSystemAdmin(true);
-        setLoading(false);
-        return; // Success
-      }
-
-      // 2. Check Team Membership
-      const { count, error: countError } = await supabase
-        .from("team_members")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
-
-      if (countError) {
-        setError(countError.message);
-        setLoading(false);
-        return;
-      }
-
-      if (count === 0) {
-        // Unauthorized
-        setError("Access denied. You must be part of a team to login.");
-        await signOut();
-      } else {
-        // Success
-        setLoading(false);
-      }
-    },
-    [signOut],
-  );
+    if (count === 0) {
+      // NOTE: We do NOT force logout here anymore, because they might be
+      // in the process of registering a team (handled by usePendingRegistration).
+      // We just leave them authenticated but without team access yet.
+      setLoading(false);
+    } else {
+      // Success
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const client = supabase;
@@ -113,7 +69,7 @@ export function useAuth() {
       setSessionEmail(user?.email ?? null);
       setSessionUserId(user?.id ?? null);
       if (user?.id) {
-        void handlePostLogin(user.id);
+        void checkAccess(user.id);
       } else {
         setLoading(false);
       }
@@ -127,7 +83,7 @@ export function useAuth() {
 
       if (event === "SIGNED_IN" && user?.id) {
         setLoading(true); // Set loading while we verify
-        void handlePostLogin(user.id);
+        void checkAccess(user.id);
       } else if (event === "SIGNED_OUT") {
         setIsSystemAdmin(false);
         setLoading(false);
@@ -137,7 +93,7 @@ export function useAuth() {
     return () => {
       sub.subscription.unsubscribe();
     };
-  }, [handlePostLogin]);
+  }, [checkAccess]);
 
   // Sync profile
   useEffect(() => {
