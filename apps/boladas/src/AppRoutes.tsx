@@ -7,7 +7,6 @@ import { AppShell } from "./components/layout/AppShell";
 import { GamesPage } from "./features/teams/pages/GamesPage";
 import { StandingsPage } from "./features/teams/pages/StandingsPage";
 import { StatsPage } from "./features/teams/pages/StatsPage";
-import { ActivityPage } from "./features/teams/pages/ActivityPage";
 import { ProfilePage } from "./features/teams/pages/ProfilePage";
 
 export function AppRoutes() {
@@ -26,7 +25,6 @@ export function AppRoutes() {
           <Route path="/games" element={<GamesPage />} />
           <Route path="/standings" element={<StandingsPage />} />
           <Route path="/stats" element={<StatsPage />} />
-          <Route path="/activity" element={<ActivityPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
 

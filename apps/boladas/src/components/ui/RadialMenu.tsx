@@ -27,13 +27,13 @@ export function RadialMenu({ items, position = "right" }: RadialMenuProps) {
     >
       <div className="relative">
         {items.map((item, index) => {
-          const angleRange = 90;
+          const angleRange = 100;
           const step = angleRange / (items.length - 1 || 1);
           const currentAngle =
             position === "right" ? 180 - step * index : 0 + step * index;
 
           const radian = (currentAngle * Math.PI) / 180;
-          const radius = 100;
+          const radius = 110;
           const x = isOpen ? Math.cos(radian) * radius : 0;
           const y = isOpen ? -Math.sin(radian) * radius : 0;
           const isActive = location.pathname.includes(item.path);

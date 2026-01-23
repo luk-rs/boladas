@@ -53,7 +53,6 @@ export function AppShell() {
     { id: "games", label: "Jogos", icon: "📅", path: "/games" },
     { id: "standings", label: "Classificação", icon: "🏆", path: "/standings" },
     { id: "stats", label: "Estatísticas", icon: "📊", path: "/stats" },
-    { id: "activity", label: "Atividade", icon: "🔔", path: "/activity" },
     { id: "profile", label: "Perfil", icon: "👤", path: "/profile" },
   ];
 
