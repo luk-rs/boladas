@@ -1,4 +1,4 @@
-# ADR-008: Vertical Slice Architecture
+# ADR-008: Vertical Slice Architecture & Registration Flow
 
 ## Status
 
@@ -6,49 +6,51 @@ Accepted
 
 ## Date
 
-2026-01-22
+2026-01-23
 
 ## Context
 
-The application is currently structured as a monolithic React component (`App.tsx`) and a single API handler (`index.ts`). As features like Teams, Members, and Auth grow, this structure becomes difficult to maintain. Logic is interleaved, and finding code related to a specific feature requires searching through a large file.
+The application structure was monolithic, and the login flow was too permissive. We needed to refactor the architecture for scalability and introduce strict login controls and a team registration flow.
 
 ## Decision
 
-We will refactor both the PWA (`apps/boladas`) and the API (`apps/api`) to use a **Vertical Slice Architecture**.
+### 1. Vertical Slice Architecture
 
-### PWA Structure
+We refactored both the PWA (`apps/boladas`) and API (`apps/api`) to key feature slices:
 
-Instead of technical layers (components, hooks, containers), we will organize code by **business domain** (features).
-Each feature (e.g., `auth`, `teams`, `members`) will be a self-contained directory containing its own:
+- **PWA**: `auth`, `teams`, `members`, `install`, `health`.
+- **API**: `random`, `team-registration` (via RPC).
 
-- UI Components
-- State Management (Hooks)
-- API Interaction
+### 2. Team Registration Flow
 
-Shared code (`src/lib`, `src/components/ui`) will be kept to a minimum and used by features.
+Instead of generic sign-up, users must "Create a Team" to register.
 
-### API Structure
+- **Form**: Collects Team Name, Season Start, and Holiday Start.
+- **Persistence**: Data is saved to `localStorage` before OAuth redirect.
+- **Registration**: On callback, if registration data exists, the `register_team` RPC is called.
+- **RPC**: A secure specific PostgreSQL function creates the team and assigns the creator as `team_admin`, `manager`, `secretary`, and `accountant`.
 
-The Cloudflare Worker API will also be split by feature.
+### 3. Login Restrictions
 
-- `src/features/random/`
-- `src/features/auth/` (future)
-- `src/features/teams/` (future)
+Login is no longer open to everyone.
+
+- **System Admins**: Always allowed.
+- **Team Members**: Allowed only if they belong to at least one team.
+- **Others**: Access denied immediately upon login.
 
 ## Consequences
 
 ### Positive
 
-- **High Cohesion**: Related code is co-located.
-- **Scalability**: Easier to add new features without touching unrelated files.
-- **Maintainability**: Smaller files and clear boundaries.
-- **Team Work**: Different people can work on different features with less conflict.
+- **Secure Access**: Only authorized team members can access the app.
+- **Structured Onboarding**: New users immediately have a context (their team) and roles.
+- **Maintainability**: Features are isolated and easy to navigate.
 
 ### Negative
 
-- **Duplication**: Some logic might be duplicated if not careful (though "WET" is preferred over wrong abstractions).
-- **Initial Effort**: Requires refactoring the existing monolith.
+- **Complexity**: The auth flow now handles registration data persistence and post-login verification steps.
+- **Schema**: Added specific business logic (Season/Holiday start) to the `teams` table.
 
 ## Compliance
 
-This ADR complies with the project's requirement to document architectural decisions.
+This ADR documents the architectural changes and the new business rules for access control.
