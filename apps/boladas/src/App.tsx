@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from "react";
 import { BrowserRouter } from "react-router-dom";
-import { Page, Header } from "./components/layout";
 import { InstallPrompt } from "./features/install/InstallPrompt";
 import { usePWAInstall } from "./features/install/usePWAInstall";
 import { useAuth } from "./features/auth/useAuth";
