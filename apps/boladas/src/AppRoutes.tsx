@@ -21,7 +21,7 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         {/* Flattened App Shell */}
         <Route element={<AppShell />}>
-          <Route path="/" element={<Navigate to="/games" replace />} />
+          <Route path="/" element={<Navigate to="/profile" replace />} />
           <Route path="/games" element={<GamesPage />} />
           <Route path="/standings" element={<StandingsPage />} />
           <Route path="/stats" element={<StatsPage />} />
@@ -31,7 +31,7 @@ export function AppRoutes() {
         <Route path="/admin" element={<SystemAdminPage />} />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/games" replace />} />
+        <Route path="*" element={<Navigate to="/profile" replace />} />
       </Route>
     </Routes>
   );

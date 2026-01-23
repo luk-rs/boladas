@@ -50,9 +50,21 @@ export function AppShell() {
   }, []);
 
   const menuItems = [
-    { id: "games", label: "Jogos", icon: "📅", path: "/games" },
-    { id: "standings", label: "Classificação", icon: "🏆", path: "/standings" },
-    { id: "stats", label: "Estatísticas", icon: "📊", path: "/stats" },
+    { id: "games", label: "Jogos", icon: "📅", path: "/games", disabled: true },
+    {
+      id: "standings",
+      label: "Classificação",
+      icon: "🏆",
+      path: "/standings",
+      disabled: true,
+    },
+    {
+      id: "stats",
+      label: "Estatísticas",
+      icon: "📊",
+      path: "/stats",
+      disabled: true,
+    },
     { id: "profile", label: "Perfil", icon: "👤", path: "/profile" },
   ];
 

@@ -6,6 +6,7 @@ export interface RadialMenuItem {
   label: string;
   icon: string;
   path: string;
+  disabled?: boolean;
 }
 
 interface RadialMenuProps {
@@ -42,13 +43,18 @@ export function RadialMenu({ items, position = "right" }: RadialMenuProps) {
             <button
               key={item.id}
               onClick={() => {
+                if (item.disabled) return;
                 navigate(item.path);
                 setIsOpen(false);
               }}
-              className={`absolute bottom-0 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full border-none shadow-mui transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] active:scale-95 ${
-                isActive
-                  ? "bg-primary-500 text-white"
-                  : "bg-[var(--bg-surface)] text-[var(--text-primary)]"
+              disabled={item.disabled}
+              className={`absolute bottom-0 flex h-12 w-12 items-center justify-center rounded-full border-none shadow-mui transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] ${
+                item.disabled
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
+                  : "active:scale-95 cursor-pointer " +
+                    (isActive
+                      ? "bg-primary-500 text-white"
+                      : "bg-[var(--bg-surface)] text-[var(--text-primary)]")
               }`}
               style={{
                 [position]: 0,
@@ -57,7 +63,7 @@ export function RadialMenu({ items, position = "right" }: RadialMenuProps) {
                 pointerEvents: isOpen ? "auto" : "none",
                 zIndex: 102,
               }}
-              title={item.label}
+              title={item.label + (item.disabled ? " (Bloqueado)" : "")}
             >
               <span className="text-xl">{item.icon}</span>
             </button>
