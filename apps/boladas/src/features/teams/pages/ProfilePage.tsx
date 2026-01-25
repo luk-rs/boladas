@@ -6,7 +6,7 @@ import { Toggle } from "../../../components/ui/Toggle";
 
 export function ProfilePage() {
   const { signOut, sessionUserId } = useAuth();
-  const { memberships } = useTeams(sessionUserId, false);
+  const { memberships, loading } = useTeams(sessionUserId, false);
   const [menuPosition, setMenuPosition] = useState<"left" | "right">("right");
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -68,7 +68,14 @@ export function ProfilePage() {
       {/* Teams Section */}
       <CollapsibleSection title="Meus Times" defaultOpen={true}>
         <div className="space-y-3">
-          {memberships.length > 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-10 bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-color)]">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+              <p className="mt-4 text-xs text-[var(--text-secondary)]">
+                Carregando seus times...
+              </p>
+            </div>
+          ) : memberships.length > 0 ? (
             memberships.map((m) => (
               <div
                 key={m.teamId}
@@ -86,10 +93,9 @@ export function ProfilePage() {
             ))
           ) : (
             <div className="text-center py-4 bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-color)]">
-              <p className="text-sm text-[var(--text-secondary)] mb-3">
+              <p className="text-sm text-[var(--text-secondary)]">
                 Você não participa de nenhum time.
               </p>
-              <CreateTeamInline />
             </div>
           )}
         </div>
@@ -121,55 +127,6 @@ export function ProfilePage() {
           className="w-full rounded-2xl bg-red-500 py-4 font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95"
         >
           Sair da Conta
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function CreateTeamInline() {
-  const { createTeam, error } = useTeams(null, false); // userId not needed for hook init, but needed for action. Wait, hook needs userId.
-  // Actually, useTeams needs userId to init.
-  // Let's get it from useAuth inside the component?
-  // No, useTeams shouldn't be re-initialized if we can avoid it, but here it's fine.
-  const { sessionUserId } = useAuth();
-  const { createTeam: performCreate, status } = useTeams(sessionUserId, false);
-
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!name.trim()) return;
-    setLoading(true);
-    await performCreate(name);
-    setLoading(false);
-    setName("");
-    // Reload happens automatically via useTeams subscription usually, or we might need to trigger parent refresh.
-    // useTeams has internal state, but parent ProfilePage has its OWN instance of useTeams.
-    // For simple implementation, we can force a window reload or context update.
-    // Actually, useTeams does not share state across instances (it's a hook, not a context).
-    // So the parent list won't update unless we share context.
-    // FOR NOW: window.location.reload() is a crude but effective way to sync.
-    window.location.reload();
-  };
-
-  return (
-    <div className="px-4">
-      {status && <p className="text-green-500 text-xs mb-2">{status}</p>}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Nome do novo time..."
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="flex-1 rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:border-primary-500 focus:outline-none"
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={loading || !name.trim()}
-          className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-primary-700 active:scale-95 disabled:opacity-50"
-        >
-          {loading ? "..." : "Criar"}
         </button>
       </div>
     </div>
