@@ -1,8 +1,10 @@
 import { handleRandom } from "./features/random";
+import { handleGetGames } from "./features/games/get-games";
 import { corsHeaders } from "./shared/cors";
 
 export interface Env {
   ALLOWED_ORIGIN?: string;
+  SUPABASE_DB_URL?: string;
 }
 
 export default {
@@ -16,6 +18,10 @@ export default {
 
     if (url.pathname === "/random" || url.pathname === "/random/") {
       return handleRandom(request, origin);
+    }
+
+    if (url.pathname === "/games" || url.pathname === "/games/") {
+      return handleGetGames(request, env);
     }
 
     return new Response("Not found", { status: 404 });

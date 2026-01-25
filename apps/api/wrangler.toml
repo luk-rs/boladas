@@ -1,6 +1,7 @@
 name = "boladas-api"
 main = "src/index.ts"
 compatibility_date = "2025-12-15"
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ALLOWED_ORIGIN = "*"

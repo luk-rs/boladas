@@ -26,3 +26,6 @@ supabase/.env
 
 # Docker volumes (persistent data)
 docker/volumes/db/data/
+
+# Cloudflare Workers secrets
+.dev.vars
