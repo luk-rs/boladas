@@ -21,6 +21,7 @@ export function JoinPage() {
     if (!token || !supabase) return;
     const loadInfo = async () => {
       // Use direct client for public call
+      if (!supabase) return;
       const { data, error } = await supabase.rpc("get_invite_info", {
         p_token: token,
       });
