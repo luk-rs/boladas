@@ -10,6 +10,7 @@ export function TeamSettingsPage() {
     createGenericInvite,
     activeTeamId,
     error: hookError,
+    loading: hookLoading,
   } = useTeams(sessionUserId, false);
 
   // Find current active team role
@@ -24,9 +25,20 @@ export function TeamSettingsPage() {
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  if (hookLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center p-6">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" />
+        <p className="mt-4 text-sm text-[var(--text-secondary)]">
+          Verificando permissões...
+        </p>
+      </div>
+    );
+  }
+
   if (!isAdminOrManager) {
     return (
-      <div className="flex items-center justify-center h-[60vh] text-center p-6">
+      <div className="flex items-center justify-center h-[60vh] text-center p-6 animate-in fade-in duration-500">
         <div>
           <h2 className="text-xl font-bold text-red-500 mb-2">Acesso Negado</h2>
           <p className="text-[var(--text-secondary)]">
