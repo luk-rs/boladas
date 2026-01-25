@@ -7,13 +7,14 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "concurrently --kill-others --prefix '[{name}]' --names 'supabase,api,app' --prefix-colors 'magenta,yellow,cyan' 'supabase start' 'pnpm dev:api' 'pnpm dev:app'",
+    "dev": "./scripts/dev.sh",
+    "dev:services": "concurrently --kill-others --prefix '[{name}]' --names 'api,app' --prefix-colors 'yellow,cyan' 'pnpm dev:api' 'pnpm dev:app'",
     "dev:api": "pnpm -C apps/api dev",
     "dev:app": "pnpm -C apps/boladas dev",
     "build": "pnpm -C apps/boladas build && pnpm -C apps/api build",
     "lint": "pnpm -C apps/boladas lint && pnpm -C apps/api lint",
     "typecheck": "pnpm -C apps/boladas typecheck && pnpm -C apps/api typecheck"
-  }
+  },
   "devDependencies": {
     "concurrently": "^9.2.1"
   }
