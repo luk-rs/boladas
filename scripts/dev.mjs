@@ -19,8 +19,7 @@ const run = (command, args, options = {}) =>
   });
 
 try {
-  await run("node", [path.join(rootDir, "scripts", "setup-dev.mjs")]);
-  await run("docker", ["compose", "-f", path.join(rootDir, "docker-compose.yml"), "up", "-d"]);
+  await run("supabase", ["start"]);
 } catch (err) {
   console.error(err instanceof Error ? err.message : err);
   process.exit(1);

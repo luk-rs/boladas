@@ -54,7 +54,7 @@ export function SignIn({
       <div className="w-full max-w-sm z-10 animate-in fade-in zoom-in duration-500">
         <div className="mb-8 text-center italic">
           <h1 className="text-5xl font-black tracking-tighter text-white drop-shadow-lg">
-            BOLADAS
+            BOLADASX
           </h1>
           <p className="mt-2 text-primary-200 font-medium tracking-wide uppercase text-xs">
             Gestão de grupos & Peladas
