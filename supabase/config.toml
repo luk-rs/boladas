@@ -1,3 +1,5 @@
+project_id = "futeboladas-boladas"
+
 [api]
 enabled = true
 port = 54321
