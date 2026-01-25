@@ -12,6 +12,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
   const [allTeams, setAllTeams] = useState<Team[]>([]); // Admin only
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const loadMemberships = useCallback(async () => {
     // console.log("🔄 Loading Memberships for:", userId);
@@ -25,6 +26,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     if (fetchError) {
       console.error("❌ Error loading memberships:", fetchError);
       setError(fetchError.message);
+      setLoading(false);
       return;
     }
 
@@ -38,6 +40,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
       };
     });
     setMemberships(mapped);
+    setLoading(false);
 
     // Only set active team IF it was passed or logic requires it, but for now we want to start with NO active team
     // unless there is strictly only one? NO, user wants list even then likely.
@@ -55,7 +58,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     if (!supabase || !userId) return;
     const { data, error } = await supabase
       .from("team_requests")
-      .select("id, name, status, created_at")
+      .select("id, name, status, created_at, requested_by")
       .eq("requested_by", userId);
     if (error) setError(error.message);
     else setMyRequests(data ?? []);
@@ -241,6 +244,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     allTeams,
     error,
     status,
+    loading,
     createTeam,
     requestTeam,
     voteTeam: handleTeamSelection, // Renaming for clarity if needed, but handleTeamSelection is fine
