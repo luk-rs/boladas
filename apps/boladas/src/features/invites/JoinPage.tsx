@@ -7,7 +7,7 @@ import { useTeams } from "../../features/teams/useTeams";
 export function JoinPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { isAuthed, sessionUserId } = useAuth();
+  const { isAuthed, sessionUserId, sessionEmail } = useAuth();
   const { acceptInvite, error: acceptError } = useTeams(sessionUserId, false);
 
   const [teamInfo, setTeamInfo] = useState<{
@@ -18,15 +18,18 @@ export function JoinPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token || !supabase) return;
+    if (!token || !supabase) {
+      if (!supabase)
+        setError("Erro de configuração: Supabase não inicializado.");
+      return;
+    }
     const loadInfo = async () => {
       // Use direct client for public call
-      if (!supabase) return;
-      const { data, error } = await supabase.rpc("get_invite_info", {
+      const { data, error } = await supabase!.rpc("get_invite_info", {
         p_token: token,
       });
       if (error) {
-        setError(error.message); // Likely 'expired' or 'invalid' handled poorly by empty return, assuming RPC works
+        setError(error.message);
       } else if (data && data.length > 0) {
         setTeamInfo(data[0]);
       } else {
@@ -38,34 +41,38 @@ export function JoinPage() {
   }, [token]);
 
   const handleJoin = async () => {
-    if (isAuthed && token) {
-      setLoading(true);
-      const teamId = await acceptInvite(token);
-      if (teamId) {
-        navigate("/profile");
-      } else {
-        setLoading(false); // Error is handled by hook
-      }
+    if (!token) return;
+    setLoading(true);
+    const teamId = await acceptInvite(token);
+    if (teamId) {
+      navigate("/profile");
     } else {
-      // Login Flow
-      localStorage.setItem("boladas:invite_redirect", window.location.href);
-      const isStandalone = window.matchMedia(
-        "(display-mode: standalone)",
-      ).matches;
-
-      // Persist that we are accepting an invite?
-      // Actually, if we redirect back to THIS url, we just land here again but now isAuthed=true.
-      if (!supabase) return;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          skipBrowserRedirect: !isStandalone,
-          redirectTo: window.location.href, // Return to this page
-        },
-      });
-      if (error) setError(error.message);
+      setLoading(false);
     }
+  };
+
+  // Auto-join effect
+  // Auto-join effect
+  useEffect(() => {
+    if (isAuthed && token && !loading && !error && teamInfo && !acceptError) {
+      handleJoin();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthed, token, loading, error, teamInfo, acceptError]);
+
+  const handleLogin = async () => {
+    if (!supabase) return;
+
+    // We don't need to manually persist state if we just redirect back here.
+    // The auto-join effect above will catch it when they return.
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.href,
+      },
+    });
+    if (error) setError(error.message);
   };
 
   if (loading) {
@@ -114,10 +121,10 @@ export function JoinPage() {
 
         <div className="mt-8 space-y-4">
           <button
-            onClick={handleJoin}
+            onClick={isAuthed ? handleJoin : handleLogin}
             className="w-full rounded-2xl bg-primary-600 py-4 font-bold text-white shadow-lg shadow-primary-600/30 transition-all hover:bg-primary-700 active:scale-95"
           >
-            {isAuthed ? "Confirmar e Entrar" : "Entrar com Google"}
+            {isAuthed ? "Entrando..." : "Entrar com Google"}
           </button>
 
           {acceptError && (
@@ -126,7 +133,7 @@ export function JoinPage() {
 
           {isAuthed && (
             <p className="text-xs text-[var(--text-secondary)]">
-              Logado como {useAuth().sessionEmail}
+              Logado como {sessionEmail}
             </p>
           )}
         </div>
