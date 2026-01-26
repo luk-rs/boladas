@@ -8,9 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      # TODO: CI migrations fail with pooler auth - investigate direct connection
-      SKIP_DB_MIGRATIONS: ${{ vars.SKIP_DB_MIGRATIONS }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -26,7 +23,6 @@ jobs:
         with:
           version: latest
       - name: Run Supabase migrations
-        if: ${{ env.SKIP_DB_MIGRATIONS != 'true' }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -34,9 +30,9 @@ jobs:
           SUPABASE_AUTH_GOOGLE_CLIENT_ID: ${{ secrets.SUPABASE_AUTH_GOOGLE_CLIENT_ID }}
           SUPABASE_AUTH_GOOGLE_SECRET: ${{ secrets.SUPABASE_AUTH_GOOGLE_SECRET }}
         run: |
-          echo "Running migrations..."
-          supabase link --project-ref $SUPABASE_PROJECT_ID --password $SUPABASE_DB_PASSWORD
-          supabase db push
+          echo "Running migrations with direct connection..."
+          DB_URL="postgresql://postgres.$SUPABASE_PROJECT_ID:$SUPABASE_DB_PASSWORD@aws-1-eu-west-3.pooler.supabase.com:6543/postgres"
+          supabase db push --db-url "$DB_URL"
       - name: Build app
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
