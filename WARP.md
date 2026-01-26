@@ -36,4 +36,8 @@ pnpm monorepo:
 - Supabase: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_ID`
 - App vars: `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
 
-✅ **CI/CD**: Migrations run automatically on deploy via GitHub Actions
+⚠️ **Database Migrations** (Manual due to free tier limits):
+- Run `bash .github/scripts/push-migrations.sh` locally when adding migrations
+- CI deploys app only (no automatic migrations)
+- Uses direct DB connection to avoid pooler prepared statement issues
+- Free tier has 10-connection limit; automatic migrations exhaust it

@@ -74,10 +74,13 @@ boladas/
 - DO NOT use `docker compose up/down` for local development
 - Use Supabase CLI instead (industry standard and better integration)
 
-**Database Migrations**:
-- Migrations are handled by CI/CD pipeline (GitHub Actions)
-- Migrations run automatically on deploy to production via `supabase db push`
-- DO NOT manually run migrations against production unless explicitly requested
+|**Database Migrations** (Free Tier Strategy):
+|- **Manual push required**: Migrations are NOT run automatically in CI
+|- Use `bash .github/scripts/push-migrations.sh` locally when you add new migrations
+|- This avoids connection pool exhaustion on Supabase free tier (10-connection limit)
+|- Push script uses direct DB connection (port 5432) instead of pooler
+|- After pushing migrations, commit migration files and push to `main` - CI will deploy the app
+|- **Why manual?**: Supabase free tier + automatic migrations + pooler = prepared statement conflicts that exhaust connections
 
 ## Development Guidelines
 
