@@ -1,5 +1,4 @@
 -- Extensions
-create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
 
 -- Profiles (one per auth user)
@@ -13,7 +12,7 @@ create table if not exists public.profiles (
 
 -- Teams
 create table if not exists public.teams (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   created_by uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
@@ -21,7 +20,7 @@ create table if not exists public.teams (
 
 -- Team members
 create table if not exists public.team_members (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   team_id uuid not null references public.teams(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   created_at timestamptz not null default now(),
@@ -44,7 +43,7 @@ on conflict do nothing;
 
 -- Team member roles (multi-role)
 create table if not exists public.team_member_roles (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   team_member_id uuid not null references public.team_members(id) on delete cascade,
   role text not null references public.roles(name) on delete restrict,
   created_at timestamptz not null default now(),
@@ -53,7 +52,7 @@ create table if not exists public.team_member_roles (
 
 -- Invites
 create table if not exists public.invites (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   team_id uuid not null references public.teams(id) on delete cascade,
   email text not null,
   token text not null unique,
@@ -66,7 +65,7 @@ create table if not exists public.invites (
 );
 -- Team creation requests (pending approval by system admin)
 create table if not exists public.team_requests (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   requested_by uuid not null references auth.users(id) on delete cascade,
   status text not null default 'pending' check (status in ('pending','approved','denied')),
