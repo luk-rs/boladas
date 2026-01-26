@@ -30,9 +30,9 @@ jobs:
           SUPABASE_AUTH_GOOGLE_CLIENT_ID: ${{ secrets.SUPABASE_AUTH_GOOGLE_CLIENT_ID }}
           SUPABASE_AUTH_GOOGLE_SECRET: ${{ secrets.SUPABASE_AUTH_GOOGLE_SECRET }}
         run: |
-          echo "Running migrations with direct connection..."
-          # Use direct DB connection (port 5432) instead of pooler (6543) to avoid prepared statement conflicts
-          DB_URL="postgresql://postgres.$SUPABASE_PROJECT_ID:$SUPABASE_DB_PASSWORD@db.$SUPABASE_PROJECT_ID.supabase.co:5432/postgres"
+          echo "Running migrations with pooler..."
+          # Use pooler with pgbouncer=true to disable prepared statements
+          DB_URL="postgresql://postgres.$SUPABASE_PROJECT_ID:$SUPABASE_DB_PASSWORD@aws-1-eu-west-3.pooler.supabase.com:6543/postgres?pgbouncer=true"
           supabase db push --db-url "$DB_URL"
       - name: Build app
         env:
