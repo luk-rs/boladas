@@ -1,13 +1,13 @@
-import postgres from "postgres";
+import { getDb } from "../../shared/db";
 
 export async function handleGetGames(request: Request, env: any) {
   if (!env.SUPABASE_DB_URL) {
     return new Response("Missing DB Configuration", { status: 500 });
   }
 
-  // Use connection pooling (port 6543) via the connection string
-  // 'postgres' driver handles the connection lifecycle efficiently for serverless
-  const sql = postgres(env.SUPABASE_DB_URL);
+  // Use singleton connection pool instead of creating a new connection per request
+  // This prevents connection exhaustion on Supabase free tier (10-connection limit)
+  const sql = getDb(env.SUPABASE_DB_URL);
 
   try {
     // Basic query to verify connection
@@ -46,9 +46,6 @@ export async function handleGetGames(request: Request, env: any) {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
-  } finally {
-    // Clean up connection to prevent leaks in serverless environment?
-    // postgres.js manages this well, but explicit usage often requires end() if instance is created per req.
-    await sql.end();
   }
+  // No cleanup needed - singleton client persists across requests
 }
