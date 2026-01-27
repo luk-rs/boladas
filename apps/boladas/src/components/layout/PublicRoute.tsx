@@ -11,7 +11,7 @@ export function PublicRoute() {
   }
 
   return (
-    <div className="mobile-shell">
+    <div className="app-shell">
       <Outlet />
     </div>
   );

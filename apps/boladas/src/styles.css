@@ -31,10 +31,8 @@
 }
 
 @layer utilities {
-  .mobile-shell {
-    @apply w-full max-w-[450px] min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] shadow-mui relative overflow-hidden flex flex-col;
-    border-left: 1px solid var(--border-color);
-    border-right: 1px solid var(--border-color);
+  .app-shell {
+    @apply w-full min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] relative flex flex-col;
   }
 
   .scrollbar-hide::-webkit-scrollbar {

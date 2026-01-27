@@ -85,7 +85,7 @@ export function AppShell() {
     : undefined;
 
   return (
-    <div className="mobile-shell">
+    <div className="app-shell">
       <TopBar title={title} />
       <main className="flex-1 overflow-y-auto p-4 pb-24">
         <Outlet context={{ activeTeam }} />

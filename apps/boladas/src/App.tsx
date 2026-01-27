@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { BrowserRouter } from "react-router-dom";
-import { InstallPrompt } from "./features/install/InstallPrompt";
+
 import { usePWAInstall } from "./features/install/usePWAInstall";
 import { useAuth } from "./features/auth/useAuth";
 import { usePendingRegistration } from "./features/auth/usePendingRegistration";
@@ -8,7 +8,7 @@ import { useTeams } from "./features/teams/useTeams";
 import { AppRoutes } from "./AppRoutes";
 
 export default function App() {
-  const { isInstalled } = usePWAInstall();
+  // const { isInstalled } = usePWAInstall(); - removed usage
   // We need auth and teams hook at top level mainly for the global invite/popup logic
   // OR we can move that logic to a specialized component inside Router.
   // Ideally, useAuth should be used inside router context if it uses router hooks (nav),
@@ -45,7 +45,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <InstallPrompt />
+      {/* InstallPrompt removed */}
       {/* Only show content if installed (based on original logic which hid everything if not installed? 
             Original logic: {isInstalled && ...}. 
             Wait, original logic allowed install prompt. 
