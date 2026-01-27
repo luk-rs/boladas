@@ -74,13 +74,19 @@ boladas/
 - DO NOT use `docker compose up/down` for local development
 - Use Supabase CLI instead (industry standard and better integration)
 
-|**Database Migrations** (Free Tier Strategy):
-|- **Manual push required**: Migrations are NOT run automatically in CI
-|- Use `bash .github/scripts/push-migrations.sh` locally when you add new migrations
-|- This avoids connection pool exhaustion on Supabase free tier (10-connection limit)
-|- Push script uses direct DB connection (port 5432) instead of pooler
-|- After pushing migrations, commit migration files and push to `main` - CI will deploy the app
-|- **Why manual?**: Supabase free tier + automatic migrations + pooler = prepared statement conflicts that exhaust connections
+**Database Migrations** (Free Tier Strategy - see ADR-009):
+- **Manual push required**: Migrations are NOT run automatically in CI
+- When adding migrations: `bash .github/scripts/push-migrations.sh` with `SUPABASE_PROJECT_ID` and `SUPABASE_DB_PASSWORD` env vars
+- This avoids connection pool exhaustion on Supabase free tier (10-connection limit)
+- Push script uses direct DB connection (port 5432) instead of pooler to avoid prepared statement conflicts
+- Workflow: Create migration → Test locally → Push migrations → Commit files → Push to main (CI deploys app)
+
+**Database Connections** (Free Tier Optimization - see ADR-016):
+- Free tier: Maximum 10 concurrent connections total
+- API uses singleton connection pool (max 3 connections) cached in Worker module state
+- Pool reuses connections across requests instead of creating/destroying per request
+- This allows dozens of concurrent users with only 3 connections
+- **Key file**: `apps/api/src/shared/db.ts` — All database access goes through `getDb()` function
 
 ## Development Guidelines
 
