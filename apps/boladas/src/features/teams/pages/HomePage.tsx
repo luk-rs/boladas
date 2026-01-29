@@ -119,7 +119,7 @@ export function HomePage() {
               Equipas
             </p>
             <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-              Equipas ainda sem elementos suficientes
+              Equipas e respetivo plantel
             </h2>
             <p className="text-xs text-[var(--text-secondary)]">
               Mínimo de 10 jogadores
