@@ -22,6 +22,8 @@ type BallVote = {
   updatedAt: string;
 };
 
+type HoldIntent = "accepted";
+
 type Convocation = {
   id: string;
   teamId: string;
@@ -42,6 +44,7 @@ type HoldActionButtonProps = {
   label: string;
   durationMs: number;
   onComplete: () => void;
+  onProgress?: (progress: number) => void;
   className?: string;
   disabled?: boolean;
   title?: string;
@@ -51,11 +54,11 @@ function HoldActionButton({
   label,
   durationMs,
   onComplete,
+  onProgress,
   className = "",
   disabled = false,
   title,
 }: HoldActionButtonProps) {
-  const [progress, setProgress] = useState(0);
   const startRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -76,14 +79,15 @@ function HoldActionButton({
     pressedRef.current = false;
     startRef.current = null;
     clearTimers();
-    setProgress(0);
+
+    onProgress?.(0);
   };
 
   const tick = () => {
     if (!pressedRef.current || startRef.current === null) return;
     const elapsed = performance.now() - startRef.current;
     const nextProgress = Math.min(1, elapsed / durationMs);
-    setProgress(nextProgress);
+    onProgress?.(nextProgress);
     if (elapsed < durationMs) {
       frameRef.current = window.requestAnimationFrame(tick);
     }
@@ -93,14 +97,17 @@ function HoldActionButton({
     if (disabled) return;
     pressedRef.current = true;
     startRef.current = performance.now();
-    setProgress(0);
+
+    onProgress?.(0);
     clearTimers();
     frameRef.current = window.requestAnimationFrame(tick);
     timeoutRef.current = window.setTimeout(() => {
       pressedRef.current = false;
-      setProgress(1);
+      onProgress?.(1);
       onComplete();
-      window.setTimeout(() => setProgress(0), 250);
+      window.setTimeout(() => {
+        onProgress?.(0);
+      }, 250);
     }, durationMs);
   };
 
@@ -120,15 +127,6 @@ function HoldActionButton({
       disabled={disabled}
       title={title}
     >
-      <span
-        className="pointer-events-none absolute inset-0 bg-black/20"
-        style={{
-          transform: `scaleX(${progress})`,
-          transformOrigin: "left",
-          transition: progress === 0 ? "none" : "transform 80ms linear",
-          opacity: disabled ? 0 : 1,
-        }}
-      />
       <span className="relative z-10">{label}</span>
     </button>
   );
@@ -172,6 +170,9 @@ export function HomePage() {
 
   const [convocations, setConvocations] = useState<Convocation[]>([]);
   const [loadingConvocations, setLoadingConvocations] = useState(false);
+  const [holdProgressById, setHoldProgressById] = useState<
+    Record<string, { intent: HoldIntent; progress: number }>
+  >({});
 
   const formatSchedule = (scheduledAt: string) => {
     const date = new Date(scheduledAt);
@@ -197,6 +198,20 @@ export function HomePage() {
     }
     return "open";
   };
+
+  const handleHoldProgress = useCallback(
+    (id: string, intent: HoldIntent, progress: number) => {
+      setHoldProgressById((prev) => {
+        if (progress <= 0) {
+          if (!prev[id]) return prev;
+          const { [id]: _, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, [id]: { intent, progress } };
+      });
+    },
+    [],
+  );
 
   const loadConvocations = useCallback(async () => {
     if (!supabase || teamIds.length === 0) {
@@ -384,7 +399,12 @@ export function HomePage() {
                     new Date(b.updatedAt).getTime(),
                 );
 
-                return { ...convocation, myState: nextState, roster, ballVotes };
+                return {
+                  ...convocation,
+                  myState: nextState,
+                  roster,
+                  ballVotes,
+                };
               })()
             : convocation,
         ),
@@ -563,7 +583,9 @@ export function HomePage() {
     } * 1rem)`;
 
     return (
-      <div className={`flex items-center gap-3 ${isDimmed ? "opacity-50" : ""}`}>
+      <div
+        className={`flex items-center gap-3 ${isDimmed ? "opacity-50" : ""}`}
+      >
         <span className="text-lg">⚽️</span>
         {sortedVotes.length === 0 ? (
           <span className="text-xs text-[var(--text-secondary)]">
@@ -635,13 +657,17 @@ export function HomePage() {
                 convocation.status === "dismissed" &&
                 new Date(convocation.scheduledAt).getTime() > Date.now();
               const canAccept = convocation.roster.ball >= MIN_TEAM_MEMBERS;
+              const holdState = holdProgressById[convocation.id];
+              const holdTint =
+                holdState?.intent === "accepted"
+                  ? "bg-emerald-50/80 dark:bg-emerald-900/20"
+                  : "";
               const displayTitle = convocation.teamName;
-              const subtitle = convocation.title;
 
               return (
                 <div
                   key={convocation.id}
-                  className={`rounded-xl px-4 py-4 ${
+                  className={`relative overflow-hidden rounded-xl px-4 py-4 ${
                     convocation.status === "dismissed"
                       ? "bg-rose-50/80 dark:bg-rose-900/20"
                       : convocation.status === "accepted"
@@ -649,123 +675,150 @@ export function HomePage() {
                         : "bg-[var(--bg-app)]"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-base font-semibold text-[var(--text-primary)]">
-                        {displayTitle}
-                      </p>
-                      {subtitle && (
-                        <p className="text-xs text-[var(--text-secondary)]">
-                          {subtitle}
+                  {holdState && (
+                    <div
+                      className={`pointer-events-none absolute inset-0 ${holdTint}`}
+                      style={{
+                        transform: `scaleX(${holdState.progress})`,
+                        transformOrigin: "left",
+                        transition:
+                          holdState.progress === 0
+                            ? "none"
+                            : "transform 80ms linear",
+                      }}
+                    />
+                  )}
+                  <div className="relative z-10">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <p className="text-base font-semibold text-[var(--text-primary)]">
+                          {displayTitle}
                         </p>
-                      )}
-                      <div className="mt-1 flex items-center gap-3 text-xs text-[var(--text-secondary)]">
-                        <span className="inline-flex items-center gap-1">
-                          📅 {dateLabel}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          🕘 {timeLabel}
-                        </span>
+                        <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
+                          <span className="inline-flex items-center gap-1">
+                            📅 {dateLabel}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            🕘 {timeLabel}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-[10px] font-semibold ${statusStyles[convocation.status]}`}
-                    >
-                      {statusLabels[convocation.status]}
-                    </span>
-                  </div>
-
-                  <div
-                    className={`mt-4 flex flex-wrap items-center justify-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-2 ${
-                      isOpen ? "" : "opacity-50"
-                    }`}
-                  >
-                    {responseOptions.map((option) => {
-                      const isActive = convocation.myState === option.id;
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition-all active:scale-95 ${
-                            isActive
-                              ? "bg-primary-600 text-white"
-                              : "bg-transparent text-[var(--text-primary)]"
-                          }`}
-                          aria-pressed={isActive}
-                          aria-label={option.label}
-                          title={option.label}
-                          disabled={!isOpen || !sessionUserId}
-                          onClick={() =>
-                            handleVoteChange(convocation.id, option.id)
-                          }
-                        >
-                          <span className="text-base">{option.icon}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    {renderBallRoster(
-                      convocation.ballVotes,
-                      `${convocation.id}-b`,
-                      convocation.myState !== "ball",
-                    )}
-                    {renderRoster(
-                      convocation.roster.couch,
-                      `${convocation.id}-c`,
-                      convocation.myState !== "couch",
-                      "🛋️",
-                    )}
-                    {renderRoster(
-                      convocation.roster.hospital,
-                      `${convocation.id}-h`,
-                      convocation.myState !== "hospital",
-                      "🏥",
-                    )}
-                  </div>
-
-                  {isOpen && canManage && (
-                    <div className="mt-4 flex items-center justify-end gap-2">
-                      <HoldActionButton
-                        label="Dispensar"
-                        durationMs={2000}
-                        onComplete={() =>
-                          handleStatusChange(convocation.id, "dismissed")
-                        }
-                        className="bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200"
-                        title="Segure 2s para dispensar"
-                      />
-                      <HoldActionButton
-                        label="Aceitar"
-                        durationMs={3000}
-                        onComplete={() =>
-                          handleStatusChange(convocation.id, "accepted")
-                        }
-                        className="bg-emerald-500 text-white disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={!canAccept}
-                        title={
-                          canAccept
-                            ? "Segure 3s para aceitar"
-                            : `Precisa de pelo menos ${MIN_TEAM_MEMBERS} jogadores na bola`
-                        }
-                      />
-                    </div>
-                  )}
-
-                  {canManage && canReopen && (
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        className="rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1 text-xs font-semibold text-[var(--text-primary)]"
-                        onClick={() =>
-                          handleStatusChange(convocation.id, "open")
-                        }
+                      <span
+                        className={`rounded-full px-3 py-1 text-[10px] font-semibold ${statusStyles[convocation.status]}`}
                       >
-                        Reabrir
-                      </button>
+                        {statusLabels[convocation.status]}
+                      </span>
                     </div>
-                  )}
+
+                    <div
+                      className={`mt-4 flex flex-wrap items-center justify-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-2 ${
+                        isOpen ? "" : "opacity-50"
+                      }`}
+                    >
+                      {responseOptions.map((option) => {
+                        const isActive = convocation.myState === option.id;
+                        return (
+                          <button
+                            key={option.id}
+                            type="button"
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition-all active:scale-95 ${
+                              isActive
+                                ? "bg-primary-600 text-white"
+                                : "bg-transparent text-[var(--text-primary)]"
+                            }`}
+                            aria-pressed={isActive}
+                            aria-label={option.label}
+                            title={option.label}
+                            disabled={!isOpen || !sessionUserId}
+                            onClick={() =>
+                              handleVoteChange(convocation.id, option.id)
+                            }
+                          >
+                            <span className="text-base">{option.icon}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {renderBallRoster(
+                        convocation.ballVotes,
+                        `${convocation.id}-b`,
+                        convocation.myState !== "ball",
+                      )}
+                      {renderRoster(
+                        convocation.roster.couch,
+                        `${convocation.id}-c`,
+                        convocation.myState !== "couch",
+                        "🛋️",
+                      )}
+                      {renderRoster(
+                        convocation.roster.hospital,
+                        `${convocation.id}-h`,
+                        convocation.myState !== "hospital",
+                        "🏥",
+                      )}
+                    </div>
+
+                    {isOpen && canManage && (
+                      <div className="mt-4 flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleStatusChange(convocation.id, "dismissed")
+                          }
+                          className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-100 text-base text-rose-700 transition-all active:scale-95 dark:bg-rose-900/40 dark:text-rose-200"
+                          title="Dispensar"
+                        >
+                          💤
+                        </button>
+                        {canAccept ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleStatusChange(convocation.id, "accepted")
+                            }
+                            className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-base text-white transition-all active:scale-95"
+                            title="Aceitar"
+                          >
+                            📝
+                          </button>
+                        ) : (
+                          <HoldActionButton
+                            label="📝"
+                            durationMs={3000}
+                            onComplete={() =>
+                              handleStatusChange(convocation.id, "accepted")
+                            }
+                            onProgress={(progress) =>
+                              handleHoldProgress(
+                                convocation.id,
+                                "accepted",
+                                progress,
+                              )
+                            }
+                            className="h-9 w-9 rounded-full bg-emerald-500 text-base text-white"
+                            title={`Segure 3s para aceitar com menos de ${MIN_TEAM_MEMBERS} jogadores`}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    {canManage && canReopen && (
+                      <div className="mt-4 flex items-center justify-end">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleStatusChange(convocation.id, "open")
+                          }
+                          className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] text-base text-[var(--text-primary)] transition-all active:scale-95"
+                          title="Reabrir"
+                        >
+                          🥅
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })
