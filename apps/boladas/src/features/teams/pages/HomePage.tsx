@@ -1,19 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../auth/useAuth";
 import { useTeams } from "../useTeams";
 import { supabase } from "../../../lib/supabase";
 
 const MIN_TEAM_MEMBERS = 10;
-const PLAYER_EMOJIS = [
-  "👱‍♂️",
-  "👨‍🦰",
-  "👨‍🦱",
-  "👨",
-  "👨‍🦳",
-  "👴",
-  "👨‍🦲",
-  "🧔",
-];
+const PLAYER_EMOJIS = ["👱‍♂️", "👨‍🦰", "👨‍🦱", "👨", "👨‍🦳", "👴", "👨‍🦲", "🧔"];
 const MANAGER_ROLES = new Set(["team_admin", "manager", "secretary"]);
 
 type TeamRosterStatus = {
@@ -40,6 +31,102 @@ type Convocation = {
   };
   myState: PlayerState;
 };
+
+type HoldActionButtonProps = {
+  label: string;
+  durationMs: number;
+  onComplete: () => void;
+  className?: string;
+  disabled?: boolean;
+  title?: string;
+};
+
+function HoldActionButton({
+  label,
+  durationMs,
+  onComplete,
+  className = "",
+  disabled = false,
+  title,
+}: HoldActionButtonProps) {
+  const [progress, setProgress] = useState(0);
+  const startRef = useRef<number | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const pressedRef = useRef(false);
+
+  const clearTimers = () => {
+    if (timeoutRef.current) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (frameRef.current) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+  };
+
+  const reset = () => {
+    pressedRef.current = false;
+    startRef.current = null;
+    clearTimers();
+    setProgress(0);
+  };
+
+  const tick = () => {
+    if (!pressedRef.current || startRef.current === null) return;
+    const elapsed = performance.now() - startRef.current;
+    const nextProgress = Math.min(1, elapsed / durationMs);
+    setProgress(nextProgress);
+    if (elapsed < durationMs) {
+      frameRef.current = window.requestAnimationFrame(tick);
+    }
+  };
+
+  const handlePointerDown = () => {
+    if (disabled) return;
+    pressedRef.current = true;
+    startRef.current = performance.now();
+    setProgress(0);
+    clearTimers();
+    frameRef.current = window.requestAnimationFrame(tick);
+    timeoutRef.current = window.setTimeout(() => {
+      pressedRef.current = false;
+      setProgress(1);
+      onComplete();
+      window.setTimeout(() => setProgress(0), 250);
+    }, durationMs);
+  };
+
+  const handlePointerUp = () => {
+    if (!pressedRef.current) return;
+    reset();
+  };
+
+  return (
+    <button
+      type="button"
+      className={`relative overflow-hidden rounded-full px-3 py-1 text-xs font-semibold transition-all active:scale-95 ${className}`}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      disabled={disabled}
+      title={title}
+    >
+      <span
+        className="pointer-events-none absolute inset-0 bg-black/20"
+        style={{
+          transform: `scaleX(${progress})`,
+          transformOrigin: "left",
+          transition: progress === 0 ? "none" : "transform 80ms linear",
+          opacity: disabled ? 0 : 1,
+        }}
+      />
+      <span className="relative z-10">{label}</span>
+    </button>
+  );
+}
 
 export function HomePage() {
   const { sessionUserId, isSystemAdmin } = useAuth();
@@ -156,8 +243,11 @@ export function HomePage() {
     });
 
     voteRows.forEach((vote) => {
-      const entry =
-        voteSummary.get(vote.convocation_id) ?? { ball: 0, couch: 0, hospital: 0 };
+      const entry = voteSummary.get(vote.convocation_id) ?? {
+        ball: 0,
+        couch: 0,
+        hospital: 0,
+      };
 
       if (vote.state === "ball") {
         entry.ball += 1;
@@ -211,7 +301,9 @@ export function HomePage() {
       .sort((a, b) => {
         const statusDiff = statusOrder[a.status] - statusOrder[b.status];
         if (statusDiff !== 0) return statusDiff;
-        return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+        return (
+          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+        );
       });
 
     setConvocations(mapped);
@@ -358,12 +450,15 @@ export function HomePage() {
       "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200",
   };
 
-  const responseOptions: Array<{ id: PlayerState; label: string; icon: string }> =
-    [
-      { id: "ball", label: "Bola", icon: "⚽️" },
-      { id: "couch", label: "Sofá", icon: "🛋️" },
-      { id: "hospital", label: "Hospital", icon: "🏥" },
-    ];
+  const responseOptions: Array<{
+    id: PlayerState;
+    label: string;
+    icon: string;
+  }> = [
+    { id: "ball", label: "Bola", icon: "⚽️" },
+    { id: "couch", label: "Sofá", icon: "🛋️" },
+    { id: "hospital", label: "Hospital", icon: "🏥" },
+  ];
 
   const renderRoster = (
     count: number,
@@ -371,9 +466,7 @@ export function HomePage() {
     isDimmed: boolean,
     icon: string,
   ) => (
-    <div
-      className={`flex items-center gap-3 ${isDimmed ? "opacity-50" : ""}`}
-    >
+    <div className={`flex items-center gap-3 ${isDimmed ? "opacity-50" : ""}`}>
       <span className="text-lg">{icon}</span>
       <div className="flex flex-wrap -space-x-4 text-base">
         {Array.from({ length: Math.max(count, 0) }).map((_, index) => (
@@ -443,13 +536,20 @@ export function HomePage() {
               const canReopen =
                 convocation.status === "dismissed" &&
                 new Date(convocation.scheduledAt).getTime() > Date.now();
+              const canAccept = convocation.roster.ball >= MIN_TEAM_MEMBERS;
               const displayTitle = convocation.teamName;
               const subtitle = convocation.title;
 
               return (
                 <div
                   key={convocation.id}
-                  className="rounded-xl bg-[var(--bg-app)] px-4 py-4"
+                  className={`rounded-xl px-4 py-4 ${
+                    convocation.status === "dismissed"
+                      ? "bg-rose-50/80 dark:bg-rose-900/20"
+                      : convocation.status === "accepted"
+                        ? "bg-emerald-50/80 dark:bg-emerald-900/20"
+                        : "bg-[var(--bg-app)]"
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -530,24 +630,29 @@ export function HomePage() {
 
                   {isOpen && canManage && (
                     <div className="mt-4 flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700 transition-all active:scale-95 dark:bg-rose-900/40 dark:text-rose-200"
-                        onClick={() =>
+                      <HoldActionButton
+                        label="Dispensar"
+                        durationMs={2000}
+                        onComplete={() =>
                           handleStatusChange(convocation.id, "dismissed")
                         }
-                      >
-                        Dispensar
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition-all active:scale-95"
-                        onClick={() =>
+                        className="bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200"
+                        title="Segure 2s para dispensar"
+                      />
+                      <HoldActionButton
+                        label="Aceitar"
+                        durationMs={3000}
+                        onComplete={() =>
                           handleStatusChange(convocation.id, "accepted")
                         }
-                      >
-                        Aceitar
-                      </button>
+                        className="bg-emerald-500 text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={!canAccept}
+                        title={
+                          canAccept
+                            ? "Segure 3s para aceitar"
+                            : `Precisa de pelo menos ${MIN_TEAM_MEMBERS} jogadores na bola`
+                        }
+                      />
                     </div>
                   )}
 
@@ -629,9 +734,7 @@ export function HomePage() {
                             className="group relative flex h-7 w-7 items-center justify-center text-left"
                             style={{ zIndex: displayCount - emojiIndex }}
                             onClick={() =>
-                              setActiveTooltipId(
-                                isActive ? null : tooltipId,
-                              )
+                              setActiveTooltipId(isActive ? null : tooltipId)
                             }
                             onBlur={() => setActiveTooltipId(null)}
                             onMouseLeave={() => setActiveTooltipId(null)}
