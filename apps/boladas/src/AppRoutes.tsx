@@ -10,6 +10,7 @@ import { StatsPage } from "./features/teams/pages/StatsPage";
 import { ProfilePage } from "./features/teams/pages/ProfilePage";
 import { TeamSettingsPage } from "./features/teams/pages/TeamSettingsPage";
 import { JoinPage } from "./features/invites/JoinPage";
+import { HomePage } from "./features/teams/pages/HomePage";
 
 export function AppRoutes() {
   return (
@@ -25,7 +26,8 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         {/* Flattened App Shell */}
         <Route element={<AppShell />}>
-          <Route path="/" element={<Navigate to="/profile" replace />} />
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<HomePage />} />
           <Route path="/games" element={<GamesPage />} />
           <Route path="/standings" element={<StandingsPage />} />
           <Route path="/stats" element={<StatsPage />} />
@@ -36,7 +38,7 @@ export function AppRoutes() {
         <Route path="/admin" element={<SystemAdminPage />} />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/profile" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Route>
     </Routes>
   );

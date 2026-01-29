@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { RadialMenu } from "../ui/RadialMenu";
 import { TopBar } from "./TopBar";
 import { useTeams } from "../../features/teams/useTeams";
@@ -10,6 +10,8 @@ export function AppShell() {
   const { memberships } = useTeams(sessionUserId, isSystemAdmin);
   const activeTeam = memberships[0];
   const title = activeTeam?.teamName ?? "Boladas";
+  const location = useLocation();
+  const isHome = location.pathname === "/home" || location.pathname === "/";
 
   const [menuPosition, setMenuPosition] = useState<"left" | "right">("right");
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -50,6 +52,7 @@ export function AppShell() {
   }, []);
 
   const menuItems = [
+    { id: "home", label: "Início", icon: "🏠", path: "/home" },
     { id: "games", label: "Jogos", icon: "📅", path: "/games", disabled: true },
     {
       id: "standings",
@@ -86,8 +89,10 @@ export function AppShell() {
 
   return (
     <div className="app-shell">
-      <TopBar title={title} />
-      <main className="flex-1 overflow-y-auto p-4 pb-24">
+      {!isHome && <TopBar title={title} />}
+      <main
+        className={`flex-1 overflow-y-auto ${isHome ? "p-0" : "p-4 pb-24"}`}
+      >
         <Outlet context={{ activeTeam }} />
       </main>
       <RadialMenu
