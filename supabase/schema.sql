@@ -391,6 +391,15 @@ begin
     raise exception 'Invite email mismatch';
   end if;
 
+  -- Ensure profile exists to satisfy team_members FK to profiles
+  insert into public.profiles (id, email, display_name)
+  select u.id,
+         u.email,
+         coalesce(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name')
+  from auth.users u
+  where u.id = auth.uid()
+  on conflict (id) do nothing;
+
   insert into public.team_members (team_id, user_id)
   values (v_invite.team_id, auth.uid())
   on conflict (team_id, user_id) do update set team_id = excluded.team_id
