@@ -17,6 +17,11 @@ type ConvocationStatus = "open" | "accepted" | "dismissed";
 
 type PlayerState = "ball" | "couch" | "hospital";
 
+type BallVote = {
+  userId: string;
+  updatedAt: string;
+};
+
 type Convocation = {
   id: string;
   teamId: string;
@@ -30,6 +35,7 @@ type Convocation = {
     hospital: number;
   };
   myState: PlayerState;
+  ballVotes: BallVote[];
 };
 
 type HoldActionButtonProps = {
@@ -219,12 +225,13 @@ export function HomePage() {
       convocation_id: string;
       user_id: string;
       state: PlayerState;
+      updated_at: string;
     }> = [];
 
     if (convocationIds.length > 0) {
       const { data: votes, error: votesError } = await supabase
         .from("convocation_votes")
-        .select("convocation_id, user_id, state")
+        .select("convocation_id, user_id, state, updated_at")
         .in("convocation_id", convocationIds);
 
       if (votesError) {
@@ -235,11 +242,17 @@ export function HomePage() {
 
     const voteSummary = new Map<
       string,
-      { ball: number; couch: number; hospital: number; myState?: PlayerState }
+      {
+        ball: number;
+        couch: number;
+        hospital: number;
+        myState?: PlayerState;
+        ballVotes: BallVote[];
+      }
     >();
 
     convocationIds.forEach((id) => {
-      voteSummary.set(id, { ball: 0, couch: 0, hospital: 0 });
+      voteSummary.set(id, { ball: 0, couch: 0, hospital: 0, ballVotes: [] });
     });
 
     voteRows.forEach((vote) => {
@@ -247,10 +260,15 @@ export function HomePage() {
         ball: 0,
         couch: 0,
         hospital: 0,
+        ballVotes: [],
       };
 
       if (vote.state === "ball") {
         entry.ball += 1;
+        entry.ballVotes.push({
+          userId: vote.user_id,
+          updatedAt: vote.updated_at,
+        });
       } else if (vote.state === "couch") {
         entry.couch += 1;
       } else {
@@ -281,7 +299,12 @@ export function HomePage() {
           ball: 0,
           couch: 0,
           hospital: 0,
+          ballVotes: [],
         };
+        const ballVotes = [...summary.ballVotes].sort(
+          (a, b) =>
+            new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+        );
 
         return {
           id: row.id,
@@ -296,6 +319,7 @@ export function HomePage() {
             hospital: summary.hospital,
           },
           myState: summary.myState ?? "couch",
+          ballVotes,
         } as Convocation;
       })
       .sort((a, b) => {
@@ -316,6 +340,9 @@ export function HomePage() {
 
   const handleVoteChange = useCallback(
     async (id: string, nextState: PlayerState) => {
+      if (!sessionUserId) return;
+
+      const nowIso = new Date().toISOString();
       setConvocations((current) =>
         current.map((convocation) =>
           convocation.id === id && convocation.status === "open"
@@ -326,9 +353,13 @@ export function HomePage() {
 
                 const roster = { ...convocation.roster };
                 const prevState = convocation.myState;
+                let ballVotes = convocation.ballVotes;
 
                 if (prevState === "ball") {
                   roster.ball = Math.max(0, roster.ball - 1);
+                  ballVotes = ballVotes.filter(
+                    (vote) => vote.userId !== sessionUserId,
+                  );
                 } else if (prevState === "couch") {
                   roster.couch = Math.max(0, roster.couch - 1);
                 } else {
@@ -337,19 +368,29 @@ export function HomePage() {
 
                 if (nextState === "ball") {
                   roster.ball += 1;
+                  ballVotes = [
+                    ...ballVotes,
+                    { userId: sessionUserId, updatedAt: nowIso },
+                  ];
                 } else if (nextState === "couch") {
                   roster.couch += 1;
                 } else {
                   roster.hospital += 1;
                 }
 
-                return { ...convocation, myState: nextState, roster };
+                ballVotes = [...ballVotes].sort(
+                  (a, b) =>
+                    new Date(a.updatedAt).getTime() -
+                    new Date(b.updatedAt).getTime(),
+                );
+
+                return { ...convocation, myState: nextState, roster, ballVotes };
               })()
             : convocation,
         ),
       );
 
-      if (!supabase || !sessionUserId) return;
+      if (!supabase) return;
 
       const { error } = await supabase
         .from("convocation_votes")
@@ -460,6 +501,34 @@ export function HomePage() {
     { id: "hospital", label: "Hospital", icon: "🏥" },
   ];
 
+  const renderEmojiStack = (items: number, keyPrefix: string) => (
+    <div className="flex flex-wrap -space-x-4 text-base">
+      {Array.from({ length: Math.max(items, 0) }).map((_, index) => (
+        <span
+          key={`${keyPrefix}-${index}`}
+          className="relative flex h-7 w-7 items-center justify-center"
+          style={{ zIndex: items - index }}
+        >
+          {PLAYER_EMOJIS[index % PLAYER_EMOJIS.length]}
+        </span>
+      ))}
+    </div>
+  );
+
+  const renderEmojiStackFromVotes = (votes: BallVote[], keyPrefix: string) => (
+    <div className="flex flex-wrap -space-x-4 text-base">
+      {votes.map((vote, index) => (
+        <span
+          key={`${keyPrefix}-${vote.userId}`}
+          className="relative flex h-7 w-7 items-center justify-center"
+          style={{ zIndex: votes.length - index }}
+        >
+          {PLAYER_EMOJIS[index % PLAYER_EMOJIS.length]}
+        </span>
+      ))}
+    </div>
+  );
+
   const renderRoster = (
     count: number,
     keyPrefix: string,
@@ -468,24 +537,53 @@ export function HomePage() {
   ) => (
     <div className={`flex items-center gap-3 ${isDimmed ? "opacity-50" : ""}`}>
       <span className="text-lg">{icon}</span>
-      <div className="flex flex-wrap -space-x-4 text-base">
-        {Array.from({ length: Math.max(count, 0) }).map((_, index) => (
-          <span
-            key={`${keyPrefix}-${index}`}
-            className="relative flex h-7 w-7 items-center justify-center"
-            style={{ zIndex: count - index }}
-          >
-            {PLAYER_EMOJIS[index % PLAYER_EMOJIS.length]}
-          </span>
-        ))}
-        {count === 0 && (
+      {count === 0 ? (
+        <span className="text-xs text-[var(--text-secondary)]">
+          Sem jogadores
+        </span>
+      ) : (
+        renderEmojiStack(count, keyPrefix)
+      )}
+    </div>
+  );
+
+  const renderBallRoster = (
+    votes: BallVote[],
+    keyPrefix: string,
+    isDimmed: boolean,
+  ) => {
+    const sortedVotes = [...votes].sort(
+      (a, b) =>
+        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+    );
+    const starters = sortedVotes.slice(0, MIN_TEAM_MEMBERS);
+    const substitutes = sortedVotes.slice(MIN_TEAM_MEMBERS);
+    const starterWidth = `calc(${MIN_TEAM_MEMBERS} * 1.75rem - ${
+      MIN_TEAM_MEMBERS - 1
+    } * 1rem)`;
+
+    return (
+      <div className={`flex items-center gap-3 ${isDimmed ? "opacity-50" : ""}`}>
+        <span className="text-lg">⚽️</span>
+        {sortedVotes.length === 0 ? (
           <span className="text-xs text-[var(--text-secondary)]">
             Sem jogadores
           </span>
+        ) : (
+          <div className="flex items-center">
+            <div className="flex items-center" style={{ width: starterWidth }}>
+              {renderEmojiStackFromVotes(starters, `${keyPrefix}-t`)}
+            </div>
+            <div className="mx-2 h-6 w-px bg-white/50 shadow-[0_0_6px_rgba(255,255,255,0.35)] dark:bg-white/30" />
+            <div className="flex items-center">
+              {substitutes.length > 0 &&
+                renderEmojiStackFromVotes(substitutes, `${keyPrefix}-s`)}
+            </div>
+          </div>
         )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-4 px-4 pb-0 pt-4">
@@ -596,7 +694,7 @@ export function HomePage() {
                           aria-pressed={isActive}
                           aria-label={option.label}
                           title={option.label}
-                          disabled={!isOpen}
+                          disabled={!isOpen || !sessionUserId}
                           onClick={() =>
                             handleVoteChange(convocation.id, option.id)
                           }
@@ -608,11 +706,10 @@ export function HomePage() {
                   </div>
 
                   <div className="mt-4 space-y-3">
-                    {renderRoster(
-                      convocation.roster.ball,
+                    {renderBallRoster(
+                      convocation.ballVotes,
                       `${convocation.id}-b`,
                       convocation.myState !== "ball",
-                      "⚽️",
                     )}
                     {renderRoster(
                       convocation.roster.couch,
