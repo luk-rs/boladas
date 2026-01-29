@@ -11,18 +11,25 @@ type TeamRosterStatus = {
   id: string;
   name: string;
   memberCount: number;
+  members: EmojiStackItem[];
 };
 
 type ConvocationStatus = "open" | "accepted" | "dismissed";
 
 type PlayerState = "ball" | "couch" | "hospital";
 
-type BallVote = {
+type VoteEntry = {
   userId: string;
+  label: string;
   updatedAt: string;
 };
 
 type HoldIntent = "accepted";
+
+type EmojiStackItem = {
+  id: string;
+  label?: string;
+};
 
 type Convocation = {
   id: string;
@@ -37,7 +44,9 @@ type Convocation = {
     hospital: number;
   };
   myState: PlayerState;
-  ballVotes: BallVote[];
+  ballVotes: VoteEntry[];
+  couchVotes: VoteEntry[];
+  hospitalVotes: VoteEntry[];
 };
 
 type HoldActionButtonProps = {
@@ -129,6 +138,70 @@ function HoldActionButton({
     >
       <span className="relative z-10">{label}</span>
     </button>
+  );
+}
+
+type EmojiStackProps = {
+  items: EmojiStackItem[];
+  showTooltip?: boolean;
+  activeTooltipId?: string | null;
+  onTooltipChange?: (id: string | null) => void;
+  className?: string;
+};
+
+function EmojiStack({
+  items,
+  showTooltip = false,
+  activeTooltipId,
+  onTooltipChange,
+  className = "",
+}: EmojiStackProps) {
+  return (
+    <div className={`flex flex-wrap -space-x-4 text-base ${className}`}>
+      {items.map((item, index) => {
+        const emoji = PLAYER_EMOJIS[index % PLAYER_EMOJIS.length];
+        const isTooltipEnabled = showTooltip && Boolean(item.label);
+        const isActive =
+          isTooltipEnabled && activeTooltipId === item.id && item.label;
+
+        if (isTooltipEnabled) {
+          return (
+            <button
+              key={item.id}
+              type="button"
+              title={item.label}
+              aria-label={item.label}
+              className="group relative flex h-7 w-7 items-center justify-center text-left"
+              style={{ zIndex: items.length - index }}
+              onClick={() =>
+                onTooltipChange?.(isActive ? null : item.id)
+              }
+              onBlur={() => onTooltipChange?.(null)}
+              onMouseLeave={() => onTooltipChange?.(null)}
+            >
+              {emoji}
+              <span
+                className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-2 py-1 text-[10px] font-semibold text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+                style={{ opacity: isActive ? 1 : undefined }}
+              >
+                {item.label}
+              </span>
+            </button>
+          );
+        }
+
+        return (
+          <span
+            key={item.id}
+            className="relative flex h-7 w-7 items-center justify-center"
+            style={{ zIndex: items.length - index }}
+            aria-hidden
+          >
+            {emoji}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
@@ -255,6 +328,28 @@ export function HomePage() {
       voteRows = (votes ?? []) as typeof voteRows;
     }
 
+    const userIds = Array.from(new Set(voteRows.map((vote) => vote.user_id)));
+    const profileMap = new Map<string, string>();
+
+    if (userIds.length > 0) {
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, display_name, email")
+        .in("id", userIds);
+
+      if (profilesError) {
+        console.error("Failed to load profiles:", profilesError);
+      } else {
+        (profilesData ?? []).forEach((profile) => {
+          const label =
+            profile.display_name ??
+            profile.email ??
+            "Jogador";
+          profileMap.set(profile.id, label);
+        });
+      }
+    }
+
     const voteSummary = new Map<
       string,
       {
@@ -262,12 +357,21 @@ export function HomePage() {
         couch: number;
         hospital: number;
         myState?: PlayerState;
-        ballVotes: BallVote[];
+        ballVotes: VoteEntry[];
+        couchVotes: VoteEntry[];
+        hospitalVotes: VoteEntry[];
       }
     >();
 
     convocationIds.forEach((id) => {
-      voteSummary.set(id, { ball: 0, couch: 0, hospital: 0, ballVotes: [] });
+      voteSummary.set(id, {
+        ball: 0,
+        couch: 0,
+        hospital: 0,
+        ballVotes: [],
+        couchVotes: [],
+        hospitalVotes: [],
+      });
     });
 
     voteRows.forEach((vote) => {
@@ -276,18 +380,25 @@ export function HomePage() {
         couch: 0,
         hospital: 0,
         ballVotes: [],
+        couchVotes: [],
+        hospitalVotes: [],
+      };
+      const label = profileMap.get(vote.user_id) ?? "Jogador";
+      const voteEntry = {
+        userId: vote.user_id,
+        label,
+        updatedAt: vote.updated_at,
       };
 
       if (vote.state === "ball") {
         entry.ball += 1;
-        entry.ballVotes.push({
-          userId: vote.user_id,
-          updatedAt: vote.updated_at,
-        });
+        entry.ballVotes.push(voteEntry);
       } else if (vote.state === "couch") {
         entry.couch += 1;
+        entry.couchVotes.push(voteEntry);
       } else {
         entry.hospital += 1;
+        entry.hospitalVotes.push(voteEntry);
       }
 
       if (vote.user_id === sessionUserId) {
@@ -315,8 +426,18 @@ export function HomePage() {
           couch: 0,
           hospital: 0,
           ballVotes: [],
+          couchVotes: [],
+          hospitalVotes: [],
         };
         const ballVotes = [...summary.ballVotes].sort(
+          (a, b) =>
+            new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+        );
+        const couchVotes = [...summary.couchVotes].sort(
+          (a, b) =>
+            new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+        );
+        const hospitalVotes = [...summary.hospitalVotes].sort(
           (a, b) =>
             new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
         );
@@ -329,12 +450,14 @@ export function HomePage() {
           scheduledAt: row.scheduled_at,
           status: normalizeStatus(row.status),
           roster: {
-            ball: summary.ball,
-            couch: summary.couch,
-            hospital: summary.hospital,
+            ball: ballVotes.length,
+            couch: couchVotes.length,
+            hospital: hospitalVotes.length,
           },
           myState: summary.myState ?? "couch",
           ballVotes,
+          couchVotes,
+          hospitalVotes,
         } as Convocation;
       })
       .sort((a, b) => {
@@ -366,44 +489,58 @@ export function HomePage() {
                   return convocation;
                 }
 
-                const roster = { ...convocation.roster };
-                const prevState = convocation.myState;
-                let ballVotes = convocation.ballVotes;
+                const label =
+                  convocation.ballVotes.find(
+                    (vote) => vote.userId === sessionUserId,
+                  )?.label ??
+                  convocation.couchVotes.find(
+                    (vote) => vote.userId === sessionUserId,
+                  )?.label ??
+                  convocation.hospitalVotes.find(
+                    (vote) => vote.userId === sessionUserId,
+                  )?.label ??
+                  "Jogador";
 
-                if (prevState === "ball") {
-                  roster.ball = Math.max(0, roster.ball - 1);
-                  ballVotes = ballVotes.filter(
-                    (vote) => vote.userId !== sessionUserId,
-                  );
-                } else if (prevState === "couch") {
-                  roster.couch = Math.max(0, roster.couch - 1);
-                } else {
-                  roster.hospital = Math.max(0, roster.hospital - 1);
-                }
+                const removeUser = (votes: VoteEntry[]) =>
+                  votes.filter((vote) => vote.userId !== sessionUserId);
+
+                let ballVotes = removeUser(convocation.ballVotes);
+                let couchVotes = removeUser(convocation.couchVotes);
+                let hospitalVotes = removeUser(convocation.hospitalVotes);
+
+                const nextVote = {
+                  userId: sessionUserId,
+                  label,
+                  updatedAt: nowIso,
+                };
 
                 if (nextState === "ball") {
-                  roster.ball += 1;
-                  ballVotes = [
-                    ...ballVotes,
-                    { userId: sessionUserId, updatedAt: nowIso },
-                  ];
+                  ballVotes = [...ballVotes, nextVote];
                 } else if (nextState === "couch") {
-                  roster.couch += 1;
+                  couchVotes = [...couchVotes, nextVote];
                 } else {
-                  roster.hospital += 1;
+                  hospitalVotes = [...hospitalVotes, nextVote];
                 }
 
-                ballVotes = [...ballVotes].sort(
-                  (a, b) =>
-                    new Date(a.updatedAt).getTime() -
-                    new Date(b.updatedAt).getTime(),
-                );
+                const sortByUpdated = (a: VoteEntry, b: VoteEntry) =>
+                  new Date(a.updatedAt).getTime() -
+                  new Date(b.updatedAt).getTime();
+
+                ballVotes = [...ballVotes].sort(sortByUpdated);
+                couchVotes = [...couchVotes].sort(sortByUpdated);
+                hospitalVotes = [...hospitalVotes].sort(sortByUpdated);
 
                 return {
                   ...convocation,
                   myState: nextState,
-                  roster,
+                  roster: {
+                    ball: ballVotes.length,
+                    couch: couchVotes.length,
+                    hospital: hospitalVotes.length,
+                  },
                   ballVotes,
+                  couchVotes,
+                  hospitalVotes,
                 };
               })()
             : convocation,
@@ -463,8 +600,9 @@ export function HomePage() {
 
     supabase
       .from("team_members")
-      .select("team_id")
+      .select("team_id, user_id, created_at, profile:profiles(display_name,email)")
       .in("team_id", teamIds)
+      .order("created_at", { ascending: true })
       .then(({ data, error }) => {
         if (!isMounted) return;
 
@@ -473,17 +611,31 @@ export function HomePage() {
           return;
         }
 
-        const counts = new Map<string, number>();
-        teamIds.forEach((teamId) => counts.set(teamId, 0));
+        const membersByTeam = new Map<string, EmojiStackItem[]>();
+        teamIds.forEach((teamId) => membersByTeam.set(teamId, []));
         data.forEach((row) => {
-          const current = counts.get(row.team_id) ?? 0;
-          counts.set(row.team_id, current + 1);
+          const profile = row.profile as
+            | { display_name?: string | null; email?: string | null }
+            | { display_name?: string | null; email?: string | null }[]
+            | null;
+          const profileData = Array.isArray(profile) ? profile[0] : profile;
+          const label =
+            profileData?.display_name ??
+            profileData?.email ??
+            "Jogador";
+          const teamMembers = membersByTeam.get(row.team_id) ?? [];
+          teamMembers.push({
+            id: `${row.team_id}-${row.user_id}`,
+            label,
+          });
+          membersByTeam.set(row.team_id, teamMembers);
         });
 
         const mapped = memberships.map((membership) => ({
           id: membership.teamId,
           name: membership.teamName,
-          memberCount: counts.get(membership.teamId) ?? 0,
+          memberCount: membersByTeam.get(membership.teamId)?.length ?? 0,
+          members: membersByTeam.get(membership.teamId) ?? [],
         }));
 
         setTeamsWithStatus(mapped);
@@ -521,54 +673,34 @@ export function HomePage() {
     { id: "hospital", label: "Hospital", icon: "🏥" },
   ];
 
-  const renderEmojiStack = (items: number, keyPrefix: string) => (
-    <div className="flex flex-wrap -space-x-4 text-base">
-      {Array.from({ length: Math.max(items, 0) }).map((_, index) => (
-        <span
-          key={`${keyPrefix}-${index}`}
-          className="relative flex h-7 w-7 items-center justify-center"
-          style={{ zIndex: items - index }}
-        >
-          {PLAYER_EMOJIS[index % PLAYER_EMOJIS.length]}
-        </span>
-      ))}
-    </div>
-  );
-
-  const renderEmojiStackFromVotes = (votes: BallVote[], keyPrefix: string) => (
-    <div className="flex flex-wrap -space-x-4 text-base">
-      {votes.map((vote, index) => (
-        <span
-          key={`${keyPrefix}-${vote.userId}`}
-          className="relative flex h-7 w-7 items-center justify-center"
-          style={{ zIndex: votes.length - index }}
-        >
-          {PLAYER_EMOJIS[index % PLAYER_EMOJIS.length]}
-        </span>
-      ))}
-    </div>
-  );
-
   const renderRoster = (
-    count: number,
+    votes: VoteEntry[],
     keyPrefix: string,
     isDimmed: boolean,
     icon: string,
   ) => (
     <div className={`flex items-center gap-3 ${isDimmed ? "opacity-50" : ""}`}>
       <span className="text-lg">{icon}</span>
-      {count === 0 ? (
+      {votes.length === 0 ? (
         <span className="text-xs text-[var(--text-secondary)]">
           Sem jogadores
         </span>
       ) : (
-        renderEmojiStack(count, keyPrefix)
+        <EmojiStack
+          items={votes.map((vote) => ({
+            id: `${keyPrefix}-${vote.userId}`,
+            label: vote.label,
+          }))}
+          showTooltip
+          activeTooltipId={activeTooltipId}
+          onTooltipChange={setActiveTooltipId}
+        />
       )}
     </div>
   );
 
   const renderBallRoster = (
-    votes: BallVote[],
+    votes: VoteEntry[],
     keyPrefix: string,
     isDimmed: boolean,
   ) => {
@@ -594,12 +726,29 @@ export function HomePage() {
         ) : (
           <div className="flex items-center">
             <div className="flex items-center" style={{ width: starterWidth }}>
-              {renderEmojiStackFromVotes(starters, `${keyPrefix}-t`)}
+              <EmojiStack
+                items={starters.map((vote) => ({
+                  id: `${keyPrefix}-t-${vote.userId}`,
+                  label: vote.label,
+                }))}
+                showTooltip
+                activeTooltipId={activeTooltipId}
+                onTooltipChange={setActiveTooltipId}
+              />
             </div>
             <div className="mx-2 h-6 w-px bg-white/50 shadow-[0_0_6px_rgba(255,255,255,0.35)] dark:bg-white/30" />
             <div className="flex items-center">
-              {substitutes.length > 0 &&
-                renderEmojiStackFromVotes(substitutes, `${keyPrefix}-s`)}
+              {substitutes.length > 0 && (
+                <EmojiStack
+                  items={substitutes.map((vote) => ({
+                    id: `${keyPrefix}-s-${vote.userId}`,
+                    label: vote.label,
+                  }))}
+                  showTooltip
+                  activeTooltipId={activeTooltipId}
+                  onTooltipChange={setActiveTooltipId}
+                />
+              )}
             </div>
           </div>
         )}
@@ -747,13 +896,13 @@ export function HomePage() {
                         convocation.myState !== "ball",
                       )}
                       {renderRoster(
-                        convocation.roster.couch,
+                        convocation.couchVotes,
                         `${convocation.id}-c`,
                         convocation.myState !== "couch",
                         "🛋️",
                       )}
                       {renderRoster(
-                        convocation.roster.hospital,
+                        convocation.hospitalVotes,
                         `${convocation.id}-h`,
                         convocation.myState !== "hospital",
                         "🏥",
@@ -854,9 +1003,6 @@ export function HomePage() {
           ) : teamsWithStatus.length > 0 ? (
             teamsWithStatus.map((team) => {
               const displayCount = team.memberCount;
-              const playerNames = Array.from({ length: displayCount }).map(
-                (_, nameIndex) => `Jogador ${nameIndex + 1}`,
-              );
 
               return (
                 <div
@@ -867,44 +1013,18 @@ export function HomePage() {
                     <p className="text-sm font-semibold text-[var(--text-primary)]">
                       {team.name}
                     </p>
-                    <div className="flex flex-wrap -space-x-4 text-base">
-                      {Array.from({
-                        length: Math.max(displayCount, 0),
-                      }).map((_, emojiIndex) => {
-                        const name = playerNames[emojiIndex] ?? "Jogador";
-                        const tooltipId = `${team.id}-${emojiIndex}`;
-                        const isActive = activeTooltipId === tooltipId;
-
-                        return (
-                          <button
-                            key={emojiIndex}
-                            type="button"
-                            title={name}
-                            aria-label={name}
-                            className="group relative flex h-7 w-7 items-center justify-center text-left"
-                            style={{ zIndex: displayCount - emojiIndex }}
-                            onClick={() =>
-                              setActiveTooltipId(isActive ? null : tooltipId)
-                            }
-                            onBlur={() => setActiveTooltipId(null)}
-                            onMouseLeave={() => setActiveTooltipId(null)}
-                          >
-                            {PLAYER_EMOJIS[emojiIndex % PLAYER_EMOJIS.length]}
-                            <span
-                              className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-2 py-1 text-[10px] font-semibold text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
-                              style={{ opacity: isActive ? 1 : undefined }}
-                            >
-                              {name}
-                            </span>
-                          </button>
-                        );
-                      })}
-                      {team.memberCount === 0 && (
-                        <span className="text-xs text-[var(--text-secondary)]">
-                          Sem jogadores
-                        </span>
-                      )}
-                    </div>
+                    {team.memberCount === 0 ? (
+                      <span className="text-xs text-[var(--text-secondary)]">
+                        Sem jogadores
+                      </span>
+                    ) : (
+                      <EmojiStack
+                        items={team.members}
+                        showTooltip
+                        activeTooltipId={activeTooltipId}
+                        onTooltipChange={setActiveTooltipId}
+                      />
+                    )}
                   </div>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${
