@@ -221,6 +221,24 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
   const acceptInvite = async (token: string) => {
     if (!supabase) return;
     setError(null);
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData.user;
+    if (user) {
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!existing) {
+        await supabase.from("profiles").insert({
+          id: user.id,
+          email: user.email,
+          display_name:
+            user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
+        });
+      }
+    }
     const { data, error: acceptError } = await supabase.rpc("accept_invite", {
       p_token: token,
     });
