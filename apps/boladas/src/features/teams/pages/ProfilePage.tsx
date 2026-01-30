@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../auth/useAuth";
-import { useTeams } from "../useTeams";
 import { CollapsibleSection } from "../../../components/ui/CollapsibleSection";
 import { Toggle } from "../../../components/ui/Toggle";
+import { TeamsDashboard } from "../dashboard/TeamsDashboard";
 
 export function ProfilePage() {
-  const { signOut, sessionUserId } = useAuth();
-  const { memberships, loading } = useTeams(sessionUserId, false);
+  const { signOut } = useAuth();
   const [menuPosition, setMenuPosition] = useState<"left" | "right">("right");
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -65,41 +64,8 @@ export function ProfilePage() {
         ))}
       </div>
 
-      {/* Teams Section */}
-      <CollapsibleSection title="Meus Times" defaultOpen={true}>
-        <div className="space-y-3">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-10 bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-color)]">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-              <p className="mt-4 text-xs text-[var(--text-secondary)]">
-                Carregando seus times...
-              </p>
-            </div>
-          ) : memberships.length > 0 ? (
-            memberships.map((m) => (
-              <div
-                key={m.teamId}
-                className="flex items-center justify-between rounded-xl bg-[var(--bg-app)] p-4 shadow-sm"
-              >
-                <div>
-                  <h5 className="font-semibold text-[var(--text-primary)]">
-                    {m.teamName}
-                  </h5>
-                  <p className="text-xs text-[var(--text-secondary)] capitalize">
-                    {m.roles.join(", ")}
-                  </p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-4 bg-[var(--bg-app)] rounded-xl border border-dashed border-[var(--border-color)]">
-              <p className="text-sm text-[var(--text-secondary)]">
-                Você não participa de nenhum time.
-              </p>
-            </div>
-          )}
-        </div>
-      </CollapsibleSection>
+      {/* Dashboard */}
+      <TeamsDashboard withPadding={false} />
 
       {/* Settings Sections */}
       <CollapsibleSection title="Configurações">

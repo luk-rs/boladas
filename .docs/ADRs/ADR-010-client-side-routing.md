@@ -43,6 +43,11 @@ To maintain our Vertical Slice Architecture (ADR-008):
 - `App.tsx` becomes the **Composition Root**. It initializes the `BrowserRouter`, Global Providers (if any), and renders `AppRoutes`.
 - `AppRoutes` handles the mapping of URL paths to Page Components.
 
+### 5. Default Authenticated Entry
+
+- The primary authenticated landing view is the **Profile** screen, which embeds the Teams dashboard content.
+- The `/home` route is removed to avoid duplicating dashboard logic.
+
 ## Consequences
 
 ### Positive
