@@ -29,6 +29,7 @@ type HoldIntent = "accepted";
 type EmojiStackItem = {
   id: string;
   label?: string;
+  isSelf?: boolean;
 };
 
 type Convocation = {
@@ -147,6 +148,7 @@ type EmojiStackProps = {
   activeTooltipId?: string | null;
   onTooltipChange?: (id: string | null) => void;
   className?: string;
+  dimmed?: boolean;
 };
 
 function EmojiStack({
@@ -155,14 +157,31 @@ function EmojiStack({
   activeTooltipId,
   onTooltipChange,
   className = "",
+  dimmed = false,
 }: EmojiStackProps) {
   return (
-    <div className={`flex flex-wrap -space-x-4 text-base ${className}`}>
+    <div
+      className={`flex flex-wrap -space-x-4 text-base ${
+        dimmed ? "opacity-40" : ""
+      } ${className}`}
+    >
       {items.map((item, index) => {
         const emoji = PLAYER_EMOJIS[index % PLAYER_EMOJIS.length];
         const isTooltipEnabled = showTooltip && Boolean(item.label);
         const isActive =
           isTooltipEnabled && activeTooltipId === item.id && item.label;
+        const emojiNode = (
+          <span
+            className={
+              item.isSelf
+                ? "[filter:drop-shadow(0_0_4px_rgba(22,163,74,0.85))_drop-shadow(0_0_9px_rgba(22,163,74,0.55))] dark:[filter:drop-shadow(0_0_2px_rgba(74,222,128,0.95))_drop-shadow(0_0_6px_rgba(74,222,128,0.7))]"
+                : ""
+            }
+            aria-hidden
+          >
+            {emoji}
+          </span>
+        );
 
         if (isTooltipEnabled) {
           return (
@@ -179,7 +198,7 @@ function EmojiStack({
               onBlur={() => onTooltipChange?.(null)}
               onMouseLeave={() => onTooltipChange?.(null)}
             >
-              {emoji}
+              {emojiNode}
               <span
                 className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-2 py-1 text-[10px] font-semibold text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
                 style={{ opacity: isActive ? 1 : undefined }}
@@ -197,7 +216,7 @@ function EmojiStack({
             style={{ zIndex: items.length - index }}
             aria-hidden
           >
-            {emoji}
+            {emojiNode}
           </span>
         );
       })}
@@ -627,6 +646,7 @@ export function HomePage() {
           teamMembers.push({
             id: `${row.team_id}-${row.user_id}`,
             label,
+            isSelf: row.user_id === sessionUserId,
           });
           membersByTeam.set(row.team_id, teamMembers);
         });
@@ -647,7 +667,7 @@ export function HomePage() {
     return () => {
       isMounted = false;
     };
-  }, [memberships, teamIds]);
+  }, [memberships, teamIds, sessionUserId]);
 
   const statusLabels: Record<ConvocationStatus, string> = {
     open: "Aberta",
@@ -679,10 +699,14 @@ export function HomePage() {
     isDimmed: boolean,
     icon: string,
   ) => (
-    <div className={`flex items-center gap-3 ${isDimmed ? "opacity-50" : ""}`}>
-      <span className="text-lg">{icon}</span>
+    <div className="flex items-center gap-3">
+      <span className={`text-lg ${isDimmed ? "opacity-40" : ""}`}>{icon}</span>
       {votes.length === 0 ? (
-        <span className="text-xs text-[var(--text-secondary)]">
+        <span
+          className={`text-xs text-[var(--text-secondary)] ${
+            isDimmed ? "opacity-40" : ""
+          }`}
+        >
           Sem jogadores
         </span>
       ) : (
@@ -690,10 +714,12 @@ export function HomePage() {
           items={votes.map((vote) => ({
             id: `${keyPrefix}-${vote.userId}`,
             label: vote.label,
+            isSelf: vote.userId === sessionUserId,
           }))}
           showTooltip
           activeTooltipId={activeTooltipId}
           onTooltipChange={setActiveTooltipId}
+          dimmed={isDimmed}
         />
       )}
     </div>
@@ -715,12 +741,14 @@ export function HomePage() {
     } * 1rem)`;
 
     return (
-      <div
-        className={`flex items-center gap-3 ${isDimmed ? "opacity-50" : ""}`}
-      >
-        <span className="text-lg">⚽️</span>
+      <div className="flex items-center gap-3">
+        <span className={`text-lg ${isDimmed ? "opacity-40" : ""}`}>⚽️</span>
         {sortedVotes.length === 0 ? (
-          <span className="text-xs text-[var(--text-secondary)]">
+          <span
+            className={`text-xs text-[var(--text-secondary)] ${
+              isDimmed ? "opacity-40" : ""
+            }`}
+          >
             Sem jogadores
           </span>
         ) : (
@@ -730,23 +758,31 @@ export function HomePage() {
                 items={starters.map((vote) => ({
                   id: `${keyPrefix}-t-${vote.userId}`,
                   label: vote.label,
+                  isSelf: vote.userId === sessionUserId,
                 }))}
                 showTooltip
                 activeTooltipId={activeTooltipId}
                 onTooltipChange={setActiveTooltipId}
+                dimmed={isDimmed}
               />
             </div>
-            <div className="mx-2 h-6 w-px bg-white/50 shadow-[0_0_6px_rgba(255,255,255,0.35)] dark:bg-white/30" />
+            <div
+              className={`mx-2 h-6 w-px bg-slate-300/70 shadow-[0_0_6px_rgba(148,163,184,0.6)] dark:bg-white/40 dark:shadow-[0_0_6px_rgba(255,255,255,0.35)] ${
+                isDimmed ? "opacity-40" : ""
+              }`}
+            />
             <div className="flex items-center">
               {substitutes.length > 0 && (
                 <EmojiStack
                   items={substitutes.map((vote) => ({
                     id: `${keyPrefix}-s-${vote.userId}`,
                     label: vote.label,
+                    isSelf: vote.userId === sessionUserId,
                   }))}
                   showTooltip
                   activeTooltipId={activeTooltipId}
                   onTooltipChange={setActiveTooltipId}
+                  dimmed={isDimmed}
                 />
               )}
             </div>
