@@ -1,34 +1,6 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "../../auth/useAuth";
-import { CollapsibleSection } from "../../../components/ui/CollapsibleSection";
-import { Toggle } from "../../../components/ui/Toggle";
 import { TeamsDashboard } from "../dashboard/TeamsDashboard";
 
 export function ProfilePage() {
-  const { signOut } = useAuth();
-  const [menuPosition, setMenuPosition] = useState<"left" | "right">("right");
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
-  useEffect(() => {
-    const savedPos = localStorage.getItem("menu-position") as "left" | "right";
-    if (savedPos) setMenuPosition(savedPos);
-
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark";
-    if (savedTheme) setTheme(savedTheme);
-  }, []);
-
-  const togglePosition = (pos: "left" | "right") => {
-    setMenuPosition(pos);
-    localStorage.setItem("menu-position", pos);
-    window.dispatchEvent(new Event("menu-position-change"));
-  };
-
-  const toggleTheme = (newTheme: "light" | "dark") => {
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    window.dispatchEvent(new Event("theme-change"));
-  };
-
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <header className="text-center">
@@ -66,35 +38,6 @@ export function ProfilePage() {
 
       {/* Dashboard */}
       <TeamsDashboard withPadding={false} />
-
-      {/* Settings Sections */}
-      <CollapsibleSection title="Configurações">
-        <div className="space-y-4 divide-y divide-[var(--border-color)]">
-          <Toggle
-            label="Menu à Direita"
-            subLabel="Alternar posição do menu radial"
-            checked={menuPosition === "right"}
-            onChange={(checked) => togglePosition(checked ? "right" : "left")}
-            icon="↕️"
-          />
-          <Toggle
-            label="Tema Escuro"
-            subLabel="Habilitar aparência escura"
-            checked={theme === "dark"}
-            onChange={(checked) => toggleTheme(checked ? "dark" : "light")}
-            icon={theme === "dark" ? "🌙" : "☀️"}
-          />
-        </div>
-      </CollapsibleSection>
-
-      <div className="pt-4">
-        <button
-          onClick={signOut}
-          className="w-full rounded-2xl bg-red-500 py-4 font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95"
-        >
-          Sair da Conta
-        </button>
-      </div>
     </div>
   );
 }

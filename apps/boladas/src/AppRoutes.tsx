@@ -8,7 +8,7 @@ import { GamesPage } from "./features/teams/pages/GamesPage";
 import { StandingsPage } from "./features/teams/pages/StandingsPage";
 import { StatsPage } from "./features/teams/pages/StatsPage";
 import { ProfilePage } from "./features/teams/pages/ProfilePage";
-import { TeamSettingsPage } from "./features/teams/pages/TeamSettingsPage";
+import { SettingsPage } from "./features/teams/pages/SettingsPage";
 import { JoinPage } from "./features/invites/JoinPage";
 
 export function AppRoutes() {
@@ -30,7 +30,8 @@ export function AppRoutes() {
           <Route path="/standings" element={<StandingsPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/team-settings" element={<TeamSettingsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/team-settings" element={<Navigate to="/settings" replace />} />
         </Route>
 
         <Route path="/admin" element={<SystemAdminPage />} />

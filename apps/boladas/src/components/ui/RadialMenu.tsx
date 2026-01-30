@@ -1,11 +1,13 @@
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export interface RadialMenuItem {
   id: string;
   label: string;
-  icon: string;
-  path: string;
+  icon: ReactNode;
+  path?: string;
+  onClick?: () => void;
   disabled?: boolean;
 }
 
@@ -25,6 +27,14 @@ export function RadialMenu({
   const location = useLocation();
 
   const toggleMenu = () => setIsOpen(!isOpen);
+  const triggerIconProps = {
+    className: "h-6 w-6",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.6,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
 
   return (
     <div
@@ -43,15 +53,24 @@ export function RadialMenu({
           const radius = 110;
           const x = isOpen ? Math.cos(radian) * radius : 0;
           const y = isOpen ? -Math.sin(radian) * radius : 0;
-          const isActive = location.pathname.includes(item.path);
+          const isActive = item.path
+            ? location.pathname.includes(item.path)
+            : false;
 
           return (
             <button
               key={item.id}
               onClick={() => {
                 if (item.disabled) return;
-                navigate(item.path);
-                setIsOpen(false);
+                if (item.onClick) {
+                  item.onClick();
+                  setIsOpen(false);
+                  return;
+                }
+                if (item.path) {
+                  navigate(item.path);
+                  setIsOpen(false);
+                }
               }}
               disabled={item.disabled}
               className={`absolute bottom-0 flex h-12 w-12 items-center justify-center rounded-full border-none shadow-mui transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] ${
@@ -72,7 +91,9 @@ export function RadialMenu({
               }}
               title={item.label + (item.disabled ? " (Bloqueado)" : "")}
             >
-              <span className="text-xl">{item.icon}</span>
+              <span className="flex h-6 w-6 items-center justify-center">
+                {item.icon}
+              </span>
             </button>
           );
         })}
@@ -93,15 +114,24 @@ export function RadialMenu({
             const radius = 180; // Larger radius
             const x = isOpen ? Math.cos(radian) * radius : 0;
             const y = isOpen ? -Math.sin(radian) * radius : 0;
-            const isActive = location.pathname.includes(item.path);
+            const isActive = item.path
+              ? location.pathname.includes(item.path)
+              : false;
 
             return (
               <button
                 key={item.id}
                 onClick={() => {
                   if (item.disabled) return;
-                  navigate(item.path);
-                  setIsOpen(false);
+                  if (item.onClick) {
+                    item.onClick();
+                    setIsOpen(false);
+                    return;
+                  }
+                  if (item.path) {
+                    navigate(item.path);
+                    setIsOpen(false);
+                  }
                 }}
                 disabled={item.disabled}
                 className={`absolute bottom-0 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-color)] shadow-xl transition-all duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] ${
@@ -122,7 +152,9 @@ export function RadialMenu({
                 }}
                 title={item.label}
               >
-                <span className="text-sm">{item.icon}</span>
+                <span className="flex h-5 w-5 items-center justify-center">
+                  {item.icon}
+                </span>
               </button>
             );
           })}
@@ -134,7 +166,28 @@ export function RadialMenu({
             isOpen ? "rotate-180" : "rotate-0"
           }`}
         >
-          🧭
+          {isOpen ? (
+            <svg viewBox="0 0 24 24" aria-hidden {...triggerIconProps}>
+              <path d="M6 6l12 12" />
+              <path d="M18 6l-12 12" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" aria-hidden {...triggerIconProps}>
+              <circle cx="12" cy="12" r="1.4" />
+              <circle cx="12" cy="5" r="0.8" />
+              <circle cx="12" cy="19" r="0.8" />
+              <circle cx="5" cy="12" r="0.8" />
+              <circle cx="19" cy="12" r="0.8" />
+              <circle cx="16.95" cy="7.05" r="0.7" />
+              <circle cx="7.05" cy="16.95" r="0.7" />
+              <circle cx="7.05" cy="7.05" r="0.7" />
+              <circle cx="16.95" cy="16.95" r="0.7" />
+              <circle cx="12" cy="8.2" r="0.55" />
+              <circle cx="12" cy="15.8" r="0.55" />
+              <circle cx="8.2" cy="12" r="0.55" />
+              <circle cx="15.8" cy="12" r="0.55" />
+            </svg>
+          )}
         </button>
       </div>
 
