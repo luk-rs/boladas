@@ -1,13 +1,7 @@
-import { getDb } from "../../shared/db";
-
 export async function handleGetGames(request: Request, env: any) {
   if (!env.SUPABASE_DB_URL) {
     return new Response("Missing DB Configuration", { status: 500 });
   }
-
-  // Use singleton connection pool instead of creating a new connection per request
-  // This prevents connection exhaustion on Supabase free tier (10-connection limit)
-  const sql = getDb(env.SUPABASE_DB_URL);
 
   try {
     // Basic query to verify connection

@@ -1,4 +1,4 @@
-import { getDb } from "../../shared/db";
+import { closeDb, getDb } from "../../shared/db";
 import { corsHeaders } from "../../shared/cors";
 import type { Env } from "../../index";
 
@@ -124,5 +124,7 @@ export async function handleGetConvocationTeams(
       status: 500,
       headers: corsHeaders(origin),
     });
+  } finally {
+    await closeDb(sql);
   }
 }

@@ -1,39 +1,23 @@
 import postgres from "postgres";
 
 /**
- * Shared database client for Cloudflare Workers
- * 
- * This uses a singleton pattern to reuse a single connection pool across requests.
- * Cloudflare Workers can cache connections in memory, reducing latency and 
- * preventing connection pool exhaustion on Supabase free tier (10-connection limit).
- * 
- * The `postgres.js` library handles connection pooling automatically.
- * We create one client per environment and reuse it.
+ * Create a per-request database client.
+ *
+ * Cloudflare Workers disallow reusing I/O objects across requests, so we avoid
+ * a global singleton and close the client after each handler finishes.
  */
-
-let cachedSql: ReturnType<typeof postgres> | null = null;
-
 export function getDb(dbUrl: string): ReturnType<typeof postgres> {
-  if (!cachedSql) {
-    cachedSql = postgres(dbUrl, {
-      // Connection pooling configuration
-      // These limits help prevent exhausting Supabase free tier (10 connections max)
-      max: 3, // Max connections in pool (conservative for free tier)
-      idle_timeout: 30, // Close idle connections after 30s
-      connection_timeout: 5, // 5s timeout for new connections
-      prepare: false, // Disable prepared statements to reduce memory usage
-    });
-  }
-  return cachedSql;
+  return postgres(dbUrl, {
+    // Keep the pool tiny; we close per request.
+    max: 1,
+    idle_timeout: 10,
+    connection_timeout: 5,
+    prepare: false,
+  });
 }
 
-/**
- * Closes the cached connection pool.
- * Used for cleanup in tests or graceful shutdown.
- */
-export async function closeDb(): Promise<void> {
-  if (cachedSql) {
-    await cachedSql.end();
-    cachedSql = null;
-  }
+export async function closeDb(
+  sql: ReturnType<typeof postgres>,
+): Promise<void> {
+  await sql.end({ timeout: 5 });
 }
