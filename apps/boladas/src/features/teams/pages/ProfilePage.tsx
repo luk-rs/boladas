@@ -1,4 +1,4 @@
-import { TeamsDashboard } from "../dashboard/TeamsDashboard";
+import { ProfileDashboard } from "../dashboard/ProfileDashboard";
 
 export function ProfilePage() {
   return (
@@ -37,7 +37,7 @@ export function ProfilePage() {
       </div>
 
       {/* Dashboard */}
-      <TeamsDashboard withPadding={false} />
+      <ProfileDashboard withPadding={false} />
     </div>
   );
 }

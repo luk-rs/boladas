@@ -23,7 +23,7 @@ export type TeamsDashboardProps = {
   className?: string;
 };
 
-export function TeamsDashboard({
+export function ProfileDashboard({
   withPadding = true,
   className = "",
 }: TeamsDashboardProps) {
@@ -265,8 +265,7 @@ export function TeamsDashboard({
         const statusDiff = statusOrder[a.status] - statusOrder[b.status];
         if (statusDiff !== 0) return statusDiff;
         return (
-          new Date(a.scheduledAt).getTime() -
-          new Date(b.scheduledAt).getTime()
+          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
         );
       });
 
@@ -402,7 +401,9 @@ export function TeamsDashboard({
 
     supabase
       .from("team_members")
-      .select("team_id, user_id, created_at, profile:profiles(display_name,email)")
+      .select(
+        "team_id, user_id, created_at, profile:profiles(display_name,email)",
+      )
       .in("team_id", teamIds)
       .order("created_at", { ascending: true })
       .then(({ data, error }) => {
