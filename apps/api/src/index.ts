@@ -1,5 +1,6 @@
 import { handleRandom } from "./features/random";
 import { handleGetGames } from "./features/games/get-games";
+import { handleGetConvocationTeams } from "./features/convocations/get-convocation-teams";
 import { corsHeaders } from "./shared/cors";
 
 export interface Env {
@@ -22,6 +23,18 @@ export default {
 
     if (url.pathname === "/games" || url.pathname === "/games/") {
       return handleGetGames(request, env);
+    }
+
+    const convocationTeamsMatch = url.pathname.match(
+      /^\/convocations\/([^/]+)\/teams\/?$/,
+    );
+    if (convocationTeamsMatch) {
+      return handleGetConvocationTeams(
+        request,
+        env,
+        convocationTeamsMatch[1],
+        origin,
+      );
     }
 
     return new Response("Not found", { status: 404 });

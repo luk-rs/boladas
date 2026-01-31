@@ -9,6 +9,7 @@ import { StandingsPage } from "./features/teams/pages/StandingsPage";
 import { StatsPage } from "./features/teams/pages/StatsPage";
 import { ProfilePage } from "./features/teams/pages/ProfilePage";
 import { SettingsPage } from "./features/teams/pages/SettingsPage";
+import { GameFormPage } from "./features/teams/pages/GameFormPage";
 import { JoinPage } from "./features/invites/JoinPage";
 
 export function AppRoutes() {
@@ -27,6 +28,7 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/" element={<Navigate to="/profile" replace />} />
           <Route path="/games" element={<GamesPage />} />
+          <Route path="/games/new/:convocationId" element={<GameFormPage />} />
           <Route path="/standings" element={<StandingsPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/profile" element={<ProfilePage />} />

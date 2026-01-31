@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { useTeams } from "../useTeams";
 import { supabase } from "../../../lib/supabase";
@@ -27,6 +28,7 @@ export function ProfileDashboard({
   withPadding = true,
   className = "",
 }: TeamsDashboardProps) {
+  const navigate = useNavigate();
   const { sessionUserId, isSystemAdmin } = useAuth();
   const { memberships, loading: membershipsLoading } = useTeams(
     sessionUserId,
@@ -385,9 +387,13 @@ export function ProfileDashboard({
             : convocation,
         ),
       );
+      if (nextStatus === "accepted") {
+        navigate(`/games/new/${id}`);
+        return;
+      }
       void loadConvocations();
     },
-    [loadConvocations],
+    [loadConvocations, navigate],
   );
 
   useEffect(() => {
