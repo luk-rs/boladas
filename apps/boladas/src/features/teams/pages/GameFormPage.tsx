@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { WheelTimePicker } from "../../../components/ui/WheelTimePicker";
 import { PLAYER_EMOJIS } from "../dashboard/constants";
+import { useAuth } from "../../auth/useAuth";
 
 type Player = {
   id: string;
@@ -41,6 +42,7 @@ const formatTime = (value?: string | null) => {
 
 export function GameFormPage() {
   const { convocationId } = useParams();
+  const { sessionUserId } = useAuth();
   const [teamName, setTeamName] = useState("Equipa");
   const [scheduledAt, setScheduledAt] = useState<string | null>(null);
   const [timeValue, setTimeValue] = useState("19:00");
@@ -63,6 +65,56 @@ export function GameFormPage() {
   const [error, setError] = useState<string | null>(null);
 
   const dateLabel = useMemo(() => formatDate(scheduledAt), [scheduledAt]);
+  const teamStats = useMemo(() => {
+    const rng = () => Math.random();
+    const makeStats = () => ({
+      points: Math.floor(10 + rng() * 15),
+      winPct: Math.floor(40 + rng() * 40),
+      xg: (0.8 + rng() * 2.2).toFixed(2),
+      xga: (0.8 + rng() * 2.2).toFixed(2),
+    });
+    return {
+      shirts: makeStats(),
+      coletes: makeStats(),
+    };
+  }, []);
+  const statRows = useMemo(
+    () => [
+      {
+        id: "points",
+        icon: "🏆",
+        label: "Total points",
+        left: teamStats.shirts.points,
+        right: teamStats.coletes.points,
+        suffix: "",
+      },
+      {
+        id: "win",
+        icon: "📈",
+        label: "Avg win %",
+        left: teamStats.shirts.winPct,
+        right: teamStats.coletes.winPct,
+        suffix: "%",
+      },
+      {
+        id: "xg",
+        icon: "⚽️",
+        label: "xGoals scored",
+        left: teamStats.shirts.xg,
+        right: teamStats.coletes.xg,
+        suffix: "",
+      },
+      {
+        id: "xga",
+        icon: "🥅",
+        label: "xGoals conceded",
+        left: teamStats.shirts.xga,
+        right: teamStats.coletes.xga,
+        suffix: "",
+      },
+    ],
+    [teamStats],
+  );
 
   useEffect(() => {
     if (!convocationId) {
@@ -137,8 +189,8 @@ export function GameFormPage() {
     team: "shirts" | "coletes",
   ) => {
     const emoji = PLAYER_EMOJIS[index % PLAYER_EMOJIS.length];
-    const isDragging =
-      dragging?.team === team && dragging?.index === index;
+    const isSelf = player.id === sessionUserId;
+    const isDragging = dragging?.team === team && dragging?.index === index;
     const isDropTarget =
       dragOver?.team === team &&
       dragOver?.index === index &&
@@ -197,10 +249,10 @@ export function GameFormPage() {
           setDragging(null);
           setDragOver(null);
         }}
-        className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 transition-all cursor-grab active:cursor-grabbing ${
+        className={`flex items-center justify-between gap-2 px-3 py-2 transition-all cursor-grab active:cursor-grabbing hover:bg-white/10 dark:hover:bg-white/10 ${
           isDropTarget
-            ? "border-primary-400 bg-primary-500/10 shadow-[0_0_0_2px_rgba(56,189,248,0.35)]"
-            : "border-[var(--border-color)] bg-[var(--bg-app)]"
+            ? "bg-primary-500/10 shadow-[0_0_0_2px_rgba(56,189,248,0.35)]"
+            : ""
         } ${isDragging ? "opacity-50" : ""}`}
       >
         {variant === "name-emoji" ? (
@@ -208,11 +260,29 @@ export function GameFormPage() {
             <span className="text-sm font-medium text-[var(--text-primary)]">
               {player.name}
             </span>
-            <span className="text-lg">{emoji}</span>
+            <span
+              className={`text-lg ${
+                isSelf
+                  ? "[filter:drop-shadow(0_0_4px_rgba(22,163,74,0.85))_drop-shadow(0_0_9px_rgba(22,163,74,0.55))] dark:[filter:drop-shadow(0_0_2px_rgba(74,222,128,0.95))_drop-shadow(0_0_6px_rgba(74,222,128,0.7))]"
+                  : ""
+              }`}
+              aria-hidden
+            >
+              {emoji}
+            </span>
           </>
         ) : (
           <>
-            <span className="text-lg">{emoji}</span>
+            <span
+              className={`text-lg ${
+                isSelf
+                  ? "[filter:drop-shadow(0_0_4px_rgba(22,163,74,0.85))_drop-shadow(0_0_9px_rgba(22,163,74,0.55))] dark:[filter:drop-shadow(0_0_2px_rgba(74,222,128,0.95))_drop-shadow(0_0_6px_rgba(74,222,128,0.7))]"
+                  : ""
+              }`}
+              aria-hidden
+            >
+              {emoji}
+            </span>
             <span className="text-sm font-medium text-[var(--text-primary)]">
               {player.name}
             </span>
@@ -244,71 +314,106 @@ export function GameFormPage() {
       </header>
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="h-64 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)]/60" />
-          <div className="h-64 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)]/60" />
+        <div className="space-y-3">
+          <div className="flex items-center justify-center gap-3 text-sm font-semibold text-[var(--text-secondary)]">
+            <span className="text-lg">👕</span>
+            <span>vs</span>
+            <span className="text-lg">🦺</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="h-64 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)]/60" />
+            <div className="h-64 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)]/60" />
+          </div>
         </div>
       ) : error ? (
         <div className="rounded-2xl border border-dashed border-rose-200 bg-rose-50 p-4 text-center text-sm text-rose-600">
           {error}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          <section className="rounded-2xl bg-[var(--bg-surface)] p-4 shadow-mui">
-            <header className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                Shirts
-              </h3>
-              <span className="text-lg">👕</span>
-            </header>
-            <div className="space-y-2">
-              {teamPlayers.shirts.length ? (
-                teamPlayers.shirts.map((player, index) =>
-                  renderPlayerRow(player, index, "name-emoji", "shirts"),
-                )
-              ) : (
-                <p className="rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] p-3 text-center text-xs text-[var(--text-secondary)]">
-                  Sem jogadores.
-                </p>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() => addGuest("shirts")}
-              className="mt-3 flex w-full items-center justify-between rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-primary-500/60 hover:text-[var(--text-primary)] active:scale-[0.99]"
-            >
-              <span>Adicionar convidado</span>
-              <span className="text-lg">＋</span>
-            </button>
-          </section>
+        <div className="space-y-3">
+          <div className="flex items-center justify-center gap-3 text-sm font-semibold text-[var(--text-secondary)]">
+            <span className="text-lg">👕</span>
+            <span>vs</span>
+            <span className="text-lg">🦺</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <section className="flex h-full flex-col rounded-2xl bg-[var(--bg-surface)] p-4 shadow-mui">
+              <div className="space-y-0">
+                {teamPlayers.shirts.length ? (
+                  teamPlayers.shirts.map((player, index) =>
+                    renderPlayerRow(player, index, "name-emoji", "shirts"),
+                  )
+                ) : (
+                  <p className="rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] p-3 text-center text-xs text-[var(--text-secondary)]">
+                    Sem jogadores.
+                  </p>
+                )}
+              </div>
+              <div className="mt-auto pt-3">
+                <button
+                  type="button"
+                  onClick={() => addGuest("shirts")}
+                  className="flex w-full items-center justify-between rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-primary-500/60 hover:text-[var(--text-primary)] active:scale-[0.99]"
+                >
+                  <span>Adicionar convidado</span>
+                  <span className="text-lg">＋</span>
+                </button>
+              </div>
+            </section>
 
-          <section className="rounded-2xl bg-[var(--bg-surface)] p-4 shadow-mui">
-            <header className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
-                Coletes
-              </h3>
-              <span className="text-lg">🦺</span>
-            </header>
+            <section className="flex h-full flex-col rounded-2xl bg-[var(--bg-surface)] p-4 shadow-mui">
+              <div className="space-y-0">
+                {teamPlayers.coletes.length ? (
+                  teamPlayers.coletes.map((player, index) =>
+                    renderPlayerRow(player, index, "emoji-name", "coletes"),
+                  )
+                ) : (
+                  <p className="rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] p-3 text-center text-xs text-[var(--text-secondary)]">
+                    Sem jogadores.
+                  </p>
+                )}
+              </div>
+              <div className="mt-auto pt-3">
+                <button
+                  type="button"
+                  onClick={() => addGuest("coletes")}
+                  className="flex w-full items-center justify-between rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-primary-500/60 hover:text-[var(--text-primary)] active:scale-[0.99]"
+                >
+                  <span>Adicionar convidado</span>
+                  <span className="text-lg">＋</span>
+                </button>
+              </div>
+            </section>
+          </div>
+          <div className="space-y-3 text-xs">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-center text-[var(--text-secondary)]">
+              Stats
+            </p>
             <div className="space-y-2">
-              {teamPlayers.coletes.length ? (
-                teamPlayers.coletes.map((player, index) =>
-                  renderPlayerRow(player, index, "emoji-name", "coletes"),
-                )
-              ) : (
-                <p className="rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] p-3 text-center text-xs text-[var(--text-secondary)]">
-                  Sem jogadores.
-                </p>
-              )}
+              {statRows.map((row) => (
+                <div
+                  key={row.id}
+                  className="flex items-center justify-center gap-3 text-sm"
+                >
+                  <p className="w-14 text-right font-semibold text-[var(--text-primary)]">
+                    {row.left}
+                    {row.suffix}
+                  </p>
+                  <span
+                    className="text-lg"
+                    title={row.label}
+                    aria-label={row.label}
+                  >
+                    {row.icon}
+                  </span>
+                  <p className="w-14 text-left font-semibold text-[var(--text-primary)]">
+                    {row.right}
+                    {row.suffix}
+                  </p>
+                </div>
+              ))}
             </div>
-            <button
-              type="button"
-              onClick={() => addGuest("coletes")}
-              className="mt-3 flex w-full items-center justify-between rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-primary-500/60 hover:text-[var(--text-primary)] active:scale-[0.99]"
-            >
-              <span>Adicionar convidado</span>
-              <span className="text-lg">＋</span>
-            </button>
-          </section>
+          </div>
         </div>
       )}
 
