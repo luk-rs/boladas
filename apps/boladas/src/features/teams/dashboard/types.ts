@@ -38,6 +38,17 @@ export type Convocation = {
   hospitalVotes: VoteEntry[];
 };
 
+export type UpcomingGame = {
+  id: string;
+  convocationId: string | null;
+  teamId: string;
+  teamName: string;
+  scheduledAt: string;
+  createdAt: string;
+  shirtsLineup: EmojiStackItem[];
+  coletesLineup: EmojiStackItem[];
+};
+
 export type HoldIntent = "accepted";
 
 export type HoldProgress = {

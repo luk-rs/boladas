@@ -171,6 +171,28 @@ export function GameFormPage() {
     setActionState("rejecting");
     setActionMessage(null);
     try {
+      const { error: cancelError } = await supabase.rpc(
+        "cancel_game_from_convocation",
+        {
+          p_convocation_id: convocationId,
+        },
+      );
+
+      if (!cancelError) {
+        setActionMessage("Convocatória rejeitada.");
+        navigate("/profile", { replace: true });
+        return;
+      }
+
+      const isMissingCancelRpc =
+        cancelError.message
+          ?.toLowerCase()
+          .includes("cancel_game_from_convocation") ?? false;
+      if (!isMissingCancelRpc) {
+        setActionMessage(cancelError.message);
+        return;
+      }
+
       const currentStatus = await loadConvocationStatus();
       if (!currentStatus) return;
 
@@ -294,6 +316,7 @@ export function GameFormPage() {
 
           if (!legacyCreateError) {
             setActionMessage("Jogo criado com sucesso.");
+            navigate("/profile", { replace: true });
             return;
           }
 
@@ -319,6 +342,7 @@ export function GameFormPage() {
         setActionMessage(rpcError.message);
       } else {
         setActionMessage("Jogo criado com sucesso.");
+        navigate("/profile", { replace: true });
       }
     } finally {
       setActionState("idle");
@@ -630,7 +654,7 @@ export function GameFormPage() {
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-base text-rose-700 transition-all active:scale-95 disabled:opacity-60 dark:bg-rose-900/40 dark:text-rose-200"
                 title="Rejeitar convocatória"
               >
-                ❌
+                💤
               </button>
               <button
                 type="button"

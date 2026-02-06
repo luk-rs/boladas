@@ -12,6 +12,7 @@ import {
   HoldProgress,
   PlayerState,
   TeamRosterStatus,
+  UpcomingGame,
   VoteEntry,
 } from "./types";
 import { ConvocationsSection } from "./components/ConvocationsSection";
@@ -67,6 +68,9 @@ export function ProfileDashboard({
 
   const [convocations, setConvocations] = useState<Convocation[]>([]);
   const [loadingConvocations, setLoadingConvocations] = useState(false);
+  const [games, setGames] = useState<UpcomingGame[]>([]);
+  const [loadingGames, setLoadingGames] = useState(false);
+  const [cancellingGameId, setCancellingGameId] = useState<string | null>(null);
   const [holdProgressById, setHoldProgressById] = useState<
     Record<string, HoldProgress>
   >({});
@@ -279,6 +283,86 @@ export function ProfileDashboard({
     void loadConvocations();
   }, [loadConvocations]);
 
+  const loadGames = useCallback(async () => {
+    if (!supabase || teamIds.length === 0) {
+      setGames([]);
+      setLoadingGames(false);
+      return;
+    }
+
+    setLoadingGames(true);
+    const nowIso = new Date().toISOString();
+    const { data: gameRows, error: gamesError } = await supabase
+      .from("games")
+      .select(
+        "id, convocation_id, team_id, scheduled_at, created_at, shirts_lineup, coletes_lineup, team:teams(name)",
+      )
+      .in("team_id", teamIds)
+      .gte("scheduled_at", nowIso)
+      .order("scheduled_at", { ascending: true });
+
+    if (gamesError || !gameRows) {
+      console.error("Failed to load games:", gamesError);
+      setGames([]);
+      setLoadingGames(false);
+      return;
+    }
+
+    const toEmojiStack = (
+      lineup: unknown,
+      keyPrefix: string,
+    ): Array<{ id: string; label: string; isSelf: boolean }> => {
+      if (!Array.isArray(lineup)) return [];
+
+      return lineup
+        .map((entry, index) => {
+          const player = entry as {
+            id?: string;
+            name?: string;
+            slot?: number;
+          };
+          const playerId = player.id ?? `${keyPrefix}-${index}`;
+          const label = player.name ?? "Jogador";
+          const slotValue = Number(player.slot);
+
+          return {
+            id: `${keyPrefix}-${playerId}`,
+            label,
+            isSelf: player.id === sessionUserId,
+            slot: Number.isNaN(slotValue) ? index + 1 : slotValue,
+          };
+        })
+        .sort((a, b) => a.slot - b.slot)
+        .map(({ slot: _, ...item }) => item);
+    };
+
+    const mapped = gameRows.map((row) => {
+      const teamField = row.team as { name?: string } | { name?: string }[];
+      const teamName =
+        (Array.isArray(teamField) ? teamField[0]?.name : teamField?.name) ??
+        teamNameById.get(row.team_id) ??
+        "Equipa";
+
+      return {
+        id: row.id,
+        convocationId: row.convocation_id,
+        teamId: row.team_id,
+        teamName,
+        scheduledAt: row.scheduled_at,
+        createdAt: row.created_at,
+        shirtsLineup: toEmojiStack(row.shirts_lineup, `${row.id}-shirts`),
+        coletesLineup: toEmojiStack(row.coletes_lineup, `${row.id}-coletes`),
+      } as UpcomingGame;
+    });
+
+    setGames(mapped);
+    setLoadingGames(false);
+  }, [sessionUserId, teamIds, teamNameById]);
+
+  useEffect(() => {
+    void loadGames();
+  }, [loadGames]);
+
   const handleVoteChange = useCallback(
     async (id: string, nextState: PlayerState) => {
       if (!sessionUserId) return;
@@ -397,6 +481,36 @@ export function ProfileDashboard({
     [loadConvocations, navigate],
   );
 
+  const handleCancelGame = useCallback(
+    async (game: UpcomingGame) => {
+      if (!supabase || !game.convocationId) return;
+
+      setCancellingGameId(game.id);
+      const { error } = await supabase.rpc("cancel_game_from_convocation", {
+        p_convocation_id: game.convocationId,
+      });
+
+      if (error) {
+        console.error("Failed to cancel game:", error);
+        setCancellingGameId(null);
+        return;
+      }
+
+      setGames((current) => current.filter((currentGame) => currentGame.id !== game.id));
+      setConvocations((current) =>
+        current.map((convocation) =>
+          convocation.id === game.convocationId
+            ? { ...convocation, status: "dismissed" }
+            : convocation,
+        ),
+      );
+
+      await Promise.all([loadGames(), loadConvocations()]);
+      setCancellingGameId(null);
+    },
+    [loadConvocations, loadGames],
+  );
+
   useEffect(() => {
     if (!supabase || teamIds.length === 0) {
       setTeamsWithStatus([]);
@@ -468,7 +582,15 @@ export function ProfileDashboard({
       className={`space-y-4 ${withPadding ? "px-4 pb-0 pt-4" : ""} ${className}`}
     >
       <DashboardTabs value={activeTab} onChange={setActiveTab} />
-      {activeTab === "games" && <GamesSection />}
+      {activeTab === "games" && (
+        <GamesSection
+          games={games}
+          loading={loadingGames}
+          canManageByTeamId={canManageByTeamId}
+          cancellingGameId={cancellingGameId}
+          onCancelGame={handleCancelGame}
+        />
+      )}
       {activeTab === "convocations" && (
         <ConvocationsSection
           convocations={convocations}
