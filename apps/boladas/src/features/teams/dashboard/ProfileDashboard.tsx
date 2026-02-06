@@ -368,6 +368,11 @@ export function ProfileDashboard({
 
   const handleStatusChange = useCallback(
     async (id: string, nextStatus: ConvocationStatus) => {
+      if (nextStatus === "accepted") {
+        navigate(`/games/new/${id}`);
+        return;
+      }
+
       if (!supabase) return;
 
       const { error } = await supabase.rpc("set_convocation_status", {
@@ -387,10 +392,6 @@ export function ProfileDashboard({
             : convocation,
         ),
       );
-      if (nextStatus === "accepted") {
-        navigate(`/games/new/${id}`);
-        return;
-      }
       void loadConvocations();
     },
     [loadConvocations, navigate],
@@ -402,17 +403,20 @@ export function ProfileDashboard({
       return;
     }
 
+    const db = supabase;
     let isMounted = true;
     setLoadingTeams(true);
 
-    supabase
-      .from("team_members")
-      .select(
-        "team_id, user_id, created_at, profile:profiles(display_name,email)",
-      )
-      .in("team_id", teamIds)
-      .order("created_at", { ascending: true })
-      .then(({ data, error }) => {
+    const loadTeamMembers = async () => {
+      try {
+        const { data, error } = await db
+          .from("team_members")
+          .select(
+            "team_id, user_id, created_at, profile:profiles(display_name,email)",
+          )
+          .in("team_id", teamIds)
+          .order("created_at", { ascending: true });
+
         if (!isMounted) return;
 
         if (error || !data) {
@@ -447,10 +451,12 @@ export function ProfileDashboard({
         }));
 
         setTeamsWithStatus(mapped);
-      })
-      .finally(() => {
+      } finally {
         if (isMounted) setLoadingTeams(false);
-      });
+      }
+    };
+
+    void loadTeamMembers();
 
     return () => {
       isMounted = false;
