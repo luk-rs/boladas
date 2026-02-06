@@ -24,13 +24,6 @@ const STATUS_STYLES: Record<ConvocationStatus, string> = {
     "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200",
 };
 
-const RESPONSE_OPTIONS: Array<{ id: PlayerState; label: string; icon: string }> =
-  [
-    { id: "ball", label: "Bola", icon: "⚽️" },
-    { id: "couch", label: "Sofá", icon: "🛋️" },
-    { id: "hospital", label: "Hospital", icon: "🏥" },
-  ];
-
 export type ConvocationsSectionProps = {
   convocations: Convocation[];
   loading: boolean;
@@ -58,19 +51,58 @@ export function ConvocationsSection({
   holdProgressById,
   onHoldProgress,
 }: ConvocationsSectionProps) {
+  const renderVoteIcon = (
+    convocationId: string,
+    state: PlayerState,
+    icon: string,
+    label: string,
+    isActive: boolean,
+    isOpen: boolean,
+    isDimmed: boolean,
+  ) => (
+    <button
+      type="button"
+      className={`flex h-8 w-8 items-center justify-center rounded-full text-lg transition-all active:scale-95 ${
+        isActive
+          ? "bg-primary-600 text-white shadow-sm"
+          : "bg-transparent text-[var(--text-secondary)]"
+      } ${isDimmed && !isActive ? "opacity-50" : ""}`}
+      aria-pressed={isActive}
+      aria-label={label}
+      title={label}
+      disabled={!isOpen || !sessionUserId}
+      onClick={() => onVoteChange(convocationId, state)}
+    >
+      <span aria-hidden>{icon}</span>
+    </button>
+  );
+
   const renderRoster = (
+    convocationId: string,
+    state: PlayerState,
     votes: VoteEntry[],
     keyPrefix: string,
     isDimmed: boolean,
     icon: string,
+    label: string,
+    isOpen: boolean,
+    isActive: boolean,
   ) => (
     <div className="flex items-center gap-3">
-      <span className={`text-lg ${isDimmed ? "opacity-40" : ""}`}>{icon}</span>
+      {renderVoteIcon(
+        convocationId,
+        state,
+        icon,
+        label,
+        isActive,
+        isOpen,
+        isDimmed,
+      )}
       {votes.length === 0 ? (
         <span
           className={`text-xs text-[var(--text-secondary)] ${
             isDimmed ? "opacity-40" : ""
-          }`}
+          } pl-1`}
         >
           Sem jogadores
         </span>
@@ -91,9 +123,12 @@ export function ConvocationsSection({
   );
 
   const renderBallRoster = (
+    convocationId: string,
     votes: VoteEntry[],
     keyPrefix: string,
     isDimmed: boolean,
+    isOpen: boolean,
+    isActive: boolean,
   ) => {
     const sortedVotes = [...votes].sort(
       (a, b) =>
@@ -107,12 +142,20 @@ export function ConvocationsSection({
 
     return (
       <div className="flex items-center gap-3">
-        <span className={`text-lg ${isDimmed ? "opacity-40" : ""}`}>⚽️</span>
+        {renderVoteIcon(
+          convocationId,
+          "ball",
+          "⚽️",
+          "Bola",
+          isActive,
+          isOpen,
+          isDimmed,
+        )}
         {sortedVotes.length === 0 ? (
           <span
             className={`text-xs text-[var(--text-secondary)] ${
               isDimmed ? "opacity-40" : ""
-            }`}
+            } pl-1`}
           >
             Sem jogadores
           </span>
@@ -242,52 +285,36 @@ export function ConvocationsSection({
                       {STATUS_LABELS[convocation.status]}
                     </span>
                   </div>
-
-                  <div
-                    className={`mt-4 flex flex-wrap items-center justify-center gap-2 rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-2 ${
-                      isOpen ? "" : "opacity-50"
-                    }`}
-                  >
-                    {RESPONSE_OPTIONS.map((option) => {
-                      const isActive = convocation.myState === option.id;
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold transition-all active:scale-95 ${
-                            isActive
-                              ? "bg-primary-600 text-white"
-                              : "bg-transparent text-[var(--text-primary)]"
-                          }`}
-                          aria-pressed={isActive}
-                          aria-label={option.label}
-                          title={option.label}
-                          disabled={!isOpen || !sessionUserId}
-                          onClick={() => onVoteChange(convocation.id, option.id)}
-                        >
-                          <span className="text-base">{option.icon}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
                   <div className="mt-4 space-y-3">
                     {renderBallRoster(
+                      convocation.id,
                       convocation.ballVotes,
                       `${convocation.id}-b`,
                       convocation.myState !== "ball",
+                      isOpen,
+                      convocation.myState === "ball",
                     )}
                     {renderRoster(
+                      convocation.id,
+                      "couch",
                       convocation.couchVotes,
                       `${convocation.id}-c`,
                       convocation.myState !== "couch",
                       "🛋️",
+                      "Sofá",
+                      isOpen,
+                      convocation.myState === "couch",
                     )}
                     {renderRoster(
+                      convocation.id,
+                      "hospital",
                       convocation.hospitalVotes,
                       `${convocation.id}-h`,
                       convocation.myState !== "hospital",
                       "🏥",
+                      "Hospital",
+                      isOpen,
+                      convocation.myState === "hospital",
                     )}
                   </div>
 

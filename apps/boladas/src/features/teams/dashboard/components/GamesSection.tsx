@@ -52,7 +52,7 @@ export function GamesSection({
                 }`}
               >
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-start gap-1">
                     <p className="text-base font-semibold text-[var(--text-primary)]">
                       {game.teamName}
                     </p>
@@ -63,47 +63,51 @@ export function GamesSection({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">
-                    <span className="inline-flex items-center gap-1">
-                      📅 {dateLabel}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      🕘 {timeLabel}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
-                        👕
+                  <div className="grid grid-cols-[4.5rem_1fr] gap-3">
+                    <div className="space-y-2 text-xs text-[var(--text-secondary)]">
+                      <span className="inline-flex items-center gap-1">
+                        📅 {dateLabel}
                       </span>
-                      {game.shirtsLineup.length > 0 ? (
-                        <EmojiStack
-                          items={game.shirtsLineup}
-                          showTooltip
-                          className="text-sm"
-                        />
-                      ) : (
-                        <span className="text-xs text-[var(--text-secondary)]">
-                          Sem camisolas
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-1">
+                        🕘 {timeLabel}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
-                        🦺
-                      </span>
-                      {game.coletesLineup.length > 0 ? (
-                        <EmojiStack
-                          items={game.coletesLineup}
-                          showTooltip
-                          className="text-sm"
-                        />
-                      ) : (
-                        <span className="text-xs text-[var(--text-secondary)]">
-                          Sem coletes
-                        </span>
-                      )}
+
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
+                            👕
+                          </span>
+                          {game.shirtsLineup.length > 0 ? (
+                            <EmojiStack
+                              items={game.shirtsLineup}
+                              showTooltip
+                              className="text-sm"
+                            />
+                          ) : (
+                            <span className="text-xs text-[var(--text-secondary)]">
+                              Sem camisolas
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
+                            🦺
+                          </span>
+                          {game.coletesLineup.length > 0 ? (
+                            <EmojiStack
+                              items={game.coletesLineup}
+                              showTooltip
+                              className="text-sm"
+                            />
+                          ) : (
+                            <span className="text-xs text-[var(--text-secondary)]">
+                              Sem coletes
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
