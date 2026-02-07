@@ -31,11 +31,8 @@ export function ProfileDashboard({
 }: TeamsDashboardProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { sessionUserId, isSystemAdmin } = useAuth();
-  const { memberships, loading: membershipsLoading } = useTeams(
-    sessionUserId,
-    isSystemAdmin,
-  );
+  const { sessionUserId } = useAuth();
+  const { memberships, loading: membershipsLoading } = useTeams();
   const [teamsWithStatus, setTeamsWithStatus] = useState<TeamRosterStatus[]>(
     [],
   );

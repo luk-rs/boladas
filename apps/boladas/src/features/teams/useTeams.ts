@@ -1,22 +1,29 @@
-import { useState, useEffect, useCallback } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { supabase } from "../../lib/supabase";
-import { TeamMembership, TeamRequest, Team } from "./types";
+import { useAuth } from "../auth/useAuth";
+import { Team, TeamMembership, TeamRequest } from "./types";
 
-const LAST_TEAM_KEY = "boladas:last_team_id";
 const DEFAULT_GAME_DEFINITIONS = [{ dayOfWeek: 1, startTime: "19:00" }];
 
-export function useTeams(userId: string | null, isSystemAdmin: boolean) {
+function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
   const [memberships, setMemberships] = useState<TeamMembership[]>([]);
-  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
+  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(null);
   const [myRequests, setMyRequests] = useState<TeamRequest[]>([]);
-  const [pendingRequests, setPendingRequests] = useState<TeamRequest[]>([]); // Admin only
-  const [allTeams, setAllTeams] = useState<Team[]>([]); // Admin only
+  const [pendingRequests, setPendingRequests] = useState<TeamRequest[]>([]);
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadMemberships = useCallback(async () => {
-    // console.log("🔄 Loading Memberships for:", userId);
     if (!supabase || !userId) return;
 
     const { data, error: fetchError } = await supabase
@@ -25,7 +32,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
       .eq("user_id", userId);
 
     if (fetchError) {
-      console.error("❌ Error loading memberships:", fetchError);
+      setMemberships([]);
       setError(fetchError.message);
       setLoading(false);
       return;
@@ -37,31 +44,28 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
         teamMemberId: row.id,
         teamId: row.team_id,
         teamName: team?.name ?? "Team",
-        roles: (row.roles ?? []).map((r: any) => r.role),
+        roles: (row.roles ?? []).map((role: any) => role.role),
       };
     });
+
     setMemberships(mapped);
+    setActiveTeamIdState((current) =>
+      current && mapped.some((membership) => membership.teamId === current)
+        ? current
+        : null,
+    );
     setLoading(false);
-
-    // Only set active team IF it was passed or logic requires it, but for now we want to start with NO active team
-    // unless there is strictly only one? NO, user wants list even then likely.
-    // Retaining logic: if 1 team, maybe auto-select?
-    // User said: "just list them to me". So NO auto-select.
-    // However, I will keep the state management, just remove the localStorage init.
-
-    // if (!activeTeamId && mapped.length === 1) {
-    //   setActiveTeamId(mapped[0].teamId);
-    // }
-    // Actually, forcing list view even for 1 team seems to be the request.
   }, [userId]);
 
   const loadMyRequests = useCallback(async () => {
     if (!supabase || !userId) return;
-    const { data, error } = await supabase
+
+    const { data, error: requestsError } = await supabase
       .from("team_requests")
       .select("id, name, status, created_at, requested_by")
       .eq("requested_by", userId);
-    if (error) setError(error.message);
+
+    if (requestsError) setError(requestsError.message);
     else setMyRequests(data ?? []);
   }, [userId]);
 
@@ -74,29 +78,45 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     if (teamsError) setError(teamsError.message);
     else setAllTeams(teams ?? []);
 
-    const { data: reqs, error: reqsError } = await supabase
+    const { data: requests, error: requestsError } = await supabase
       .from("team_requests")
       .select("id, name, requested_by, created_at, status")
       .eq("status", "pending");
-    if (reqsError) setError(reqsError.message);
-    else setPendingRequests(reqs ?? []);
+    if (requestsError) setError(requestsError.message);
+    else setPendingRequests(requests ?? []);
   }, [isSystemAdmin]);
 
   useEffect(() => {
-    if (userId) {
-      void loadMemberships();
-      void loadMyRequests();
+    if (!userId) {
+      setMemberships([]);
+      setActiveTeamIdState(null);
+      setMyRequests([]);
+      setPendingRequests([]);
+      setAllTeams([]);
+      setError(null);
+      setStatus(null);
+      setLoading(false);
+      return;
     }
+
+    setLoading(true);
+    void loadMemberships();
+    void loadMyRequests();
   }, [userId, loadMemberships, loadMyRequests]);
 
   useEffect(() => {
-    if (isSystemAdmin) {
-      void loadAdminData();
+    if (!isSystemAdmin) {
+      setPendingRequests([]);
+      setAllTeams([]);
+      return;
     }
+
+    void loadAdminData();
   }, [isSystemAdmin, loadAdminData]);
 
   const createTeam = async (name: string) => {
     if (!supabase || !userId) return;
+
     setError(null);
     setStatus(null);
     if (!name.trim()) {
@@ -147,12 +167,11 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
 
     setStatus("Team created.");
     await loadMemberships();
-    // Do NOT auto-select. Let user see list.
-    // setActiveTeamId(teamData.id);
   };
 
   const requestTeam = async (name: string) => {
     if (!supabase) return;
+
     setError(null);
     setStatus(null);
     if (!name.trim()) {
@@ -160,30 +179,30 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
       return;
     }
 
-    const { error: reqError } = await supabase.rpc("create_team_request", {
+    const { error: requestError } = await supabase.rpc("create_team_request", {
       p_name: name.trim(),
     });
-    if (reqError) setError(reqError.message);
+    if (requestError) setError(requestError.message);
     else {
       setStatus("Request submitted.");
       await loadMyRequests();
     }
   };
 
-  const handleTeamSelection = (teamId: string) => {
-    setActiveTeamId(teamId);
-    // No localStorage
+  const voteTeam = (teamId: string) => {
+    setActiveTeamIdState(teamId);
   };
 
-  // Admin functions
   const createSystemTeam = async (name: string) => {
     if (!supabase || !userId) return;
+
     setError(null);
     setStatus(null);
     if (!name.trim()) {
       setError("Team name is required.");
       return;
     }
+
     const { data: teamData, error: teamError } = await supabase
       .from("teams")
       .insert({
@@ -193,6 +212,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
       })
       .select("id")
       .single();
+
     if (teamError || !teamData) {
       setError(teamError?.message ?? "Failed to create team.");
       return;
@@ -231,30 +251,38 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
 
   const deleteTeam = async (teamId: string) => {
     if (!supabase) return;
-    const { error } = await supabase.from("teams").delete().eq("id", teamId);
-    if (error) setError(error.message);
+
+    const { error: deleteError } = await supabase
+      .from("teams")
+      .delete()
+      .eq("id", teamId);
+    if (deleteError) setError(deleteError.message);
     else await loadAdminData();
   };
 
   const approveRequest = async (requestId: string) => {
     if (!supabase) return;
-    const { error } = await supabase.rpc("approve_team_request", {
+
+    const { error: approveError } = await supabase.rpc("approve_team_request", {
       p_request_id: requestId,
     });
-    if (error) setError(error.message);
+
+    if (approveError) setError(approveError.message);
     else {
       setStatus("Request approved.");
       await loadAdminData();
-      await loadMemberships(); // In case the admin is the one who requested it (edge case) or if it affects them
+      await loadMemberships();
     }
   };
 
   const denyRequest = async (requestId: string) => {
     if (!supabase) return;
-    const { error } = await supabase.rpc("deny_team_request", {
+
+    const { error: denyError } = await supabase.rpc("deny_team_request", {
       p_request_id: requestId,
     });
-    if (error) setError(error.message);
+
+    if (denyError) setError(denyError.message);
     else {
       setStatus("Request denied.");
       await loadAdminData();
@@ -263,17 +291,18 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
 
   const acceptInvite = async (token: string) => {
     if (!supabase) return;
+
     setError(null);
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
     if (user) {
-      const { data: existing } = await supabase
+      const { data: existingProfile } = await supabase
         .from("profiles")
         .select("id")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (!existing) {
+      if (!existingProfile) {
         await supabase.from("profiles").insert({
           id: user.id,
           email: user.email,
@@ -282,6 +311,7 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
         });
       }
     }
+
     const { data, error: acceptError } = await supabase.rpc("accept_invite", {
       p_token: token,
     });
@@ -289,12 +319,89 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
       setError(acceptError.message);
       return;
     }
+
     if (data) {
-      setActiveTeamId(data);
-      localStorage.setItem(LAST_TEAM_KEY, data);
+      setActiveTeamIdState(data);
       await loadMemberships();
       return data;
     }
+  };
+
+  const createEmailInvite = async (teamId: string, email: string) => {
+    if (!supabase) {
+      return {
+        token: null,
+        error: "Supabase client unavailable.",
+      };
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return {
+        token: null,
+        error: "Invite email is required.",
+      };
+    }
+
+    setError(null);
+    const expiresAt = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    const { data, error: inviteError } = await supabase.rpc("create_invite", {
+      p_team_id: teamId,
+      p_email: normalizedEmail,
+      p_roles: ["member"],
+      p_expires_at: expiresAt,
+    });
+
+    if (inviteError) {
+      setError(inviteError.message);
+      return {
+        token: null,
+        error: inviteError.message,
+      };
+    }
+
+    const invite = Array.isArray(data) ? data[0] : data;
+    const token =
+      invite && typeof invite === "object" && "token" in invite
+        ? typeof invite.token === "string" && invite.token.length > 0
+          ? invite.token
+          : null
+        : null;
+
+    if (!token) {
+      const tokenError = "Invite token was not returned.";
+      setError(tokenError);
+      return {
+        token: null,
+        error: tokenError,
+      };
+    }
+
+    return {
+      token,
+      error: null,
+    };
+  };
+
+  const createGenericInvite = async (teamId: string) => {
+    if (!supabase) return null;
+
+    setError(null);
+    const { data, error: inviteError } = await supabase.rpc(
+      "create_generic_invite",
+      {
+        p_team_id: teamId,
+      },
+    );
+    if (inviteError) {
+      setError(inviteError.message);
+      return null;
+    }
+
+    return data as string;
   };
 
   return {
@@ -308,91 +415,34 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     loading,
     createTeam,
     requestTeam,
-    voteTeam: handleTeamSelection, // Renaming for clarity if needed, but handleTeamSelection is fine
+    voteTeam,
     setActiveTeamId: (id: string | null) => {
-      if (id) {
-        setActiveTeamId(id);
-        // No localStorage
-      } else {
-        setActiveTeamId(null);
-      }
+      setActiveTeamIdState(id);
     },
     createSystemTeam,
     deleteTeam,
     approveRequest,
     denyRequest,
     acceptInvite,
-    createEmailInvite: async (teamId: string, email: string) => {
-      if (!supabase) {
-        return {
-          token: null,
-          error: "Supabase client unavailable.",
-        };
-      }
-
-      const normalizedEmail = email.trim().toLowerCase();
-      if (!normalizedEmail) {
-        return {
-          token: null,
-          error: "Invite email is required.",
-        };
-      }
-
-      setError(null);
-      const expiresAt = new Date(
-        Date.now() + 7 * 24 * 60 * 60 * 1000,
-      ).toISOString();
-      const { data, error: inviteError } = await supabase.rpc("create_invite", {
-        p_team_id: teamId,
-        p_email: normalizedEmail,
-        p_roles: ["member"],
-        p_expires_at: expiresAt,
-      });
-
-      if (inviteError) {
-        setError(inviteError.message);
-        return {
-          token: null,
-          error: inviteError.message,
-        };
-      }
-
-      const invite = Array.isArray(data) ? data[0] : data;
-      const token =
-        invite && typeof invite === "object" && "token" in invite
-          ? typeof invite.token === "string" && invite.token.length > 0
-            ? invite.token
-            : null
-          : null;
-
-      if (!token) {
-        const tokenError = "Invite token was not returned.";
-        setError(tokenError);
-        return {
-          token: null,
-          error: tokenError,
-        };
-      }
-
-      return {
-        token,
-        error: null,
-      };
-    },
-    createGenericInvite: async (teamId: string) => {
-      if (!supabase) return null;
-      setError(null);
-      const { data, error: inviteError } = await supabase.rpc(
-        "create_generic_invite",
-        {
-          p_team_id: teamId,
-        },
-      );
-      if (inviteError) {
-        setError(inviteError.message);
-        return null;
-      }
-      return data as string;
-    },
+    createEmailInvite,
+    createGenericInvite,
   };
+}
+
+type TeamsContextValue = ReturnType<typeof useTeamsState>;
+
+const TeamsContext = createContext<TeamsContextValue | undefined>(undefined);
+
+export function TeamsProvider({ children }: { children: ReactNode }) {
+  const { sessionUserId, isSystemAdmin } = useAuth();
+  const value = useTeamsState(sessionUserId, isSystemAdmin);
+  return createElement(TeamsContext.Provider, { value }, children);
+}
+
+export function useTeams() {
+  const context = useContext(TeamsContext);
+  if (!context) {
+    throw new Error("useTeams must be used inside TeamsProvider.");
+  }
+  return context;
 }

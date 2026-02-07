@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { BrowserRouter } from "react-router-dom";
 
-import { usePWAInstall } from "./features/install/usePWAInstall";
 import { useAuth } from "./features/auth/useAuth";
 import { usePendingRegistration } from "./features/auth/usePendingRegistration";
 import { useTeams } from "./features/teams/useTeams";
@@ -67,9 +66,8 @@ function GlobalRegistrationHandler() {
 }
 
 function GlobalInviteHandler() {
-  const { isAuthed, sessionUserId } = useAuth();
-  // We need useTeams to accept invite, but useTeams needs userId.
-  const { acceptInvite } = useTeams(sessionUserId, false);
+  const { isAuthed } = useAuth();
+  const { acceptInvite } = useTeams();
 
   const inviteToken = useMemo(() => {
     if (typeof window === "undefined") return null;

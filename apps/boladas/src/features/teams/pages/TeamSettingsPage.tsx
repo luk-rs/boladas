@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAuth } from "../../auth/useAuth";
 import { useTeams } from "../useTeams";
 import { WheelPicker } from "../../../components/ui/WheelPicker";
 import { supabase } from "../../../lib/supabase";
@@ -81,13 +80,12 @@ function getMemberEmoji(seed: string) {
 }
 
 export function TeamSettingsPage() {
-  const { sessionUserId } = useAuth();
   const {
     memberships,
     createEmailInvite,
     error: hookError,
     loading: hookLoading,
-  } = useTeams(sessionUserId, false);
+  } = useTeams();
 
   const [selectedInviteTeamId, setSelectedInviteTeamId] = useState("");
   const [showTeamPicker, setShowTeamPicker] = useState(false);

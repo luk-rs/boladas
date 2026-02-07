@@ -7,8 +7,8 @@ import { useTeams } from "../../features/teams/useTeams";
 export function JoinPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { isAuthed, sessionUserId, sessionEmail } = useAuth();
-  const { acceptInvite, error: acceptError } = useTeams(sessionUserId, false);
+  const { isAuthed, sessionEmail } = useAuth();
+  const { acceptInvite, error: acceptError } = useTeams();
 
   const [teamInfo, setTeamInfo] = useState<{
     team_name: string;

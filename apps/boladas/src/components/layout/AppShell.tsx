@@ -7,8 +7,8 @@ import { useAuth } from "../../features/auth/useAuth";
 const TEAM_MANAGEMENT_ROLES = new Set(["team_admin", "manager"]);
 
 export function AppShell() {
-  const { sessionUserId, isSystemAdmin, signOut } = useAuth();
-  const { memberships } = useTeams(sessionUserId, isSystemAdmin);
+  const { signOut } = useAuth();
+  const { memberships } = useTeams();
   const activeTeam = memberships[0];
   const canManageTeams = memberships.some((membership) =>
     membership.roles.some((role) => TEAM_MANAGEMENT_ROLES.has(role)),

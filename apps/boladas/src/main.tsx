@@ -1,6 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { AuthProvider } from "./features/auth/useAuth";
+import { TeamsProvider } from "./features/teams/useTeams";
 import "./styles.css";
 
 const THEME_META_NAME = "theme-color";
@@ -26,6 +28,10 @@ if (!root) throw new Error("Root element not found");
 
 createRoot(root).render(
   <React.StrictMode>
-    <App />
+    <AuthProvider>
+      <TeamsProvider>
+        <App />
+      </TeamsProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

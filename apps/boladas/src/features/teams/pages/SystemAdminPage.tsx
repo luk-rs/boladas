@@ -4,7 +4,7 @@ import { SystemAdminTeams } from "../SystemAdminTeams";
 import { Navigate } from "react-router-dom";
 
 export function SystemAdminPage() {
-  const { sessionUserId, isSystemAdmin } = useAuth();
+  const { isSystemAdmin } = useAuth();
   const {
     allTeams,
     pendingRequests,
@@ -12,7 +12,7 @@ export function SystemAdminPage() {
     deleteTeam,
     approveRequest,
     denyRequest,
-  } = useTeams(sessionUserId, isSystemAdmin);
+  } = useTeams();
 
   if (!isSystemAdmin) {
     return <Navigate to="/" replace />;

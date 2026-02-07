@@ -1,7 +1,27 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { supabase } from "../../lib/supabase";
 
-export function useAuth() {
+type AuthContextValue = {
+  isAuthed: boolean;
+  sessionUserId: string | null;
+  sessionEmail: string | null;
+  isSystemAdmin: boolean;
+  loading: boolean;
+  error: string | null;
+  signOut: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function useAuthState(): AuthContextValue {
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [isSystemAdmin, setIsSystemAdmin] = useState(false);
@@ -12,8 +32,6 @@ export function useAuth() {
     if (!supabase) return;
     await supabase.auth.signOut();
   }, []);
-
-  const processingRegistration = useRef(false);
 
   // Handle post-login access check
   const checkAccess = useCallback(
@@ -148,4 +166,17 @@ export function useAuth() {
     error,
     signOut,
   };
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const value = useAuthState();
+  return createElement(AuthContext.Provider, { value }, children);
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used inside AuthProvider.");
+  }
+  return context;
 }

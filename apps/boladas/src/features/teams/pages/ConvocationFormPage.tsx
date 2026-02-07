@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { WheelDatePicker } from "../../../components/ui/WheelDatePicker";
 import { WheelTimePicker } from "../../../components/ui/WheelTimePicker";
 import { WheelPicker } from "../../../components/ui/WheelPicker";
-import { useAuth } from "../../auth/useAuth";
 import { supabase } from "../../../lib/supabase";
 import { MANAGER_ROLES } from "../dashboard/constants";
 import { useTeams } from "../useTeams";
@@ -167,11 +166,7 @@ function buildScheduledAtIso(dateValue: string, timeValue: string) {
 
 export function ConvocationFormPage() {
   const navigate = useNavigate();
-  const { sessionUserId } = useAuth();
-  const { memberships, loading: membershipsLoading } = useTeams(
-    sessionUserId,
-    false,
-  );
+  const { memberships, loading: membershipsLoading } = useTeams();
 
   const [activePicker, setActivePicker] = useState<ActivePicker>(null);
   const [selectedTeamId, setSelectedTeamId] = useState("");
