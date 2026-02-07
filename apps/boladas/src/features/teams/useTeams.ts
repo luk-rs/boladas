@@ -135,6 +135,9 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
       .insert([
         { team_member_id: memberData.id, role: "member" },
         { team_member_id: memberData.id, role: "team_admin" },
+        { team_member_id: memberData.id, role: "manager" },
+        { team_member_id: memberData.id, role: "secretary" },
+        { team_member_id: memberData.id, role: "accountant" },
       ]);
 
     if (roleError) {
@@ -181,18 +184,49 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
       setError("Team name is required.");
       return;
     }
-    const { error: teamError } = await supabase
+    const { data: teamData, error: teamError } = await supabase
       .from("teams")
       .insert({
         name: name.trim(),
         created_by: userId,
         game_definitions: DEFAULT_GAME_DEFINITIONS,
-      });
-    if (teamError) setError(teamError.message);
-    else {
-      setStatus("Team created.");
-      await loadAdminData();
+      })
+      .select("id")
+      .single();
+    if (teamError || !teamData) {
+      setError(teamError?.message ?? "Failed to create team.");
+      return;
     }
+
+    const { data: memberData, error: memberError } = await supabase
+      .from("team_members")
+      .insert({ team_id: teamData.id, user_id: userId })
+      .select("id")
+      .single();
+
+    if (memberError || !memberData) {
+      setError(memberError?.message ?? "Failed to create team membership.");
+      return;
+    }
+
+    const { error: roleError } = await supabase
+      .from("team_member_roles")
+      .insert([
+        { team_member_id: memberData.id, role: "member" },
+        { team_member_id: memberData.id, role: "team_admin" },
+        { team_member_id: memberData.id, role: "manager" },
+        { team_member_id: memberData.id, role: "secretary" },
+        { team_member_id: memberData.id, role: "accountant" },
+      ]);
+
+    if (roleError) {
+      setError(roleError.message);
+      return;
+    }
+
+    setStatus("Team created.");
+    await loadAdminData();
+    await loadMemberships();
   };
 
   const deleteTeam = async (teamId: string) => {

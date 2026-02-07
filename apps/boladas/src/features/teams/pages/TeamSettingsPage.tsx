@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../auth/useAuth";
 import { useTeams } from "../useTeams";
 import { WheelPicker } from "../../../components/ui/WheelPicker";
+import { supabase } from "../../../lib/supabase";
+import { PLAYER_EMOJIS } from "../dashboard/constants";
 
 const TEAM_MANAGEMENT_ROLES = new Set(["team_admin", "manager"]);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -12,6 +14,25 @@ type InviteResult = {
 };
 
 type InviteAction = "whatsapp" | "copy";
+type ExtraRole = "team_admin" | "manager" | "secretary" | "accountant";
+type TeamRosterMember = {
+  id: string;
+  displayName: string;
+  email: string;
+  roles: Set<string>;
+};
+
+const ROLE_TOGGLE_OPTIONS: Array<{
+  role: ExtraRole;
+  emoji: string;
+  label: string;
+  isUnique: boolean;
+}> = [
+  { role: "team_admin", emoji: "🛡️", label: "Admin", isUnique: false },
+  { role: "manager", emoji: "🧭", label: "Manager", isUnique: true },
+  { role: "secretary", emoji: "🗂️", label: "Secretário", isUnique: true },
+  { role: "accountant", emoji: "💰", label: "Tesoureiro", isUnique: true },
+];
 
 function parseEmails(raw: string) {
   const parts = raw
@@ -45,6 +66,20 @@ function buildAggregateInviteMessage(teamName: string, results: InviteResult[]) 
   return `Time: ${teamName}\n\n${rows.join("\n\n")}`;
 }
 
+function getMemberLabel(
+  profile: { email?: string | null; display_name?: string | null } | null,
+) {
+  return profile?.display_name || profile?.email || "Jogador";
+}
+
+function getMemberEmoji(seed: string) {
+  let hash = 0;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 31 + seed.charCodeAt(index)) >>> 0;
+  }
+  return PLAYER_EMOJIS[hash % PLAYER_EMOJIS.length];
+}
+
 export function TeamSettingsPage() {
   const { sessionUserId } = useAuth();
   const {
@@ -67,6 +102,10 @@ export function TeamSettingsPage() {
     results: InviteResult[];
     aggregateMessage: string;
   } | null>(null);
+  const [rosterMembers, setRosterMembers] = useState<TeamRosterMember[]>([]);
+  const [loadingRoster, setLoadingRoster] = useState(false);
+  const [rolesError, setRolesError] = useState<string | null>(null);
+  const [roleActionKey, setRoleActionKey] = useState<string | null>(null);
 
   const manageableMemberships = useMemo(
     () =>
@@ -111,6 +150,74 @@ export function TeamSettingsPage() {
   const selectedTeamWheelLabel =
     teamWheelOptions.find((option) => option.teamId === selectedInviteTeam?.teamId)
       ?.label ?? teamWheelOptions[0]?.label;
+
+  const roleHolderCount = useMemo(() => {
+    const counts: Record<ExtraRole, number> = {
+      team_admin: 0,
+      manager: 0,
+      secretary: 0,
+      accountant: 0,
+    };
+
+    for (const member of rosterMembers) {
+      for (const option of ROLE_TOGGLE_OPTIONS) {
+        if (member.roles.has(option.role)) {
+          counts[option.role] += 1;
+        }
+      }
+    }
+
+    return counts;
+  }, [rosterMembers]);
+
+  const loadRosterMembers = useCallback(async (teamId: string) => {
+    if (!supabase) return;
+
+    setLoadingRoster(true);
+    const { data, error } = await supabase
+      .from("team_members")
+      .select(
+        "id, user_id, profiles:profiles(email,display_name), roles:team_member_roles(role)",
+      )
+      .eq("team_id", teamId);
+
+    if (error) {
+      setRosterMembers([]);
+      setRolesError(error.message);
+      setLoadingRoster(false);
+      return;
+    }
+
+    const mapped = (data ?? [])
+      .map((row: any) => {
+        const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
+        const email = profile?.email ?? "";
+        return {
+          id: row.id as string,
+          displayName: getMemberLabel(profile),
+          email,
+          roles: new Set<string>((row.roles ?? []).map((item: any) => item.role)),
+        };
+      })
+      .sort((a, b) =>
+        a.displayName.localeCompare(b.displayName, "pt-PT", {
+          sensitivity: "base",
+        }),
+      );
+
+    setRosterMembers(mapped);
+    setLoadingRoster(false);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedInviteTeam?.teamId) {
+      setRosterMembers([]);
+      setLoadingRoster(false);
+      return;
+    }
+    setRolesError(null);
+    void loadRosterMembers(selectedInviteTeam.teamId);
+  }, [selectedInviteTeam?.teamId, loadRosterMembers]);
 
   const syncEmailsTextareaHeight = () => {
     const textarea = emailsTextareaRef.current;
@@ -242,6 +349,77 @@ export function TeamSettingsPage() {
     setLoadingAction(null);
   };
 
+  const handleToggleRole = async (
+    memberId: string,
+    role: ExtraRole,
+    isActive: boolean,
+  ) => {
+    if (!supabase || !selectedInviteTeam?.teamId) return;
+
+    const actionKey = `${memberId}:${role}`;
+    setRoleActionKey(actionKey);
+    setRolesError(null);
+
+    if (isActive) {
+      const { error } = await supabase
+        .from("team_member_roles")
+        .delete()
+        .eq("team_member_id", memberId)
+        .eq("role", role);
+
+      if (error) {
+        setRolesError(error.message);
+      } else {
+        await loadRosterMembers(selectedInviteTeam.teamId);
+      }
+
+      setRoleActionKey(null);
+      return;
+    }
+
+    const roleConfig = ROLE_TOGGLE_OPTIONS.find((option) => option.role === role);
+    if (roleConfig?.isUnique) {
+      const { error: assignError } = await supabase
+        .from("team_member_roles")
+        .insert({ team_member_id: memberId, role });
+
+      if (assignError) {
+        setRolesError(assignError.message);
+        setRoleActionKey(null);
+        return;
+      }
+
+      const teamMemberIds = rosterMembers.map((member) => member.id);
+      if (teamMemberIds.length > 0) {
+        const { error: clearError } = await supabase
+          .from("team_member_roles")
+          .delete()
+          .eq("role", role)
+          .in("team_member_id", teamMemberIds)
+          .neq("team_member_id", memberId);
+
+        if (clearError) {
+          setRolesError(clearError.message);
+          setRoleActionKey(null);
+          return;
+        }
+      }
+    } else {
+      const { error: assignError } = await supabase
+        .from("team_member_roles")
+        .insert({ team_member_id: memberId, role });
+
+      if (assignError) {
+        setRolesError(assignError.message);
+        setRoleActionKey(null);
+        return;
+      }
+    }
+
+    await loadRosterMembers(selectedInviteTeam.teamId);
+    setRoleActionKey(null);
+  };
+
   if (hookLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center p-6">
@@ -292,6 +470,116 @@ export function TeamSettingsPage() {
           <span>{selectedInviteTeam?.teamName ?? "Selecione o time"}</span>
           <span className="text-lg opacity-40">⌄</span>
         </button>
+      </section>
+
+      <section className="rounded-2xl bg-[var(--bg-surface)] p-5 shadow-mui">
+        <header className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
+              Papéis
+            </p>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+              Atribuir funções no elenco
+            </h3>
+          </div>
+          <span className="text-2xl">👥</span>
+        </header>
+
+        <div className="space-y-4">
+          <div className="space-y-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-app)]/70 p-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
+                Só 1
+              </p>
+              <p className="text-xs text-[var(--text-primary)]">
+                🧭 Manager · 🗂️ Secretário · 💰 Tesoureiro
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
+                Múltiplos
+              </p>
+              <p className="text-xs text-[var(--text-primary)]">🛡️ Team admin</p>
+            </div>
+          </div>
+
+          {loadingRoster && rosterMembers.length === 0 && (
+            <p className="text-sm text-[var(--text-secondary)]">Carregando elenco...</p>
+          )}
+
+          {!loadingRoster && rosterMembers.length === 0 && (
+            <p className="text-sm text-[var(--text-secondary)]">
+              Nenhum membro encontrado para este time.
+            </p>
+          )}
+
+          {rosterMembers.length > 0 && (
+            <div className="space-y-2">
+              {rosterMembers.map((member) => {
+                const activeEmojiList = ROLE_TOGGLE_OPTIONS.filter((option) =>
+                  member.roles.has(option.role),
+                )
+                  .map((option) => option.emoji)
+                  .join(" ");
+
+                return (
+                  <div
+                    key={member.id}
+                    className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-app)]/80 p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
+                          {getMemberEmoji(member.id)} {member.displayName}
+                        </p>
+                        <p className="truncate text-xs text-[var(--text-secondary)]">
+                          {member.email || "sem email"}
+                          {activeEmojiList ? ` • ${activeEmojiList}` : ""}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {ROLE_TOGGLE_OPTIONS.map((option) => {
+                          const isActive = member.roles.has(option.role);
+                          const actionKey = `${member.id}:${option.role}`;
+                          const isLoading = roleActionKey === actionKey;
+                          const isProtectedLastHolder =
+                            isActive && roleHolderCount[option.role] <= 1;
+
+                          return (
+                            <button
+                              key={option.role}
+                              type="button"
+                              onClick={() =>
+                                void handleToggleRole(member.id, option.role, isActive)
+                              }
+                              disabled={
+                                (roleActionKey !== null &&
+                                  roleActionKey !== actionKey) ||
+                                isProtectedLastHolder
+                              }
+                              title={option.label}
+                              aria-label={option.label}
+                              className={`flex h-9 min-w-9 items-center justify-center rounded-full border px-2 text-sm transition-all active:scale-95 disabled:opacity-60 ${
+                                isActive
+                                  ? "border-primary-500 bg-primary-500 text-white"
+                                  : "border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-primary)]"
+                              }`}
+                            >
+                              {isLoading ? "⏳" : option.emoji}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {rolesError && <p className="text-xs font-bold text-red-500">{rolesError}</p>}
+        </div>
       </section>
 
       <section className="rounded-2xl bg-[var(--bg-surface)] p-5 shadow-mui">

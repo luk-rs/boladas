@@ -57,7 +57,7 @@ export function SignIn({
             BOLADAS
           </h1>
           <p className="mt-2 text-primary-200 font-medium tracking-wide uppercase text-xs">
-            Gestão de grupos & Peladas
+            Dá vida à tua jogatana
           </p>
         </div>
 
