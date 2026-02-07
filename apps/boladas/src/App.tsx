@@ -7,13 +7,6 @@ import { useTeams } from "./features/teams/useTeams";
 import { AppRoutes } from "./AppRoutes";
 
 export default function App() {
-  // const { isInstalled } = usePWAInstall(); - removed usage
-  // We need auth and teams hook at top level mainly for the global invite/popup logic
-  // OR we can move that logic to a specialized component inside Router.
-  // Ideally, useAuth should be used inside router context if it uses router hooks (nav),
-  // but here it uses window location.
-
-  // Checking Popup logic (Global)
   const { isAuthed } = useAuth();
   const isPopup = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -37,22 +30,8 @@ export default function App() {
     );
   }
 
-  // Invite acceptance logic could be moved to a hook that runs inside the Dashboard or a "AcceptInvitePage"
-  // But for now, keeping it compatible, let's just let the Dashboard or Login page handle parameters if needed.
-  // Actually, existing App.tsx handled invite acceptance globally.
-  // Let's create a GlobalInviteHandler component.
-
   return (
     <BrowserRouter>
-      {/* InstallPrompt removed */}
-      {/* Only show content if installed (based on original logic which hid everything if not installed? 
-            Original logic: {isInstalled && ...}. 
-            Wait, original logic allowed install prompt. 
-            If PWA is NOT installed, we might want to ONLY show install prompt?
-            Original: {isInstalled && !isAuthed ...}
-            Actually the usePWAInstall hook logic ensures 'isInstalled' flag or similar.
-            Let's assume the router handles the view, and Layout handles the prompt. 
-         */}
       <AppRoutes />
       <GlobalInviteHandler />
       <GlobalRegistrationHandler />
