@@ -25,11 +25,11 @@ fi
 echo "📦 Pushing migrations to Supabase project: $SUPABASE_PROJECT_ID"
 echo ""
 
-# Use pooler connection (port 6543) for IPv4 compatibility
-# Direct connection (port 5432) requires IPv6 which may not be available
-DB_URL="postgresql://postgres.$SUPABASE_PROJECT_ID:$SUPABASE_DB_PASSWORD@aws-1-eu-west-3.pooler.supabase.com:6543/postgres"
+# Use direct connection (port 5432) to avoid pooler prepared statement issues
+# Note: Requires IPv6 support. If unavailable, may need pooler with session mode.
+DB_URL="postgresql://postgres:$SUPABASE_DB_PASSWORD@db.$SUPABASE_PROJECT_ID.supabase.co:5432/postgres"
 
-supabase db push --db-url "$DB_URL"
+supabase db push --db-url "$DB_URL" "$@"
 
 if [ $? -eq 0 ]; then
   echo ""
