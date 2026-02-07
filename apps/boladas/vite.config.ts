@@ -17,8 +17,8 @@ export default defineConfig({
       manifest: {
         name: isDev ? "Boladas.dev" : "Boladas",
         short_name: isDev ? "Boladas.dev" : "Boladas",
-        theme_color: "#111827",
-        background_color: "#111827",
+        theme_color: "#0f172a",
+        background_color: "#0f172a",
         display: "standalone",
         icons: [
           {

@@ -20,7 +20,7 @@
   }
 
   body {
-    background-color: #f1f5f9; /* Desktop background */
+    background-color: var(--bg-app);
     @apply transition-colors duration-200 antialiased;
   }
 
@@ -33,6 +33,7 @@
 @layer utilities {
   .app-shell {
     @apply w-full min-h-screen bg-[var(--bg-app)] text-[var(--text-primary)] relative flex flex-col;
+    padding-top: env(safe-area-inset-top);
   }
 
   .scrollbar-hide::-webkit-scrollbar {
