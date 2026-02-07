@@ -4,10 +4,15 @@ import { RadialMenu } from "../ui/RadialMenu";
 import { useTeams } from "../../features/teams/useTeams";
 import { useAuth } from "../../features/auth/useAuth";
 
+const TEAM_MANAGEMENT_ROLES = new Set(["team_admin", "manager"]);
+
 export function AppShell() {
   const { sessionUserId, isSystemAdmin, signOut } = useAuth();
   const { memberships } = useTeams(sessionUserId, isSystemAdmin);
   const activeTeam = memberships[0];
+  const canManageTeams = memberships.some((membership) =>
+    membership.roles.some((role) => TEAM_MANAGEMENT_ROLES.has(role)),
+  );
 
   const [menuPosition, setMenuPosition] = useState<"left" | "right">("right");
   const [, setTheme] = useState<"light" | "dark">("light");
@@ -100,12 +105,33 @@ export function AppShell() {
     },
   ];
 
+  const backofficeItems = canManageTeams
+    ? [
+        {
+          id: "team-management",
+          label: "Gestão de Time",
+          icon: (
+            <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
+              <path d="M12 3.5l7 3v5.5c0 4.3-2.8 6.9-7 8.5-4.2-1.6-7-4.2-7-8.5V6.5l7-3z" />
+              <circle cx="12" cy="10" r="2.2" />
+              <path d="M9 14c.8-1 1.8-1.5 3-1.5s2.2.5 3 1.5" />
+            </svg>
+          ),
+          path: "/team-management",
+        },
+      ]
+    : undefined;
+
   return (
     <div className="app-shell">
       <main className="flex-1 overflow-y-auto p-4 pb-24">
         <Outlet context={{ activeTeam }} />
       </main>
-      <RadialMenu items={menuItems} position={menuPosition} />
+      <RadialMenu
+        items={menuItems}
+        backofficeItems={backofficeItems}
+        position={menuPosition}
+      />
     </div>
   );
 }
