@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { TeamMembership, TeamRequest, Team } from "./types";
 
 const LAST_TEAM_KEY = "boladas:last_team_id";
+const DEFAULT_GAME_DEFINITIONS = [{ dayOfWeek: 1, startTime: "19:00" }];
 
 export function useTeams(userId: string | null, isSystemAdmin: boolean) {
   const [memberships, setMemberships] = useState<TeamMembership[]>([]);
@@ -105,7 +106,11 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
 
     const { data: teamData, error: teamError } = await supabase
       .from("teams")
-      .insert({ name: name.trim(), created_by: userId })
+      .insert({
+        name: name.trim(),
+        created_by: userId,
+        game_definitions: DEFAULT_GAME_DEFINITIONS,
+      })
       .select("id,name")
       .single();
 
@@ -178,7 +183,11 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     }
     const { error: teamError } = await supabase
       .from("teams")
-      .insert({ name: name.trim(), created_by: userId });
+      .insert({
+        name: name.trim(),
+        created_by: userId,
+        game_definitions: DEFAULT_GAME_DEFINITIONS,
+      });
     if (teamError) setError(teamError.message);
     else {
       setStatus("Team created.");

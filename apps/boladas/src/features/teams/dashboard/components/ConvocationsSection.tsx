@@ -28,10 +28,12 @@ export type ConvocationsSectionProps = {
   convocations: Convocation[];
   loading: boolean;
   canManageByTeamId: Map<string, boolean>;
+  canCreateConvocation: boolean;
   minTeamMembers: number;
   sessionUserId: string | null;
   activeTooltipId: string | null;
   onTooltipChange: (id: string | null) => void;
+  onCreateConvocation: () => void;
   onVoteChange: (id: string, state: PlayerState) => void;
   onStatusChange: (id: string, status: ConvocationStatus) => void;
   holdProgressById: Record<string, HoldProgress>;
@@ -42,10 +44,12 @@ export function ConvocationsSection({
   convocations,
   loading,
   canManageByTeamId,
+  canCreateConvocation,
   minTeamMembers,
   sessionUserId,
   activeTooltipId,
   onTooltipChange,
+  onCreateConvocation,
   onVoteChange,
   onStatusChange,
   holdProgressById,
@@ -214,6 +218,25 @@ export function ConvocationsSection({
         <span className="text-2xl">📣</span>
       </header>
       <div className="mt-4 space-y-4">
+        {canCreateConvocation && (
+          <button
+            type="button"
+            onClick={onCreateConvocation}
+            className="flex w-full items-center justify-between rounded-xl border border-dashed border-primary-500/60 bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-semibold text-[var(--text-primary)] transition-all hover:border-primary-500 active:scale-[0.99]"
+            title="Nova convocatória"
+            aria-label="Nova convocatória"
+          >
+            <span className="inline-flex items-center gap-2">
+              <span className="text-base" aria-hidden>
+                ⚡
+              </span>
+              Nova convocatória
+            </span>
+            <span className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+              Criar
+            </span>
+          </button>
+        )}
         {loading ? (
           <>
             <div className="h-44 rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)]/60" />

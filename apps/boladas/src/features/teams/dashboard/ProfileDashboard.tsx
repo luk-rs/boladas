@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { useTeams } from "../useTeams";
 import { supabase } from "../../../lib/supabase";
@@ -30,6 +30,7 @@ export function ProfileDashboard({
   className = "",
 }: TeamsDashboardProps) {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { sessionUserId, isSystemAdmin } = useAuth();
   const { memberships, loading: membershipsLoading } = useTeams(
     sessionUserId,
@@ -58,6 +59,14 @@ export function ProfileDashboard({
     return map;
   }, [memberships]);
 
+  const canCreateConvocation = useMemo(
+    () =>
+      memberships.some((membership) =>
+        membership.roles.some((role) => MANAGER_ROLES.has(role)),
+      ),
+    [memberships],
+  );
+
   const teamNameById = useMemo(() => {
     const map = new Map<string, string>();
     memberships.forEach((membership) => {
@@ -65,6 +74,29 @@ export function ProfileDashboard({
     });
     return map;
   }, [memberships]);
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "convocations" || tabParam === "teams") {
+      setActiveTab(tabParam);
+      return;
+    }
+    setActiveTab("games");
+  }, [searchParams]);
+
+  const handleTabChange = useCallback(
+    (nextTab: DashboardTabId) => {
+      setActiveTab(nextTab);
+      const params = new URLSearchParams(searchParams);
+      if (nextTab === "games") {
+        params.delete("tab");
+      } else {
+        params.set("tab", nextTab);
+      }
+      setSearchParams(params, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
 
   const [convocations, setConvocations] = useState<Convocation[]>([]);
   const [loadingConvocations, setLoadingConvocations] = useState(false);
@@ -581,7 +613,7 @@ export function ProfileDashboard({
     <div
       className={`space-y-4 ${withPadding ? "px-4 pb-0 pt-4" : ""} ${className}`}
     >
-      <DashboardTabs value={activeTab} onChange={setActiveTab} />
+      <DashboardTabs value={activeTab} onChange={handleTabChange} />
       {activeTab === "games" && (
         <GamesSection
           games={games}
@@ -596,10 +628,12 @@ export function ProfileDashboard({
           convocations={convocations}
           loading={loadingConvocations}
           canManageByTeamId={canManageByTeamId}
+          canCreateConvocation={canCreateConvocation}
           minTeamMembers={MIN_TEAM_MEMBERS}
           sessionUserId={sessionUserId}
           activeTooltipId={activeTooltipId}
           onTooltipChange={setActiveTooltipId}
+          onCreateConvocation={() => navigate("/convocations/new")}
           onVoteChange={handleVoteChange}
           onStatusChange={handleStatusChange}
           holdProgressById={holdProgressById}
