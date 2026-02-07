@@ -1,10 +1,8 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/auth/useAuth";
-import { usePWAInstall } from "../../features/install/usePWAInstall";
 
 export function ProtectedRoute() {
   const { isAuthed, loading: authLoading } = useAuth();
-  const { isInstalled } = usePWAInstall();
   const location = useLocation();
 
   if (authLoading) {

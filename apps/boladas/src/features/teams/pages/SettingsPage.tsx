@@ -1,31 +1,19 @@
-import { useEffect, useState } from "react";
 import { Toggle } from "../../../components/ui/Toggle";
-
-type ThemeMode = "light" | "dark";
-type MenuPosition = "left" | "right";
+import {
+  usePreferences,
+  type MenuPosition,
+  type ThemeMode,
+} from "../../preferences/usePreferences";
 
 export function SettingsPage() {
-  const [menuPosition, setMenuPosition] = useState<MenuPosition>("right");
-  const [theme, setTheme] = useState<ThemeMode>("light");
-
-  useEffect(() => {
-    const savedPos = localStorage.getItem("menu-position") as MenuPosition;
-    if (savedPos) setMenuPosition(savedPos);
-
-    const savedTheme = localStorage.getItem("theme") as ThemeMode;
-    if (savedTheme) setTheme(savedTheme);
-  }, []);
+  const { menuPosition, setMenuPosition, theme, setTheme } = usePreferences();
 
   const togglePosition = (position: MenuPosition) => {
     setMenuPosition(position);
-    localStorage.setItem("menu-position", position);
-    window.dispatchEvent(new Event("menu-position-change"));
   };
 
   const toggleTheme = (nextTheme: ThemeMode) => {
     setTheme(nextTheme);
-    localStorage.setItem("theme", nextTheme);
-    window.dispatchEvent(new Event("theme-change"));
   };
 
   return (

@@ -1,56 +1,19 @@
-import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { RadialMenu } from "../ui/RadialMenu";
 import { useTeams } from "../../features/teams/useTeams";
 import { useAuth } from "../../features/auth/useAuth";
+import { usePreferences } from "../../features/preferences/usePreferences";
 
 const TEAM_MANAGEMENT_ROLES = new Set(["team_admin", "manager"]);
 
 export function AppShell() {
   const { signOut } = useAuth();
   const { memberships } = useTeams();
+  const { menuPosition } = usePreferences();
   const activeTeam = memberships[0];
   const canManageTeams = memberships.some((membership) =>
     membership.roles.some((role) => TEAM_MANAGEMENT_ROLES.has(role)),
   );
-
-  const [menuPosition, setMenuPosition] = useState<"left" | "right">("right");
-  const [, setTheme] = useState<"light" | "dark">("light");
-
-  useEffect(() => {
-    // Load initial preferences
-    const savedPos = localStorage.getItem("menu-position") as "left" | "right";
-    if (savedPos) setMenuPosition(savedPos);
-
-    const savedTheme = localStorage.getItem("theme") as "light" | "dark";
-    if (savedTheme) {
-      setTheme(savedTheme);
-      document.documentElement.classList.toggle("dark", savedTheme === "dark");
-    }
-
-    // Listen for position changes
-    const handlePosChange = () => {
-      const saved = localStorage.getItem("menu-position") as "left" | "right";
-      if (saved) setMenuPosition(saved);
-    };
-
-    // Listen for theme changes
-    const handleThemeChange = () => {
-      const saved = localStorage.getItem("theme") as "light" | "dark";
-      if (saved) {
-        setTheme(saved);
-        document.documentElement.classList.toggle("dark", saved === "dark");
-      }
-    };
-
-    window.addEventListener("menu-position-change", handlePosChange);
-    window.addEventListener("theme-change", handleThemeChange);
-
-    return () => {
-      window.removeEventListener("menu-position-change", handlePosChange);
-      window.removeEventListener("theme-change", handleThemeChange);
-    };
-  }, []);
 
   const iconProps = {
     className: "h-5 w-5",
