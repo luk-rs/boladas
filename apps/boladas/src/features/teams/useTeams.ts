@@ -279,6 +279,63 @@ export function useTeams(userId: string | null, isSystemAdmin: boolean) {
     approveRequest,
     denyRequest,
     acceptInvite,
+    createEmailInvite: async (teamId: string, email: string) => {
+      if (!supabase) {
+        return {
+          token: null,
+          error: "Supabase client unavailable.",
+        };
+      }
+
+      const normalizedEmail = email.trim().toLowerCase();
+      if (!normalizedEmail) {
+        return {
+          token: null,
+          error: "Invite email is required.",
+        };
+      }
+
+      setError(null);
+      const expiresAt = new Date(
+        Date.now() + 7 * 24 * 60 * 60 * 1000,
+      ).toISOString();
+      const { data, error: inviteError } = await supabase.rpc("create_invite", {
+        p_team_id: teamId,
+        p_email: normalizedEmail,
+        p_roles: ["member"],
+        p_expires_at: expiresAt,
+      });
+
+      if (inviteError) {
+        setError(inviteError.message);
+        return {
+          token: null,
+          error: inviteError.message,
+        };
+      }
+
+      const invite = Array.isArray(data) ? data[0] : data;
+      const token =
+        invite && typeof invite === "object" && "token" in invite
+          ? typeof invite.token === "string" && invite.token.length > 0
+            ? invite.token
+            : null
+          : null;
+
+      if (!token) {
+        const tokenError = "Invite token was not returned.";
+        setError(tokenError);
+        return {
+          token: null,
+          error: tokenError,
+        };
+      }
+
+      return {
+        token,
+        error: null,
+      };
+    },
     createGenericInvite: async (teamId: string) => {
       if (!supabase) return null;
       setError(null);
