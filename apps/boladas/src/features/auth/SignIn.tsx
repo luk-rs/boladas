@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { RegistrationForm } from "./RegistrationForm";
+
+const REGISTRATION_ERROR_KEY = "boladas:registration_error";
+const REGISTRATION_LOCK_KEY = "boladas:registration_lock";
 
 export function SignIn({
   inviteToken,
@@ -9,9 +12,26 @@ export function SignIn({
   inviteToken: string | null;
   error?: string | null;
 }) {
-  const [showRegistration, setShowRegistration] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("register") === "1";
+  });
+  const [registrationError, setRegistrationError] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = localStorage.getItem(REGISTRATION_ERROR_KEY);
+    if (!stored) return;
+
+    setRegistrationError(stored);
+    setShowRegistration(true);
+    localStorage.removeItem(REGISTRATION_ERROR_KEY);
+  }, []);
 
   // Standard redirect login for normal sign-in (not creating a team)
   const signInWithGoogle = async () => {
@@ -26,6 +46,8 @@ export function SignIn({
 
       if (inviteToken) {
         localStorage.removeItem("boladas:registration_data");
+        localStorage.removeItem(REGISTRATION_ERROR_KEY);
+        localStorage.removeItem(REGISTRATION_LOCK_KEY);
       }
 
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -49,8 +71,22 @@ export function SignIn({
     }
   };
 
+  const handleCancelRegistration = () => {
+    setShowRegistration(false);
+    setRegistrationError(null);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("register");
+    window.history.replaceState({}, "", url.toString());
+  };
+
   if (showRegistration) {
-    return <RegistrationForm onCancel={() => setShowRegistration(false)} />;
+    return (
+      <RegistrationForm
+        initialError={registrationError}
+        onCancel={handleCancelRegistration}
+      />
+    );
   }
 
   return (
@@ -129,7 +165,11 @@ export function SignIn({
               Ainda não tem um time?
             </p>
             <button
-              onClick={() => setShowRegistration(true)}
+              onClick={() => {
+                setRegistrationError(null);
+                localStorage.removeItem(REGISTRATION_LOCK_KEY);
+                setShowRegistration(true);
+              }}
               className="px-8 py-3 rounded-xl bg-white/10 text-white font-bold backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all active:scale-95"
             >
               Criar Novo Grupo

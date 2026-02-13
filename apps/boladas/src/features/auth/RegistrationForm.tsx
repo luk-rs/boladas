@@ -4,7 +4,16 @@ import { WheelDatePicker } from "../../components/ui/WheelDatePicker";
 import { WheelTimePicker } from "../../components/ui/WheelTimePicker";
 import { WheelDayOfWeekPicker } from "../../components/ui/WheelDayOfWeekPicker";
 
-export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
+const REGISTRATION_ERROR_KEY = "boladas:registration_error";
+const REGISTRATION_LOCK_KEY = "boladas:registration_lock";
+
+export function RegistrationForm({
+  onCancel,
+  initialError = null,
+}: {
+  onCancel: () => void;
+  initialError?: string | null;
+}) {
   const [formData, setFormData] = useState({
     name: "",
     seasonStart: "",
@@ -14,7 +23,7 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
   const [status, setStatus] = useState<
     "idle" | "authenticating" | "registering" | "success"
   >("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
 
   const [activePicker, setActivePicker] = useState<
     "seasonStart" | "holidayStart" | "addGame" | null
@@ -30,10 +39,10 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
     return "dd/mm";
   };
 
-  const isFormValid =
-    formData.name &&
-    formData.seasonStart &&
-    formData.gameDefinitions.length > 0;
+  const hasTeamName = formData.name.trim().length > 0;
+  const hasSeasonStart = Boolean(formData.seasonStart);
+  const hasGameDefinition = formData.gameDefinitions.length > 0;
+  const isFormValid = hasTeamName && hasSeasonStart && hasGameDefinition;
 
   const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
@@ -51,8 +60,12 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
     return () => subscription.unsubscribe();
   }, [status]);
 
+  useEffect(() => {
+    setError(initialError);
+  }, [initialError]);
+
   const handleGoogleSignIn = async () => {
-    if (!formData.name || !formData.seasonStart) {
+    if (!hasTeamName || !hasSeasonStart) {
       setError("O nome do time e a data de início são obrigatórios.");
       return;
     }
@@ -64,6 +77,8 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
     const isStandalone = window.matchMedia(
       "(display-mode: standalone)",
     ).matches;
+    localStorage.removeItem(REGISTRATION_ERROR_KEY);
+    localStorage.removeItem(REGISTRATION_LOCK_KEY);
     localStorage.setItem("boladas:registration_data", JSON.stringify(formData));
 
     const { data, error: authError } = await supabase.auth.signInWithOAuth({
@@ -166,7 +181,11 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
                   setFormData({ ...formData, name: e.target.value })
                 }
                 placeholder="Ex: Dream Team FC"
-                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent focus:border-primary-500 p-4 outline-none transition-all text-[var(--text-primary)] font-medium"
+                className={`w-full rounded-2xl bg-[var(--bg-app)] border-2 p-4 outline-none transition-all text-[var(--text-primary)] font-medium ${
+                  hasTeamName
+                    ? "border-transparent focus:border-primary-500"
+                    : "border-slate-300/35 focus:border-slate-300/50 ring-1 ring-slate-300/10"
+                }`}
               />
             </div>
 
@@ -176,7 +195,11 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
               </label>
               <div
                 onClick={() => setActivePicker("seasonStart")}
-                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center"
+                className={`w-full rounded-2xl bg-[var(--bg-app)] border-2 hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center ${
+                  hasSeasonStart
+                    ? "border-transparent"
+                    : "border-slate-300/35 ring-1 ring-slate-300/10"
+                }`}
               >
                 <span>{formatDate(formData.seasonStart)}</span>
                 <span className="text-lg opacity-40">📅</span>
@@ -216,9 +239,11 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
 
               <div className="space-y-2">
                 {formData.gameDefinitions.length === 0 ? (
-                  <p className="text-[10px] text-center text-[var(--text-secondary)] py-2 italic opacity-60">
-                    Nenhum jogo definido. Adicione pelo menos um.
-                  </p>
+                  <div className="rounded-xl border border-slate-300/25 bg-slate-500/5 px-3 py-2">
+                    <p className="text-[10px] text-center text-[var(--text-secondary)] italic opacity-90">
+                      Nenhum jogo definido. Adicione pelo menos um.
+                    </p>
+                  </div>
                 ) : (
                   formData.gameDefinitions.map((game, idx) => (
                     <div
@@ -242,9 +267,26 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
                             ),
                           })
                         }
-                        className="text-red-500 text-xs font-bold hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
+                        aria-label="Remover horário"
+                        title="Remover horário"
+                        className="inline-flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 p-2 rounded-lg transition-colors"
                       >
-                        Excluir
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4h8v2" />
+                          <path d="M19 6l-1 14H6L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                        </svg>
                       </button>
                     </div>
                   ))
@@ -254,14 +296,51 @@ export function RegistrationForm({ onCancel }: { onCancel: () => void }) {
           </div>
 
           {error && (
-            <div className="rounded-xl bg-red-50 p-3 border border-red-100">
-              <p className="text-xs text-red-600 font-bold text-center">
+            <div className="rounded-xl bg-red-500/10 p-3 border border-red-400/25 backdrop-blur-sm">
+              <p className="text-xs text-red-300 font-bold text-center">
                 {error}
               </p>
             </div>
           )}
 
           <div className="pt-2 space-y-4">
+            {!isFormValid && (
+              <div className="rounded-xl border border-slate-300/25 bg-slate-500/10 p-3">
+                <p className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wide">
+                  Para desbloquear "Registrar com Google":
+                </p>
+                <ul className="mt-2 space-y-1">
+                  <li
+                    className={`text-xs font-semibold ${
+                      hasTeamName
+                        ? "text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)]"
+                    }`}
+                  >
+                    {hasTeamName ? "✓" : "•"} Nome do time
+                  </li>
+                  <li
+                    className={`text-xs font-semibold ${
+                      hasSeasonStart
+                        ? "text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)]"
+                    }`}
+                  >
+                    {hasSeasonStart ? "✓" : "•"} Data de início da temporada
+                  </li>
+                  <li
+                    className={`text-xs font-semibold ${
+                      hasGameDefinition
+                        ? "text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)]"
+                    }`}
+                  >
+                    {hasGameDefinition ? "✓" : "•"} Pelo menos um horário de
+                    jogo
+                  </li>
+                </ul>
+              </div>
+            )}
             <button
               disabled={!isFormValid}
               onClick={handleGoogleSignIn}
