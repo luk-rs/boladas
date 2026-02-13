@@ -7,11 +7,20 @@ import { supabase } from "../../../lib/supabase";
 import { MANAGER_ROLES, MIN_TEAM_MEMBERS } from "../dashboard/constants";
 import { useTeams } from "../useTeams";
 
-type ActivePicker = "team" | "date" | "time" | null;
+type ActivePicker = "team" | "definition" | "date" | "time" | null;
+type ScheduleMode = "definition" | "custom";
 
 type GameDefinition = {
   dayOfWeek: number;
   startTime: string;
+};
+
+type GameDefinitionOption = {
+  id: string;
+  definition: GameDefinition;
+  label: string;
+  nextOccurrenceLabel: string;
+  nextSlot: { dateValue: string; timeValue: string } | null;
 };
 
 type TeamSchedule = {
@@ -26,6 +35,19 @@ type TeamSchedule = {
 
 const RETURN_TO_PROFILE_URL = "/profile?tab=convocations";
 const DEFAULT_TIME = "19:00";
+const DAY_LABELS = [
+  "Domingo",
+  "Segunda",
+  "Terça",
+  "Quarta",
+  "Quinta",
+  "Sexta",
+  "Sábado",
+];
+
+function getDefinitionId(definition: GameDefinition) {
+  return `${definition.dayOfWeek}:${definition.startTime}`;
+}
 
 function toIsoDateLocal(value: Date) {
   const year = value.getFullYear();
@@ -107,9 +129,10 @@ function computeNextOccurrence(
   return candidate;
 }
 
-function computeNextScheduledSlot(team: TeamSchedule) {
-  if (team.gameDefinitions.length === 0) return null;
-
+function computeNextSlotForDefinition(
+  team: TeamSchedule,
+  definition: GameDefinition,
+) {
   const now = new Date();
   let reference = new Date(now);
   if (team.seasonStart) {
@@ -122,31 +145,23 @@ function computeNextScheduledSlot(team: TeamSchedule) {
     }
   }
 
+  const next = computeNextOccurrence(
+    definition.dayOfWeek,
+    definition.startTime,
+    reference,
+  );
+  if (!next) return null;
+
   const holidayStart = team.holidayStart
     ? new Date(`${team.holidayStart}T00:00:00`)
     : null;
-  const hasHolidayStart =
-    holidayStart !== null && !Number.isNaN(holidayStart.getTime());
-
-  const rawCandidates = team.gameDefinitions
-    .map((definition) =>
-      computeNextOccurrence(definition.dayOfWeek, definition.startTime, reference),
-    )
-    .filter((candidate): candidate is Date => candidate !== null);
-
-  const filteredCandidates =
-    hasHolidayStart && holidayStart
-      ? rawCandidates.filter(
-          (candidate) => candidate.getTime() < holidayStart.getTime(),
-        )
-      : rawCandidates;
-
-  const candidates =
-    filteredCandidates.length > 0 ? filteredCandidates : rawCandidates;
-  if (candidates.length === 0) return null;
-
-  candidates.sort((a, b) => a.getTime() - b.getTime());
-  const next = candidates[0];
+  if (
+    holidayStart &&
+    !Number.isNaN(holidayStart.getTime()) &&
+    next.getTime() >= holidayStart.getTime()
+  ) {
+    return null;
+  }
 
   return {
     dateValue: toIsoDateLocal(next),
@@ -154,6 +169,34 @@ function computeNextScheduledSlot(team: TeamSchedule) {
       next.getMinutes(),
     ).padStart(2, "0")}`,
   };
+}
+
+function buildDefinitionOptions(team: TeamSchedule): GameDefinitionOption[] {
+  return team.gameDefinitions
+    .map((definition) => {
+      const nextSlot = computeNextSlotForDefinition(team, definition);
+      const dayLabel = DAY_LABELS[definition.dayOfWeek] ?? "Dia";
+      return {
+        id: getDefinitionId(definition),
+        definition,
+        nextSlot,
+        label: `${dayLabel} ${definition.startTime}`,
+        nextOccurrenceLabel: nextSlot
+          ? `${formatDateLabel(nextSlot.dateValue)} ${nextSlot.timeValue}`
+          : "Sem ocorrência futura disponível",
+      };
+    })
+    .sort((a, b) => {
+      if (a.nextSlot && b.nextSlot) {
+        return (
+          new Date(`${a.nextSlot.dateValue}T${a.nextSlot.timeValue}:00`).getTime() -
+          new Date(`${b.nextSlot.dateValue}T${b.nextSlot.timeValue}:00`).getTime()
+        );
+      }
+      if (a.nextSlot) return -1;
+      if (b.nextSlot) return 1;
+      return a.label.localeCompare(b.label, "pt-PT", { sensitivity: "base" });
+    });
 }
 
 function buildScheduledAtIso(dateValue: string, timeValue: string) {
@@ -170,7 +213,17 @@ function buildGameDefinitionKey(
   team: TeamSchedule,
   dateValue: string,
   timeValue: string,
+  preferredDefinitionId?: string | null,
 ) {
+  if (preferredDefinitionId) {
+    const preferredDefinition = team.gameDefinitions.find(
+      (definition) => getDefinitionId(definition) === preferredDefinitionId,
+    );
+    if (preferredDefinition) {
+      return `def:${preferredDefinition.dayOfWeek}:${preferredDefinition.startTime}`;
+    }
+  }
+
   const parsedTime = parseTime(timeValue);
   if (!parsedTime) return null;
 
@@ -199,6 +252,8 @@ export function ConvocationFormPage() {
   const { memberships, loading: membershipsLoading } = useTeams();
 
   const [activePicker, setActivePicker] = useState<ActivePicker>(null);
+  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>("custom");
+  const [selectedDefinitionId, setSelectedDefinitionId] = useState("");
   const [selectedTeamId, setSelectedTeamId] = useState("");
   const [dateValue, setDateValue] = useState(toIsoDateLocal(new Date()));
   const [timeValue, setTimeValue] = useState(DEFAULT_TIME);
@@ -356,22 +411,56 @@ export function ConvocationFormPage() {
   }, [manageableMemberships]);
 
   const selectedTeam = selectedTeamId ? teamScheduleById[selectedTeamId] : null;
+  const definitionOptions = useMemo(
+    () => (selectedTeam ? buildDefinitionOptions(selectedTeam) : []),
+    [selectedTeam],
+  );
+  const selectedDefinitionOption = definitionOptions.find(
+    (option) => option.id === selectedDefinitionId,
+  );
 
   useEffect(() => {
     if (!selectedTeam) return;
 
-    const nextSlot = computeNextScheduledSlot(selectedTeam);
-    if (nextSlot) {
-      setDateValue(nextSlot.dateValue);
-      setTimeValue(nextSlot.timeValue);
+    if (selectedTeam.gameDefinitions.length > 0) {
+      const options = buildDefinitionOptions(selectedTeam);
+      const firstOption = options[0];
+      if (firstOption) {
+        setScheduleMode("definition");
+        setSelectedDefinitionId(firstOption.id);
+        if (firstOption.nextSlot) {
+          setDateValue(firstOption.nextSlot.dateValue);
+          setTimeValue(firstOption.nextSlot.timeValue);
+        } else {
+          setTimeValue(firstOption.definition.startTime);
+        }
+      }
+      return;
+    }
+
+    setScheduleMode("custom");
+    setSelectedDefinitionId("");
+    const fallbackDate = new Date();
+    fallbackDate.setDate(fallbackDate.getDate() + 1);
+    setDateValue(toIsoDateLocal(fallbackDate));
+    setTimeValue(DEFAULT_TIME);
+  }, [selectedTeamId, selectedTeam]);
+
+  useEffect(() => {
+    if (scheduleMode !== "definition") return;
+    if (!selectedDefinitionOption) return;
+
+    if (selectedDefinitionOption.nextSlot) {
+      setDateValue(selectedDefinitionOption.nextSlot.dateValue);
+      setTimeValue(selectedDefinitionOption.nextSlot.timeValue);
       return;
     }
 
     const fallbackDate = new Date();
     fallbackDate.setDate(fallbackDate.getDate() + 1);
     setDateValue(toIsoDateLocal(fallbackDate));
-    setTimeValue(DEFAULT_TIME);
-  }, [selectedTeam]);
+    setTimeValue(selectedDefinitionOption.definition.startTime);
+  }, [scheduleMode, selectedDefinitionOption]);
 
   const teamPickerOptions = useMemo(() => {
     const seen = new Map<string, number>();
@@ -403,6 +492,22 @@ export function ConvocationFormPage() {
     navigate(RETURN_TO_PROFILE_URL, { replace: true });
   };
 
+  const handleDateChange = (nextDateValue: string) => {
+    if (scheduleMode === "definition") {
+      setScheduleMode("custom");
+      setSelectedDefinitionId("");
+    }
+    setDateValue(nextDateValue);
+  };
+
+  const handleTimeChange = (nextTimeValue: string) => {
+    if (scheduleMode === "definition") {
+      setScheduleMode("custom");
+      setSelectedDefinitionId("");
+    }
+    setTimeValue(nextTimeValue);
+  };
+
   const handleCreate = async () => {
     if (!supabase) return;
     if (!selectedTeam || !selectedTeam.isComplete) {
@@ -426,6 +531,7 @@ export function ConvocationFormPage() {
       selectedTeam,
       dateValue,
       timeValue,
+      scheduleMode === "definition" ? selectedDefinitionId : null,
     );
     if (!gameDefinitionKey) {
       setError("Não foi possível identificar a definição do jogo.");
@@ -516,6 +622,73 @@ export function ConvocationFormPage() {
         </label>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {selectedTeam && selectedTeam.gameDefinitions.length > 0 && (
+            <label className="space-y-2 sm:col-span-2">
+              <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+                Modo
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScheduleMode("definition");
+                    if (!selectedDefinitionId && definitionOptions[0]) {
+                      setSelectedDefinitionId(definitionOptions[0].id);
+                    }
+                  }}
+                  className={`rounded-2xl border-2 p-3 text-sm font-semibold transition-all ${
+                    scheduleMode === "definition"
+                      ? "border-primary-500 bg-primary-500/15 text-[var(--text-primary)]"
+                      : "border-transparent bg-[var(--bg-app)] text-[var(--text-secondary)] hover:border-primary-500/40"
+                  }`}
+                >
+                  Definição de jogo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScheduleMode("custom");
+                    setSelectedDefinitionId("");
+                  }}
+                  className={`rounded-2xl border-2 p-3 text-sm font-semibold transition-all ${
+                    scheduleMode === "custom"
+                      ? "border-primary-500 bg-primary-500/15 text-[var(--text-primary)]"
+                      : "border-transparent bg-[var(--bg-app)] text-[var(--text-secondary)] hover:border-primary-500/40"
+                  }`}
+                >
+                  Personalizado
+                </button>
+              </div>
+            </label>
+          )}
+
+          {scheduleMode === "definition" && definitionOptions.length > 0 && (
+            <label className="space-y-2 sm:col-span-2">
+              <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+                Definição
+              </span>
+              <button
+                type="button"
+                onClick={() => setActivePicker("definition")}
+                className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center"
+              >
+                <span>
+                  {selectedDefinitionOption?.label ??
+                    definitionOptions[0]?.label ??
+                    "Seleciona uma definição"}
+                </span>
+                <span className="text-lg opacity-40">⌄</span>
+              </button>
+              <p className="text-xs text-[var(--text-secondary)]">
+                A definição só guarda dia da semana e hora. Próxima ocorrência:{" "}
+                {selectedDefinitionOption?.nextOccurrenceLabel ??
+                  definitionOptions[0]?.nextOccurrenceLabel ??
+                  "Sem ocorrência futura disponível"}
+                .
+              </p>
+            </label>
+          )}
+
           <label className="space-y-2">
             <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
               Data
@@ -523,7 +696,12 @@ export function ConvocationFormPage() {
             <button
               type="button"
               onClick={() => setActivePicker("date")}
-              className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center"
+              disabled={scheduleMode === "definition"}
+              className={`w-full rounded-2xl bg-[var(--bg-app)] border-2 p-4 transition-all text-[var(--text-primary)] font-medium flex justify-between items-center ${
+                scheduleMode === "definition"
+                  ? "cursor-not-allowed border-transparent opacity-60"
+                  : "cursor-pointer border-transparent hover:border-primary-500/50"
+              }`}
             >
               <span>{formatDateLabel(dateValue)}</span>
               <span className="text-lg opacity-40">📅</span>
@@ -537,7 +715,12 @@ export function ConvocationFormPage() {
             <button
               type="button"
               onClick={() => setActivePicker("time")}
-              className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center"
+              disabled={scheduleMode === "definition"}
+              className={`w-full rounded-2xl bg-[var(--bg-app)] border-2 p-4 transition-all text-[var(--text-primary)] font-medium flex justify-between items-center ${
+                scheduleMode === "definition"
+                  ? "cursor-not-allowed border-transparent opacity-60"
+                  : "cursor-pointer border-transparent hover:border-primary-500/50"
+              }`}
             >
               <span>{timeValue}</span>
               <span className="text-lg opacity-40">🕘</span>
@@ -624,6 +807,52 @@ export function ConvocationFormPage() {
         </div>
       )}
 
+      {activePicker === "definition" && definitionOptions.length > 0 && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
+          <div className="animate-in slide-in-from-bottom duration-300 w-full max-w-[450px] mx-auto bg-[var(--bg-app)] rounded-t-3xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-6 px-1">
+              <h3 className="font-bold text-lg text-[var(--text-primary)]">
+                Selecionar definição
+              </h3>
+              <button
+                type="button"
+                onClick={() => setActivePicker(null)}
+                className="bg-primary-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary-600/20 active:scale-95"
+              >
+                Concluir
+              </button>
+            </div>
+
+            <div className="bg-[var(--bg-app)] rounded-2xl p-2 items-center min-w-[140px]">
+              <div className="text-[10px] font-bold text-center uppercase text-[var(--text-secondary)] mb-1">
+                Definição
+              </div>
+              <WheelPicker
+                options={definitionOptions.map((option) => option.label)}
+                value={
+                  selectedDefinitionOption?.label ??
+                  definitionOptions[0]?.label ??
+                  ""
+                }
+                onChange={(value) => {
+                  const selectedOption = definitionOptions.find(
+                    (option) => option.label === String(value),
+                  );
+                  if (!selectedOption) return;
+                  setScheduleMode("definition");
+                  setSelectedDefinitionId(selectedOption.id);
+                  setError(null);
+                }}
+              />
+            </div>
+            <p className="mt-3 text-xs text-[var(--text-secondary)]">
+              Ao escolher uma definição, a data e hora usam o próximo horário
+              disponível dessa definição.
+            </p>
+          </div>
+        </div>
+      )}
+
       {activePicker === "date" && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
           <div className="animate-in slide-in-from-bottom duration-300 w-full max-w-[450px] mx-auto bg-[var(--bg-app)] rounded-t-3xl p-6 shadow-2xl">
@@ -639,7 +868,7 @@ export function ConvocationFormPage() {
                 Concluir
               </button>
             </div>
-            <WheelDatePicker value={dateValue} onChange={setDateValue} />
+            <WheelDatePicker value={dateValue} onChange={handleDateChange} />
           </div>
         </div>
       )}
@@ -659,7 +888,7 @@ export function ConvocationFormPage() {
                 Concluir
               </button>
             </div>
-            <WheelTimePicker value={timeValue} onChange={setTimeValue} />
+            <WheelTimePicker value={timeValue} onChange={handleTimeChange} />
           </div>
         </div>
       )}
