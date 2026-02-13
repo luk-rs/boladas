@@ -16,6 +16,7 @@ export function JoinPage() {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [attemptedAutoJoin, setAttemptedAutoJoin] = useState(false);
 
   useEffect(() => {
     if (!token || !supabase) {
@@ -51,28 +52,59 @@ export function JoinPage() {
     }
   };
 
-  // Auto-join effect
-  // Auto-join effect
   useEffect(() => {
-    if (isAuthed && token && !loading && !error && teamInfo && !acceptError) {
-      handleJoin();
+    if (!isAuthed) {
+      setAttemptedAutoJoin(false);
+    }
+  }, [isAuthed, token]);
+
+  // Auto-join once after authentication.
+  useEffect(() => {
+    if (
+      isAuthed &&
+      token &&
+      !loading &&
+      !error &&
+      teamInfo &&
+      !attemptedAutoJoin
+    ) {
+      setAttemptedAutoJoin(true);
+      void handleJoin();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthed, token, loading, error, teamInfo, acceptError]);
+  }, [isAuthed, token, loading, error, teamInfo, attemptedAutoJoin]);
 
   const handleLogin = async () => {
     if (!supabase) return;
+    setError(null);
+    setLoading(true);
+    localStorage.removeItem("boladas:registration_data");
 
     // We don't need to manually persist state if we just redirect back here.
     // The auto-join effect above will catch it when they return.
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.href,
+        redirectTo,
+        skipBrowserRedirect: true,
       },
     });
-    if (error) setError(error.message);
+
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
+    }
+
+    if (!data?.url) {
+      setError("Unable to start Google login. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    window.location.assign(data.url);
   };
 
   if (loading) {
@@ -127,7 +159,7 @@ export function JoinPage() {
             {isAuthed ? "Entrando..." : "Entrar com Google"}
           </button>
 
-          {acceptError && (
+          {isAuthed && acceptError && (
             <p className="text-xs text-red-500 font-bold">{acceptError}</p>
           )}
 

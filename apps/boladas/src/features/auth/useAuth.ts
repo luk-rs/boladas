@@ -33,6 +33,14 @@ function useAuthState(): AuthContextValue {
     await supabase.auth.signOut();
   }, []);
 
+  const isInviteFlow = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    if (window.location.pathname.startsWith("/join/")) return true;
+
+    const params = new URLSearchParams(window.location.search);
+    return Boolean(params.get("invite"));
+  }, []);
+
   // Handle post-login access check
   const checkAccess = useCallback(
     async (userId: string) => {
@@ -68,9 +76,11 @@ function useAuthState(): AuthContextValue {
         // Strict Mode Logic:
         // Users MUST have a team.
         // Exception: They are currently in the middle of a registration flow (Pending Registration).
+        // Exception: They are accepting an invite and will gain membership in this flow.
         const pendingReg = localStorage.getItem("boladas:registration_data");
+        const pendingInvite = isInviteFlow();
 
-        if (pendingReg) {
+        if (pendingReg || pendingInvite) {
           // Allow temporary access to complete registration
           setLoading(false);
         } else {
@@ -86,7 +96,7 @@ function useAuthState(): AuthContextValue {
         setLoading(false);
       }
     },
-    [signOut],
+    [isInviteFlow, signOut],
   );
 
   useEffect(() => {

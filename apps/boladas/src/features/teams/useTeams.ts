@@ -295,21 +295,24 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
     setError(null);
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
-    if (user) {
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .maybeSingle();
+    if (!user) {
+      setError("Please sign in before accepting an invite.");
+      return;
+    }
 
-      if (!existingProfile) {
-        await supabase.from("profiles").insert({
-          id: user.id,
-          email: user.email,
-          display_name:
-            user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-        });
-      }
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (!existingProfile) {
+      await supabase.from("profiles").insert({
+        id: user.id,
+        email: user.email,
+        display_name:
+          user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
+      });
     }
 
     const { data, error: acceptError } = await supabase.rpc("accept_invite", {

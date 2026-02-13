@@ -5,7 +5,7 @@ import { useAuth } from "./useAuth";
 const REGISTRATION_KEY = "boladas:registration_data";
 
 export function usePendingRegistration() {
-  const { sessionUserId, signOut } = useAuth();
+  const { sessionUserId } = useAuth();
   const processingRef = useRef(false);
   const [status, setStatus] = useState<
     "idle" | "processing" | "success" | "error"
@@ -15,6 +15,12 @@ export function usePendingRegistration() {
   useEffect(() => {
     // 1. Pre-checks: Must be logged in, not already processing, and have data
     if (!supabase || !sessionUserId || processingRef.current) return;
+
+    // Invite onboarding should never trigger pending registration side effects.
+    const isInviteFlow =
+      window.location.pathname.startsWith("/join/") ||
+      new URLSearchParams(window.location.search).has("invite");
+    if (isInviteFlow) return;
 
     const registrationDataStr = localStorage.getItem(REGISTRATION_KEY);
     if (!registrationDataStr) return;
@@ -79,18 +85,15 @@ export function usePendingRegistration() {
         setError(err.message || "Registration failed.");
         setStatus("error");
 
-        // Critical Failure: Rollback
-        // specific error handling could go here (e.g. only rollback on 409 or 500)
-        // for now, we rollback to avoid loops
+        // Avoid retry loops with stale data; keep user session intact.
         localStorage.removeItem(REGISTRATION_KEY);
-        await signOut();
       } finally {
         processingRef.current = false;
       }
     };
 
     executeRegistration();
-  }, [sessionUserId, signOut]);
+  }, [sessionUserId]);
 
   return { status, error };
 }

@@ -24,12 +24,22 @@ export function SignIn({
         ? `${window.location.origin}/?invite=${encodeURIComponent(inviteToken)}`
         : window.location.origin;
 
-      const { error } = await supabase.auth.signInWithOAuth({
+      if (inviteToken) {
+        localStorage.removeItem("boladas:registration_data");
+      }
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo },
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
       });
 
       if (error) throw error;
+      if (!data?.url) throw new Error("Unable to start Google login.");
+
+      window.location.assign(data.url);
     } catch (err) {
       console.error("Login error:", err);
       setAuthError(
