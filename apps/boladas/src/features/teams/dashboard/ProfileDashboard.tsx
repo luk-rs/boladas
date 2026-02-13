@@ -35,6 +35,7 @@ function ProfileDashboardView({
     convocations,
     loadingConvocations,
     canCreateConvocation,
+    canClickCreateConvocation,
     minTeamMembers,
     sessionUserId,
     activeTooltipId,
@@ -69,6 +70,7 @@ function ProfileDashboardView({
           loading={loadingConvocations}
           canManageByTeamId={canManageByTeamId}
           canCreateConvocation={canCreateConvocation}
+          canClickCreateConvocation={canClickCreateConvocation}
           minTeamMembers={minTeamMembers}
           sessionUserId={sessionUserId}
           activeTooltipId={activeTooltipId}

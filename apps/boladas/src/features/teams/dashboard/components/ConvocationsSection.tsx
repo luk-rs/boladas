@@ -29,6 +29,7 @@ export type ConvocationsSectionProps = {
   loading: boolean;
   canManageByTeamId: Map<string, boolean>;
   canCreateConvocation: boolean;
+  canClickCreateConvocation: boolean;
   minTeamMembers: number;
   sessionUserId: string | null;
   activeTooltipId: string | null;
@@ -45,6 +46,7 @@ export function ConvocationsSection({
   loading,
   canManageByTeamId,
   canCreateConvocation,
+  canClickCreateConvocation,
   minTeamMembers,
   sessionUserId,
   activeTooltipId,
@@ -219,23 +221,40 @@ export function ConvocationsSection({
       </header>
       <div className="mt-4 space-y-4">
         {canCreateConvocation && (
-          <button
-            type="button"
-            onClick={onCreateConvocation}
-            className="flex w-full items-center justify-between rounded-xl border border-dashed border-primary-500/60 bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-semibold text-[var(--text-primary)] transition-all hover:border-primary-500 active:scale-[0.99]"
-            title="Nova convocatória"
-            aria-label="Nova convocatória"
-          >
-            <span className="inline-flex items-center gap-2">
-              <span className="text-base" aria-hidden>
-                ⚡
+          <>
+            <button
+              type="button"
+              onClick={onCreateConvocation}
+              disabled={!canClickCreateConvocation}
+              className={`flex w-full items-center justify-between rounded-xl border border-dashed px-3 py-2 text-left text-sm font-semibold text-[var(--text-primary)] transition-all ${
+                canClickCreateConvocation
+                  ? "border-primary-500/60 bg-[var(--bg-app)] hover:border-primary-500 active:scale-[0.99]"
+                  : "cursor-not-allowed border-[var(--border-color)] bg-[var(--bg-app)]/60 opacity-60"
+              }`}
+              title={
+                canClickCreateConvocation
+                  ? "Nova convocatória"
+                  : `Precisas de pelo menos uma equipa completa (${minTeamMembers} jogadores).`
+              }
+              aria-label="Nova convocatória"
+            >
+              <span className="inline-flex items-center gap-2">
+                <span className="text-base" aria-hidden>
+                  ⚡
+                </span>
+                Nova convocatória
               </span>
-              Nova convocatória
-            </span>
-            <span className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">
-              Criar
-            </span>
-          </button>
+              <span className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+                Criar
+              </span>
+            </button>
+            {!canClickCreateConvocation && (
+              <p className="text-xs text-[var(--text-secondary)]">
+                Precisas de pelo menos uma equipa completa ({minTeamMembers}{" "}
+                jogadores) para criar convocatória.
+              </p>
+            )}
+          </>
         )}
         {loading ? (
           <>

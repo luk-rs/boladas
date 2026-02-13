@@ -4,7 +4,7 @@ import { WheelDatePicker } from "../../../components/ui/WheelDatePicker";
 import { WheelTimePicker } from "../../../components/ui/WheelTimePicker";
 import { WheelPicker } from "../../../components/ui/WheelPicker";
 import { supabase } from "../../../lib/supabase";
-import { MANAGER_ROLES } from "../dashboard/constants";
+import { MANAGER_ROLES, MIN_TEAM_MEMBERS } from "../dashboard/constants";
 import { useTeams } from "../useTeams";
 
 type ActivePicker = "team" | "date" | "time" | null;
@@ -20,6 +20,8 @@ type TeamSchedule = {
   seasonStart: string | null;
   holidayStart: string | null;
   gameDefinitions: GameDefinition[];
+  memberCount: number;
+  isComplete: boolean;
 };
 
 const RETURN_TO_PROFILE_URL = "/profile?tab=convocations";
@@ -187,19 +189,34 @@ export function ConvocationFormPage() {
     [memberships],
   );
 
+  const completeManageableMemberships = useMemo(
+    () =>
+      manageableMemberships.filter(
+        (membership) => teamScheduleById[membership.teamId]?.isComplete,
+      ),
+    [manageableMemberships, teamScheduleById],
+  );
+
+  const hasCompleteManageableTeam = completeManageableMemberships.length > 0;
+
   useEffect(() => {
     if (manageableMemberships.length === 0) {
       setSelectedTeamId("");
       return;
     }
 
-    const hasSelectedTeam = manageableMemberships.some(
+    if (completeManageableMemberships.length === 0) {
+      setSelectedTeamId("");
+      return;
+    }
+
+    const hasSelectedTeam = completeManageableMemberships.some(
       (membership) => membership.teamId === selectedTeamId,
     );
     if (!hasSelectedTeam) {
-      setSelectedTeamId(manageableMemberships[0].teamId);
+      setSelectedTeamId(completeManageableMemberships[0].teamId);
     }
-  }, [manageableMemberships, selectedTeamId]);
+  }, [completeManageableMemberships, manageableMemberships, selectedTeamId]);
 
   useEffect(() => {
     if (!supabase || manageableMemberships.length === 0) {
@@ -226,6 +243,7 @@ export function ConvocationFormPage() {
         | null = null;
 
       let fetchError: string | null = null;
+      let memberRows: Array<{ team_id: string }> = [];
 
       const {
         data: fullData,
@@ -255,6 +273,17 @@ export function ConvocationFormPage() {
         rows = fullData ?? [];
       }
 
+      const { data: membersData, error: membersError } = await db
+        .from("team_members")
+        .select("team_id")
+        .in("team_id", teamIds);
+
+      if (membersError) {
+        fetchError = fetchError ?? membersError.message;
+      } else {
+        memberRows = membersData ?? [];
+      }
+
       if (!isMounted) return;
 
       if (fetchError) {
@@ -264,14 +293,27 @@ export function ConvocationFormPage() {
       }
 
       const byId: Record<string, TeamSchedule> = {};
+      const memberCountByTeamId = new Map<string, number>();
+
+      teamIds.forEach((teamId) => memberCountByTeamId.set(teamId, 0));
+      memberRows.forEach((row) => {
+        memberCountByTeamId.set(
+          row.team_id,
+          (memberCountByTeamId.get(row.team_id) ?? 0) + 1,
+        );
+      });
+
       manageableMemberships.forEach((membership) => {
         const row = rows?.find((candidate) => candidate.id === membership.teamId);
+        const memberCount = memberCountByTeamId.get(membership.teamId) ?? 0;
         byId[membership.teamId] = {
           id: membership.teamId,
           name: row?.name ?? membership.teamName,
           seasonStart: row?.season_start ?? null,
           holidayStart: row?.holiday_start ?? null,
           gameDefinitions: parseGameDefinitions(row?.game_definitions),
+          memberCount,
+          isComplete: memberCount >= MIN_TEAM_MEMBERS,
         };
       });
 
@@ -285,17 +327,7 @@ export function ConvocationFormPage() {
     };
   }, [manageableMemberships]);
 
-  const selectedTeam =
-    (selectedTeamId ? teamScheduleById[selectedTeamId] : undefined) ??
-    (manageableMemberships[0]
-      ? {
-          id: manageableMemberships[0].teamId,
-          name: manageableMemberships[0].teamName,
-          seasonStart: null,
-          holidayStart: null,
-          gameDefinitions: [],
-        }
-      : null);
+  const selectedTeam = selectedTeamId ? teamScheduleById[selectedTeamId] : null;
 
   useEffect(() => {
     if (!selectedTeam) return;
@@ -311,7 +343,7 @@ export function ConvocationFormPage() {
     fallbackDate.setDate(fallbackDate.getDate() + 1);
     setDateValue(toIsoDateLocal(fallbackDate));
     setTimeValue(DEFAULT_TIME);
-  }, [selectedTeamId, teamScheduleById, selectedTeam]);
+  }, [selectedTeam]);
 
   const teamPickerOptions = useMemo(() => {
     const seen = new Map<string, number>();
@@ -319,23 +351,38 @@ export function ConvocationFormPage() {
       const baseName = membership.teamName;
       const count = (seen.get(baseName) ?? 0) + 1;
       seen.set(baseName, count);
+      const displayName = count === 1 ? baseName : `${baseName} (${count})`;
+      const memberCount = teamScheduleById[membership.teamId]?.memberCount ?? 0;
+      const isSelectable = teamScheduleById[membership.teamId]?.isComplete ?? false;
+
       return {
         teamId: membership.teamId,
-        label: count === 1 ? baseName : `${baseName} (${count})`,
+        displayName,
+        memberCount,
+        isSelectable,
+        label: isSelectable
+          ? `${displayName} - Completa`
+          : `${displayName} - Incompleta (${memberCount}/${MIN_TEAM_MEMBERS})`,
       };
     });
-  }, [manageableMemberships]);
+  }, [manageableMemberships, teamScheduleById]);
 
   const selectedTeamPickerLabel =
-    teamPickerOptions.find((option) => option.teamId === selectedTeam?.id)?.label ??
-    teamPickerOptions[0]?.label;
+    teamPickerOptions.find((option) => option.teamId === selectedTeamId)?.label ??
+    "";
 
   const handleDismiss = () => {
     navigate(RETURN_TO_PROFILE_URL, { replace: true });
   };
 
   const handleCreate = async () => {
-    if (!supabase || !selectedTeam) return;
+    if (!supabase) return;
+    if (!selectedTeam || !selectedTeam.isComplete) {
+      setError(
+        `Seleciona uma equipa completa (${MIN_TEAM_MEMBERS} jogadores) para criar convocatória.`,
+      );
+      return;
+    }
 
     setActionState("creating");
     setError(null);
@@ -414,9 +461,18 @@ export function ConvocationFormPage() {
             onClick={() => setActivePicker("team")}
             className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center"
           >
-            <span>{selectedTeam?.name ?? "Selecione o time"}</span>
+            <span>{selectedTeam?.name ?? "Selecione um time completo"}</span>
             <span className="text-lg opacity-40">⌄</span>
           </button>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Apenas equipas completas ({MIN_TEAM_MEMBERS} jogadores) podem ser
+            selecionadas.
+          </p>
+          {!hasCompleteManageableTeam && (
+            <p className="text-xs font-semibold text-amber-600 dark:text-amber-300">
+              Ainda não tens nenhuma equipa completa para criar convocatória.
+            </p>
+          )}
         </label>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -463,9 +519,15 @@ export function ConvocationFormPage() {
           <button
             type="button"
             onClick={() => void handleCreate()}
-            disabled={actionState !== "idle"}
+            disabled={
+              actionState !== "idle" || !selectedTeam || !selectedTeam.isComplete
+            }
             className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-base text-white transition-all active:scale-95 disabled:opacity-60"
-            title="Criar convocatória"
+            title={
+              selectedTeam?.isComplete
+                ? "Criar convocatória"
+                : `Precisas de uma equipa completa (${MIN_TEAM_MEMBERS} jogadores)`
+            }
             aria-label="Criar convocatória"
           >
             {actionState === "creating" ? "⏳" : "📝"}
@@ -502,12 +564,22 @@ export function ConvocationFormPage() {
                   const selectedOption = teamPickerOptions.find(
                     (option) => option.label === String(value),
                   );
-                  if (selectedOption) {
-                    setSelectedTeamId(selectedOption.teamId);
+                  if (!selectedOption) return;
+                  if (!selectedOption.isSelectable) {
+                    setError(
+                      `A equipa "${selectedOption.displayName}" ainda está incompleta (${selectedOption.memberCount}/${MIN_TEAM_MEMBERS}).`,
+                    );
+                    return;
                   }
+                  setError(null);
+                  setSelectedTeamId(selectedOption.teamId);
                 }}
               />
             </div>
+            <p className="mt-3 text-xs text-[var(--text-secondary)]">
+              Equipas incompletas aparecem na lista, mas não podem ser
+              selecionadas.
+            </p>
           </div>
         </div>
       )}

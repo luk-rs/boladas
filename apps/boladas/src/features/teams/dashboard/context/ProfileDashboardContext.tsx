@@ -36,6 +36,7 @@ type ProfileDashboardContextValue = {
   convocations: Convocation[];
   loadingConvocations: boolean;
   canCreateConvocation: boolean;
+  canClickCreateConvocation: boolean;
   minTeamMembers: number;
   sessionUserId: string | null;
   activeTooltipId: string | null;
@@ -97,12 +98,32 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
     return map;
   }, [memberships]);
 
+  const completeTeamIds = useMemo(() => {
+    const set = new Set<string>();
+    teamsWithStatus.forEach((team) => {
+      if (team.memberCount >= MIN_TEAM_MEMBERS) {
+        set.add(team.id);
+      }
+    });
+    return set;
+  }, [teamsWithStatus]);
+
   const canCreateConvocation = useMemo(
     () =>
       memberships.some((membership) =>
         membership.roles.some((role) => MANAGER_ROLES.has(role)),
       ),
     [memberships],
+  );
+
+  const canClickCreateConvocation = useMemo(
+    () =>
+      memberships.some(
+        (membership) =>
+          membership.roles.some((role) => MANAGER_ROLES.has(role)) &&
+          completeTeamIds.has(membership.teamId),
+      ),
+    [completeTeamIds, memberships],
   );
 
   const teamNameById = useMemo(() => {
@@ -645,11 +666,15 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
       convocations,
       loadingConvocations,
       canCreateConvocation,
+      canClickCreateConvocation,
       minTeamMembers: MIN_TEAM_MEMBERS,
       sessionUserId,
       activeTooltipId,
       onTooltipChange: setActiveTooltipId,
-      onCreateConvocation: () => navigate("/convocations/new"),
+      onCreateConvocation: () => {
+        if (!canClickCreateConvocation) return;
+        navigate("/convocations/new");
+      },
       onVoteChange,
       onStatusChange,
       holdProgressById,
@@ -669,6 +694,7 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
       convocations,
       loadingConvocations,
       canCreateConvocation,
+      canClickCreateConvocation,
       sessionUserId,
       activeTooltipId,
       onVoteChange,
