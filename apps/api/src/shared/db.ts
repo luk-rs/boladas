@@ -11,7 +11,7 @@ export function getDb(dbUrl: string): ReturnType<typeof postgres> {
     // Keep the pool tiny; we close per request.
     max: 1,
     idle_timeout: 10,
-    connection_timeout: 5,
+    connect_timeout: 5,
     prepare: false,
   });
 }

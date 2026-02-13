@@ -73,7 +73,7 @@ export async function handleGetConvocationTeams(
       id: string;
       scheduled_at: string;
       team_name: string;
-    }>`
+    }[]>`
       select c.id, c.scheduled_at, t.name as team_name
       from convocations c
       join teams t on t.id = c.team_id
@@ -88,7 +88,7 @@ export async function handleGetConvocationTeams(
       });
     }
 
-    const players = await sql<PlayerRow>`
+    const players = await sql<PlayerRow[]>`
       select cv.user_id, p.display_name, p.email
       from convocation_votes cv
       left join profiles p on p.id = cv.user_id
