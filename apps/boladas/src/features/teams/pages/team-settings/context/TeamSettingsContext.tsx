@@ -51,7 +51,9 @@ type ManageableMembership = {
 
 type TeamOption = {
   teamId: string;
+  displayName: string;
   label: string;
+  isSelectable: boolean;
 };
 
 type TeamSettingsContextValue = {
@@ -72,6 +74,8 @@ type TeamSettingsContextValue = {
   selectedTeamWheelLabel: string | undefined;
   selectedInviteTeamId: string;
   setSelectedInviteTeamId: (value: string) => void;
+  teamPickerError: string | null;
+  clearTeamPickerError: () => void;
   emailsTextareaRef: RefObject<HTMLTextAreaElement>;
   emailsInput: string;
   setEmailsInput: (value: string) => void;
@@ -150,8 +154,9 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
     error: hookError,
     loading: hookLoading,
   } = useTeams();
-  const [selectedInviteTeamId, setSelectedInviteTeamId] = useState("");
+  const [selectedInviteTeamId, setSelectedInviteTeamIdState] = useState("");
   const [showTeamPicker, setShowTeamPicker] = useState(false);
+  const [teamPickerError, setTeamPickerError] = useState<string | null>(null);
   const [emailsInput, setEmailsInput] = useState("");
   const emailsTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [loadingAction, setLoadingAction] = useState<InviteAction | null>(null);
@@ -178,7 +183,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (manageableMemberships.length === 0) {
-      setSelectedInviteTeamId("");
+      setSelectedInviteTeamIdState("");
       return;
     }
 
@@ -186,9 +191,35 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
       (membership) => membership.teamId === selectedInviteTeamId,
     );
     if (!hasSelectedTeam) {
-      setSelectedInviteTeamId(manageableMemberships[0].teamId);
+      setSelectedInviteTeamIdState(manageableMemberships[0].teamId);
     }
   }, [manageableMemberships, selectedInviteTeamId]);
+
+  const clearTeamPickerError = useCallback(() => {
+    setTeamPickerError(null);
+  }, []);
+
+  const setSelectedInviteTeamId = useCallback(
+    (value: string) => {
+      const canManageTeam = manageableMemberships.some(
+        (membership) => membership.teamId === value,
+      );
+
+      if (!canManageTeam) {
+        const blockedTeam = memberships.find((membership) => membership.teamId === value);
+        if (blockedTeam) {
+          setTeamPickerError(
+            `Sem permissão para gerir "${blockedTeam.teamName}". Só team admin ou manager podem selecionar este time.`,
+          );
+        }
+        return;
+      }
+
+      setTeamPickerError(null);
+      setSelectedInviteTeamIdState(value);
+    },
+    [manageableMemberships, memberships],
+  );
 
   const selectedInviteTeam =
     manageableMemberships.find(
@@ -197,20 +228,28 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
 
   const teamWheelOptions = useMemo(() => {
     const seen = new Map<string, number>();
-    return manageableMemberships.map((membership) => {
+    return memberships.map((membership) => {
       const baseName = membership.teamName || "Time";
       const nextCount = (seen.get(baseName) ?? 0) + 1;
       seen.set(baseName, nextCount);
+      const displayName = nextCount === 1 ? baseName : `${baseName} (${nextCount})`;
+      const isSelectable = membership.roles.some((role) =>
+        TEAM_MANAGEMENT_ROLES.has(role),
+      );
       return {
         teamId: membership.teamId,
-        label: nextCount === 1 ? baseName : `${baseName} (${nextCount})`,
+        displayName,
+        label: isSelectable ? displayName : `${displayName} - Sem acesso`,
+        isSelectable,
       };
     });
-  }, [manageableMemberships]);
+  }, [memberships]);
 
   const selectedTeamWheelLabel =
     teamWheelOptions.find((option) => option.teamId === selectedInviteTeam?.teamId)
-      ?.label ?? teamWheelOptions[0]?.label;
+      ?.label ??
+    teamWheelOptions.find((option) => option.isSelectable)?.label ??
+    teamWheelOptions[0]?.label;
 
   const roleHolderCount = useMemo(() => {
     const counts: Record<ExtraRole, number> = {
@@ -495,6 +534,8 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
       selectedTeamWheelLabel,
       selectedInviteTeamId,
       setSelectedInviteTeamId,
+      teamPickerError,
+      clearTeamPickerError,
       emailsTextareaRef,
       emailsInput,
       setEmailsInput,
@@ -520,6 +561,9 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
       teamWheelOptions,
       selectedTeamWheelLabel,
       selectedInviteTeamId,
+      setSelectedInviteTeamId,
+      teamPickerError,
+      clearTeamPickerError,
       emailsInput,
       inviteError,
       loadingAction,

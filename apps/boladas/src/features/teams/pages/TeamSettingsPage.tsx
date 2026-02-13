@@ -26,6 +26,8 @@ function TeamSettingsPageView() {
     selectedTeamWheelLabel,
     selectedInviteTeamId,
     setSelectedInviteTeamId,
+    teamPickerError,
+    clearTeamPickerError,
     emailsTextareaRef,
     emailsInput,
     setEmailsInput,
@@ -87,12 +89,24 @@ function TeamSettingsPageView() {
         </header>
         <button
           type="button"
-          onClick={() => setShowTeamPicker(true)}
+          onClick={() => {
+            clearTeamPickerError();
+            setShowTeamPicker(true);
+          }}
           className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center"
         >
           <span>{selectedInviteTeam?.teamName ?? "Selecione o time"}</span>
           <span className="text-lg opacity-40">⌄</span>
         </button>
+        <p className="mt-2 text-xs text-[var(--text-secondary)]">
+          Times sem papel de team admin/manager aparecem na lista, mas não podem
+          ser selecionados.
+        </p>
+        {teamPickerError && (
+          <p className="mt-2 text-xs font-bold text-amber-600 dark:text-amber-300">
+            {teamPickerError}
+          </p>
+        )}
       </section>
 
       <section className="rounded-2xl bg-[var(--bg-surface)] p-5 shadow-mui">
@@ -306,12 +320,20 @@ jogador2@email.com"
                     selectedOption &&
                     selectedOption.teamId !== selectedInviteTeamId
                   ) {
+                    if (!selectedOption.isSelectable) {
+                      setSelectedInviteTeamId(selectedOption.teamId);
+                      return;
+                    }
                     setSelectedInviteTeamId(selectedOption.teamId);
                     resetInviteOutput();
                   }
                 }}
               />
             </div>
+            <p className="mt-3 text-xs text-[var(--text-secondary)]">
+              Opções com "Sem acesso" estão visíveis para contexto, mas ficam
+              bloqueadas para seleção.
+            </p>
           </div>
         </div>
       )}
