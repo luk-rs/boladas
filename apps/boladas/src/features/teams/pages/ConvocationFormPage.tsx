@@ -166,6 +166,34 @@ function buildScheduledAtIso(dateValue: string, timeValue: string) {
   return date.toISOString();
 }
 
+function buildGameDefinitionKey(
+  team: TeamSchedule,
+  dateValue: string,
+  timeValue: string,
+) {
+  const parsedTime = parseTime(timeValue);
+  if (!parsedTime) return null;
+
+  const date = new Date(`${dateValue}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const normalizedTime = `${String(parsedTime.hours).padStart(2, "0")}:${String(
+    parsedTime.minutes,
+  ).padStart(2, "0")}`;
+  const dayOfWeek = date.getDay();
+  const matchingDefinition = team.gameDefinitions.find(
+    (definition) =>
+      definition.dayOfWeek === dayOfWeek &&
+      definition.startTime === normalizedTime,
+  );
+
+  if (matchingDefinition) {
+    return `def:${matchingDefinition.dayOfWeek}:${matchingDefinition.startTime}`;
+  }
+
+  return `adhoc:${dateValue}:${normalizedTime}`;
+}
+
 export function ConvocationFormPage() {
   const navigate = useNavigate();
   const { memberships, loading: membershipsLoading } = useTeams();
@@ -394,10 +422,22 @@ export function ConvocationFormPage() {
       return;
     }
 
+    const gameDefinitionKey = buildGameDefinitionKey(
+      selectedTeam,
+      dateValue,
+      timeValue,
+    );
+    if (!gameDefinitionKey) {
+      setError("Não foi possível identificar a definição do jogo.");
+      setActionState("idle");
+      return;
+    }
+
     const { error: createError } = await supabase.rpc("create_convocation", {
       p_team_id: selectedTeam.id,
       p_title: selectedTeam.name,
       p_scheduled_at: scheduledAtIso,
+      p_game_definition_key: gameDefinitionKey,
     });
 
     if (createError) {
