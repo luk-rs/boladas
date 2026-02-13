@@ -179,11 +179,13 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
     }
 
     setLoadingConvocations(true);
+    const nowIso = new Date().toISOString();
 
     const { data: convocationRows, error: convocationError } = await supabase
       .from("convocations")
       .select("id, team_id, title, scheduled_at, status, team:teams(name)")
       .in("team_id", teamIds)
+      .gte("scheduled_at", nowIso)
       .order("scheduled_at", { ascending: true });
 
     if (convocationError || !convocationRows) {
