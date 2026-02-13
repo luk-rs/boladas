@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "./useAuth";
-
-const REGISTRATION_KEY = "boladas:registration_data";
-const REGISTRATION_ERROR_KEY = "boladas:registration_error";
-const REGISTRATION_LOCK_KEY = "boladas:registration_lock";
+import {
+  REGISTRATION_ERROR_KEY,
+  REGISTRATION_LOCK_KEY,
+  REGISTRATION_STORAGE_KEY,
+} from "./registrationStorage";
 
 function toRegistrationErrorMessage(err: unknown) {
   if (err && typeof err === "object" && "message" in err) {
@@ -50,7 +51,7 @@ export function usePendingRegistration() {
       new URLSearchParams(window.location.search).has("invite");
     if (isInviteFlow) return;
 
-    const registrationDataStr = localStorage.getItem(REGISTRATION_KEY);
+    const registrationDataStr = localStorage.getItem(REGISTRATION_STORAGE_KEY);
     if (!registrationDataStr) {
       localStorage.removeItem(REGISTRATION_LOCK_KEY);
       return;
@@ -113,7 +114,7 @@ export function usePendingRegistration() {
 
         // 4. Success
         console.log("✅ Registration successful!");
-        localStorage.removeItem(REGISTRATION_KEY);
+        localStorage.removeItem(REGISTRATION_STORAGE_KEY);
         localStorage.removeItem(REGISTRATION_ERROR_KEY);
         localStorage.removeItem(REGISTRATION_LOCK_KEY);
         setStatus("success");
@@ -123,7 +124,7 @@ export function usePendingRegistration() {
         if (isDuplicateTeamCreationError(err)) {
           // Idempotent success path: a duplicate submission can happen due
           // OAuth callback timing / remounts. Team is already created.
-          localStorage.removeItem(REGISTRATION_KEY);
+          localStorage.removeItem(REGISTRATION_STORAGE_KEY);
           localStorage.removeItem(REGISTRATION_ERROR_KEY);
           localStorage.removeItem(REGISTRATION_LOCK_KEY);
           setStatus("success");
@@ -137,7 +138,7 @@ export function usePendingRegistration() {
         setStatus("error");
 
         // Avoid retry loops and force user back to registration screen.
-        localStorage.removeItem(REGISTRATION_KEY);
+        localStorage.removeItem(REGISTRATION_STORAGE_KEY);
         localStorage.setItem(REGISTRATION_ERROR_KEY, message);
         localStorage.removeItem(REGISTRATION_LOCK_KEY);
         try {

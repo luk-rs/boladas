@@ -3,6 +3,7 @@ project_id = "futeboladas-boladas"
 [api]
 enabled = true
 port = 54321
+external_url = "http://localhost:54321"
 schemas = ["public", "storage"]
 extra_search_path = ["public"]
 max_rows = 1000
@@ -52,9 +53,20 @@ enable_confirmations = false
 
 [auth.external.google]
 enabled = true
-client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
-secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 skip_nonce_check = true
+
+[auth.external.azure]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"
+url = "env(SUPABASE_AUTH_EXTERNAL_AZURE_URL)"
+
+[auth.external.facebook]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_FACEBOOK_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_FACEBOOK_SECRET)"
 
 [edge_runtime]
 enabled = false

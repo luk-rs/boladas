@@ -3,6 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../features/auth/useAuth";
 import { useTeams } from "../../features/teams/useTeams";
+import {
+  AUTH_ENABLED_PROVIDERS_ENV_VAR,
+  OAUTH_PROVIDERS,
+  hasEnabledProviders,
+  isProviderEnabled,
+  type OAuthProviderId,
+} from "../../features/auth/oauthProviders";
+import { startJoinOAuth } from "../../features/auth/oauthFlow";
 
 export function JoinPage() {
   const { token } = useParams<{ token: string }>();
@@ -15,13 +23,18 @@ export function JoinPage() {
     team_id: string;
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [attemptedAutoJoin, setAttemptedAutoJoin] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<OAuthProviderId | null>(
+    null,
+  );
+  const hasConfiguredProviders = hasEnabledProviders();
 
   useEffect(() => {
     if (!token || !supabase) {
       if (!supabase)
-        setError("Erro de configuração: Supabase não inicializado.");
+        setPageError("Erro de configuração: Supabase não inicializado.");
       return;
     }
     const loadInfo = async () => {
@@ -30,11 +43,11 @@ export function JoinPage() {
         p_token: token,
       });
       if (error) {
-        setError(error.message);
+        setPageError(error.message);
       } else if (data && data.length > 0) {
         setTeamInfo(data[0]);
       } else {
-        setError("Convite inválido ou expirado.");
+        setPageError("Convite inválido ou expirado.");
       }
       setLoading(false);
     };
@@ -64,7 +77,7 @@ export function JoinPage() {
       isAuthed &&
       token &&
       !loading &&
-      !error &&
+      !pageError &&
       teamInfo &&
       !attemptedAutoJoin
     ) {
@@ -72,39 +85,27 @@ export function JoinPage() {
       void handleJoin();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthed, token, loading, error, teamInfo, attemptedAutoJoin]);
+  }, [isAuthed, token, loading, pageError, teamInfo, attemptedAutoJoin]);
 
-  const handleLogin = async () => {
+  const handleLogin = async (providerId: OAuthProviderId) => {
     if (!supabase) return;
-    setError(null);
-    setLoading(true);
-    localStorage.removeItem("boladas:registration_data");
+    if (!isProviderEnabled(providerId)) {
+      setAuthError("Este método de login não está disponível neste ambiente.");
+      return;
+    }
 
-    // We don't need to manually persist state if we just redirect back here.
-    // The auto-join effect above will catch it when they return.
-    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    setAuthError(null);
+    setLoadingProvider(providerId);
 
-    const { data, error: authError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo,
-        skipBrowserRedirect: true,
-      },
+    const result = await startJoinOAuth({
+      provider: providerId,
     });
 
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
+    if (!result.ok) {
+      setAuthError(result.error);
+      setLoadingProvider(null);
       return;
     }
-
-    if (!data?.url) {
-      setError("Unable to start Google login. Please try again.");
-      setLoading(false);
-      return;
-    }
-
-    window.location.assign(data.url);
   };
 
   if (loading) {
@@ -115,7 +116,7 @@ export function JoinPage() {
     );
   }
 
-  if (error) {
+  if (pageError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg-app)] p-6">
         <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-surface)] p-8 text-center shadow-mui">
@@ -123,7 +124,7 @@ export function JoinPage() {
           <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
             Ops!
           </h2>
-          <p className="text-[var(--text-secondary)] mb-6">{error}</p>
+          <p className="text-[var(--text-secondary)] mb-6">{pageError}</p>
           <button
             onClick={() => navigate("/login")}
             className="w-full rounded-2xl bg-[var(--bg-app)] py-3 font-bold text-[var(--text-primary)]"
@@ -152,15 +153,68 @@ export function JoinPage() {
         </h2>
 
         <div className="mt-8 space-y-4">
-          <button
-            onClick={isAuthed ? handleJoin : handleLogin}
-            className="w-full rounded-2xl bg-primary-600 py-4 font-bold text-white shadow-lg shadow-primary-600/30 transition-all hover:bg-primary-700 active:scale-95"
-          >
-            {isAuthed ? "Entrando..." : "Entrar com Google"}
-          </button>
+          {isAuthed ? (
+            <button
+              onClick={handleJoin}
+              className="w-full rounded-2xl bg-primary-600 py-4 font-bold text-white shadow-lg shadow-primary-600/30 transition-all hover:bg-primary-700 active:scale-95"
+            >
+              {loading ? "Entrando..." : "Entrar no Time"}
+            </button>
+          ) : (
+            <>
+              {OAUTH_PROVIDERS.map((provider) => {
+                const enabled = isProviderEnabled(provider.id);
+                const disabled = loadingProvider !== null || !enabled;
+                const isLoading = loadingProvider === provider.id;
+
+                return (
+                  <button
+                    key={provider.id}
+                    onClick={() => {
+                      void handleLogin(provider.id);
+                    }}
+                    disabled={disabled}
+                    className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-white py-4 font-bold text-slate-700 shadow-md ring-1 ring-slate-200 transition-all ${
+                      disabled
+                        ? "opacity-70 cursor-not-allowed"
+                        : "hover:bg-slate-50 hover:shadow-lg active:scale-95"
+                    }`}
+                  >
+                    {isLoading ? (
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                    ) : (
+                      <img
+                        src={provider.iconPath}
+                        alt={provider.label}
+                        className={`h-6 w-6 transition-transform ${
+                          disabled ? "opacity-60" : "group-hover:scale-110"
+                        }`}
+                      />
+                    )}
+                    <span>
+                      {isLoading ? "Conectando..." : `Entrar com ${provider.label}`}
+                    </span>
+                  </button>
+                );
+              })}
+            </>
+          )}
+
+          {!isAuthed && !hasConfiguredProviders && (
+            <div className="rounded-xl border border-amber-300/40 bg-amber-500/10 p-3 text-left">
+              <p className="text-xs font-semibold text-amber-700">
+                Nenhum provedor OAuth está habilitado. Defina{" "}
+                {AUTH_ENABLED_PROVIDERS_ENV_VAR}=google,azure,facebook.
+              </p>
+            </div>
+          )}
 
           {isAuthed && acceptError && (
             <p className="text-xs text-red-500 font-bold">{acceptError}</p>
+          )}
+
+          {!isAuthed && authError && (
+            <p className="text-xs text-red-500 font-bold">{authError}</p>
           )}
 
           {isAuthed && (

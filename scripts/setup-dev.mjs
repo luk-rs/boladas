@@ -194,6 +194,7 @@ const appEnvLines = [
   "VITE_API_URL=http://localhost:8787",
   `VITE_SUPABASE_URL=http://localhost:${env.KONG_HTTP_PORT}`,
   `VITE_SUPABASE_ANON_KEY=${env.ANON_KEY}`,
+  "VITE_AUTH_ENABLED_PROVIDERS=google,azure,facebook",
   "",
 ].join("\n");
 

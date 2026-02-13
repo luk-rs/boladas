@@ -1,9 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { RegistrationForm } from "./RegistrationForm";
-
-const REGISTRATION_ERROR_KEY = "boladas:registration_error";
-const REGISTRATION_LOCK_KEY = "boladas:registration_lock";
+import {
+  AUTH_ENABLED_PROVIDERS_ENV_VAR,
+  OAUTH_PROVIDERS,
+  hasEnabledProviders,
+  isProviderEnabled,
+  type OAuthProviderId,
+} from "./oauthProviders";
+import { startLoginOAuth } from "./oauthFlow";
+import {
+  REGISTRATION_ERROR_KEY,
+  REGISTRATION_LOCK_KEY,
+} from "./registrationStorage";
 
 export function SignIn({
   inviteToken,
@@ -20,8 +29,16 @@ export function SignIn({
   const [registrationError, setRegistrationError] = useState<string | null>(
     null,
   );
-  const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<OAuthProviderId | null>(
+    null,
+  );
   const [authError, setAuthError] = useState<string | null>(null);
+  const hasConfiguredProviders = hasEnabledProviders();
+
+  const providerConfigError = useMemo(() => {
+    if (hasConfiguredProviders) return null;
+    return `Nenhum provedor OAuth está habilitado. Defina ${AUTH_ENABLED_PROVIDERS_ENV_VAR}=google,azure,facebook.`;
+  }, [hasConfiguredProviders]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -34,40 +51,29 @@ export function SignIn({
   }, []);
 
   // Standard redirect login for normal sign-in (not creating a team)
-  const signInWithGoogle = async () => {
+  const signInWithProvider = async (providerId: OAuthProviderId) => {
     if (!supabase) return;
+    if (!isProviderEnabled(providerId)) {
+      setAuthError("Este método de login não está disponível neste ambiente.");
+      return;
+    }
+
     try {
-      setLoading(true);
+      setLoadingProvider(providerId);
       setAuthError(null);
 
-      const redirectTo = inviteToken
-        ? `${window.location.origin}/?invite=${encodeURIComponent(inviteToken)}`
-        : window.location.origin;
-
-      if (inviteToken) {
-        localStorage.removeItem("boladas:registration_data");
-        localStorage.removeItem(REGISTRATION_ERROR_KEY);
-        localStorage.removeItem(REGISTRATION_LOCK_KEY);
-      }
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true,
-        },
+      const result = await startLoginOAuth({
+        provider: providerId,
+        inviteToken,
       });
 
-      if (error) throw error;
-      if (!data?.url) throw new Error("Unable to start Google login.");
-
-      window.location.assign(data.url);
+      if (!result.ok) throw new Error(result.error);
     } catch (err) {
       console.error("Login error:", err);
       setAuthError(
-        err instanceof Error ? err.message : "Erro ao conectar com Google",
+        err instanceof Error ? err.message : "Erro ao iniciar login OAuth",
       );
-      setLoading(false);
+      setLoadingProvider(null);
     }
   };
 
@@ -127,28 +133,51 @@ export function SignIn({
             </div>
           ) : (
             <div className="space-y-4 pt-2">
-              <button
-                onClick={signInWithGoogle}
-                disabled={loading}
-                className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-white dark:bg-slate-800 py-4 font-bold text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 transition-all ${
-                  loading
-                    ? "opacity-70 cursor-not-allowed"
-                    : "hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg active:scale-95"
-                }`}
-              >
-                {loading ? (
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-                ) : (
-                  <img
-                    src="/assets/providers/google.svg"
-                    alt="Google"
-                    className="h-6 w-6 transition-transform group-hover:scale-110"
-                  />
-                )}
-                <span>
-                  {loading ? "Conectando..." : "Continuar com Google"}
-                </span>
-              </button>
+              {OAUTH_PROVIDERS.map((provider) => {
+                const enabled = isProviderEnabled(provider.id);
+                const isLoading = loadingProvider === provider.id;
+                const disabled = loadingProvider !== null || !enabled;
+
+                return (
+                  <button
+                    key={provider.id}
+                    onClick={() => {
+                      void signInWithProvider(provider.id);
+                    }}
+                    disabled={disabled}
+                    className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-white dark:bg-slate-800 py-4 font-bold text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 transition-all ${
+                      disabled
+                        ? "opacity-70 cursor-not-allowed"
+                        : "hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg active:scale-95"
+                    }`}
+                  >
+                    {isLoading ? (
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                    ) : (
+                      <img
+                        src={provider.iconPath}
+                        alt={provider.label}
+                        className={`h-6 w-6 transition-transform ${
+                          disabled ? "opacity-60" : "group-hover:scale-110"
+                        }`}
+                      />
+                    )}
+                    <span>
+                      {isLoading
+                        ? "Conectando..."
+                        : `Continuar com ${provider.label}`}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {providerConfigError && (
+                <div className="rounded-xl border border-amber-300/40 bg-amber-500/10 p-3 text-left">
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-200">
+                    {providerConfigError}
+                  </p>
+                </div>
+              )}
 
               {(error || authError) && (
                 <p className="text-sm font-medium text-red-500 animate-bounce text-center">

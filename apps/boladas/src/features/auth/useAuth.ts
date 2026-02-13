@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { supabase } from "../../lib/supabase";
+import { REGISTRATION_STORAGE_KEY } from "./registrationStorage";
 
 type AuthContextValue = {
   isAuthed: boolean;
@@ -77,7 +78,7 @@ function useAuthState(): AuthContextValue {
         // Users MUST have a team.
         // Exception: They are currently in the middle of a registration flow (Pending Registration).
         // Exception: They are accepting an invite and will gain membership in this flow.
-        const pendingReg = localStorage.getItem("boladas:registration_data");
+        const pendingReg = localStorage.getItem(REGISTRATION_STORAGE_KEY);
         const pendingInvite = isInviteFlow();
 
         if (pendingReg || pendingInvite) {

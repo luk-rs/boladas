@@ -3,9 +3,16 @@ import { supabase } from "../../lib/supabase";
 import { WheelDatePicker } from "../../components/ui/WheelDatePicker";
 import { WheelTimePicker } from "../../components/ui/WheelTimePicker";
 import { WheelDayOfWeekPicker } from "../../components/ui/WheelDayOfWeekPicker";
-
-const REGISTRATION_ERROR_KEY = "boladas:registration_error";
-const REGISTRATION_LOCK_KEY = "boladas:registration_lock";
+import {
+  AUTH_ENABLED_PROVIDERS_ENV_VAR,
+  OAUTH_PROVIDERS,
+  getOAuthProvider,
+  hasEnabledProviders,
+  isProviderEnabled,
+  type OAuthProviderId,
+} from "./oauthProviders";
+import { startRegistrationOAuth } from "./oauthFlow";
+import type { PendingRegistrationData } from "./registrationStorage";
 
 export function RegistrationForm({
   onCancel,
@@ -14,16 +21,19 @@ export function RegistrationForm({
   onCancel: () => void;
   initialError?: string | null;
 }) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PendingRegistrationData>({
     name: "",
     seasonStart: "",
     holidayStart: "",
-    gameDefinitions: [] as { dayOfWeek: number; startTime: string }[],
+    gameDefinitions: [],
   });
   const [status, setStatus] = useState<
     "idle" | "authenticating" | "registering" | "success"
   >("idle");
   const [error, setError] = useState<string | null>(initialError);
+  const [activeProvider, setActiveProvider] = useState<OAuthProviderId | null>(
+    null,
+  );
 
   const [activePicker, setActivePicker] = useState<
     "seasonStart" | "holidayStart" | "addGame" | null
@@ -43,6 +53,10 @@ export function RegistrationForm({
   const hasSeasonStart = Boolean(formData.seasonStart);
   const hasGameDefinition = formData.gameDefinitions.length > 0;
   const isFormValid = hasTeamName && hasSeasonStart && hasGameDefinition;
+  const hasConfiguredProviders = hasEnabledProviders();
+  const activeProviderLabel = activeProvider
+    ? getOAuthProvider(activeProvider).label
+    : "OAuth";
 
   const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
@@ -64,50 +78,31 @@ export function RegistrationForm({
     setError(initialError);
   }, [initialError]);
 
-  const handleGoogleSignIn = async () => {
-    if (!hasTeamName || !hasSeasonStart) {
-      setError("O nome do time e a data de início são obrigatórios.");
+  const handleProviderSignIn = async (providerId: OAuthProviderId) => {
+    if (!isFormValid) {
+      setError(
+        "Preencha os campos obrigatórios e adicione pelo menos um horário de jogo.",
+      );
       return;
     }
-    if (!supabase) return;
+    if (!isProviderEnabled(providerId)) {
+      setError("Este método de registro não está disponível neste ambiente.");
+      return;
+    }
 
     setError(null);
+    setActiveProvider(providerId);
     setStatus("authenticating");
 
-    const isStandalone = window.matchMedia(
-      "(display-mode: standalone)",
-    ).matches;
-    localStorage.removeItem(REGISTRATION_ERROR_KEY);
-    localStorage.removeItem(REGISTRATION_LOCK_KEY);
-    localStorage.setItem("boladas:registration_data", JSON.stringify(formData));
-
-    const { data, error: authError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        skipBrowserRedirect: !isStandalone,
-        redirectTo: isStandalone
-          ? window.location.origin
-          : `${window.location.origin}?popup=true`,
-      },
+    const result = await startRegistrationOAuth({
+      provider: providerId,
+      registrationData: formData,
     });
 
-    if (authError) {
-      setError(authError.message);
+    if (!result.ok) {
+      setError(result.error);
       setStatus("idle");
-      return;
-    }
-
-    if (!isStandalone && data?.url) {
-      const width = 500;
-      const height = 600;
-      const left = window.screen.width / 2 - width / 2;
-      const top = window.screen.height / 2 - height / 2;
-
-      window.open(
-        data.url,
-        "google-auth",
-        `width=${width},height=${height},top=${top},left=${left},popup=yes`,
-      );
+      setActiveProvider(null);
     }
   };
 
@@ -125,12 +120,15 @@ export function RegistrationForm({
           </h2>
           <p className="text-[var(--text-secondary)]">
             {status === "authenticating"
-              ? "Complete o login na janela que se abriu."
+              ? `Complete o login com ${activeProviderLabel} na janela que se abriu.`
               : "Estamos preparando seu novo espaço de jogo."}
           </p>
           {status === "authenticating" && (
             <button
-              onClick={() => setStatus("idle")}
+              onClick={() => {
+                setStatus("idle");
+                setActiveProvider(null);
+              }}
               className="text-sm font-bold text-primary-500 hover:text-primary-600 underline"
             >
               Cancelar
@@ -307,7 +305,7 @@ export function RegistrationForm({
             {!isFormValid && (
               <div className="rounded-xl border border-slate-300/25 bg-slate-500/10 p-3">
                 <p className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wide">
-                  Para desbloquear "Registrar com Google":
+                  Para desbloquear "Registrar":
                 </p>
                 <ul className="mt-2 space-y-1">
                   <li
@@ -341,22 +339,52 @@ export function RegistrationForm({
                 </ul>
               </div>
             )}
-            <button
-              disabled={!isFormValid}
-              onClick={handleGoogleSignIn}
-              className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl py-4 font-bold transition-all active:scale-95 ${
-                isFormValid
-                  ? "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg"
-                  : "bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60"
-              }`}
-            >
-              <img
-                src="/assets/providers/google.svg"
-                alt="Google"
-                className={`h-6 w-6 transition-transform ${isFormValid ? "group-hover:scale-110" : "grayscale opacity-50"}`}
-              />
-              <span>Registrar com Google</span>
-            </button>
+            {OAUTH_PROVIDERS.map((provider) => {
+              const enabled = isProviderEnabled(provider.id);
+              const disabled = !isFormValid || !enabled;
+              const isLoading = activeProvider === provider.id && !disabled;
+
+              return (
+                <button
+                  key={provider.id}
+                  disabled={disabled}
+                  onClick={() => {
+                    void handleProviderSignIn(provider.id);
+                  }}
+                  className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl py-4 font-bold transition-all active:scale-95 ${
+                    disabled
+                      ? "bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60"
+                      : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg"
+                  }`}
+                >
+                  {isLoading ? (
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                  ) : (
+                    <img
+                      src={provider.iconPath}
+                      alt={provider.label}
+                      className={`h-6 w-6 transition-transform ${
+                        disabled ? "grayscale opacity-50" : "group-hover:scale-110"
+                      }`}
+                    />
+                  )}
+                  <span>
+                    {isLoading
+                      ? "Conectando..."
+                      : `Registrar com ${provider.label}`}
+                  </span>
+                </button>
+              );
+            })}
+
+            {!hasConfiguredProviders && (
+              <div className="rounded-xl border border-amber-300/40 bg-amber-500/10 p-3 text-left">
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-200">
+                  Nenhum provedor OAuth está habilitado. Defina{" "}
+                  {AUTH_ENABLED_PROVIDERS_ENV_VAR}=google,azure,facebook.
+                </p>
+              </div>
+            )}
 
             <button
               onClick={onCancel}

@@ -14,15 +14,50 @@
    - `pnpm install`
 2. Copy env:
    - `cp .env.example apps/boladas/.env`
-   - Update `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+   - Update `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_AUTH_ENABLED_PROVIDERS`
 
 ## Dev
 - API: `pnpm dev:api` (http://localhost:8787)
 - App: `pnpm dev:app` (http://localhost:5173)
 
+## OAuth providers (Google + Microsoft + Meta)
+The app supports the providers below in all entry points: login, create team, and invite join.
+- Google (`google`)
+- Microsoft/Outlook (`azure` in Supabase SDK/config)
+- Meta/Facebook (`facebook`)
+
+Provider availability is environment-driven with:
+- `VITE_AUTH_ENABLED_PROVIDERS=google,azure,facebook`
+
+### Local (Supabase CLI)
+1. Copy provider secret template:
+   - `cp supabase/.env.example supabase/.env`
+2. Fill OAuth credentials in `supabase/.env`:
+   - `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID`
+   - `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`
+   - `SUPABASE_AUTH_EXTERNAL_AZURE_CLIENT_ID`
+   - `SUPABASE_AUTH_EXTERNAL_AZURE_SECRET`
+   - `SUPABASE_AUTH_EXTERNAL_AZURE_URL`
+   - `SUPABASE_AUTH_EXTERNAL_FACEBOOK_CLIENT_ID`
+   - `SUPABASE_AUTH_EXTERNAL_FACEBOOK_SECRET`
+3. Ensure app env has enabled providers:
+   - `VITE_AUTH_ENABLED_PROVIDERS=google,azure,facebook`
+4. Restart services:
+   - `supabase stop && supabase start`
+   - `pnpm dev:app`
+
+### Production (Supabase dashboard + Cloudflare Pages)
+1. In Supabase dashboard: Auth > Providers, enable and configure Google, Azure, Facebook.
+2. In each OAuth app console, configure callback URL:
+   - `https://<project-ref>.supabase.co/auth/v1/callback`
+3. In Cloudflare Pages env vars, set:
+   - `VITE_AUTH_ENABLED_PROVIDERS=google,azure,facebook`
+   - `VITE_API_URL`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. In Supabase Auth URL settings, allow your deployed frontend URL as a redirect origin.
+
 ## Supabase
-Create a Supabase project and configure providers:
-Google, Facebook (Meta), Microsoft (Outlook), Apple, Magic Link.
 
 Run schema:
 - Apply `supabase/schema.sql` in Supabase SQL editor
