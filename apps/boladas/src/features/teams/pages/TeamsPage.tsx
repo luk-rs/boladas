@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -140,6 +141,20 @@ function TeamsPageView() {
     setDeleteBusy(false);
   };
 
+  const hasAnyManagementAccess = manageableMemberships.length > 0;
+  const teamsSectionLoading = membershipsLoading || loadingTeams;
+  const activeTeamRows = teamsWithStatus.filter(
+    (team) => team.id === selectedTeamId,
+  );
+  const roleMembersByRole = useMemo(
+    () =>
+      ROLE_TOGGLE_OPTIONS.map((option) => ({
+        option,
+        members: rosterMembers.filter((member) => member.roles.has(option.role)),
+      })),
+    [rosterMembers],
+  );
+
   if (hookLoading) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center p-6 text-center">
@@ -150,12 +165,6 @@ function TeamsPageView() {
       </div>
     );
   }
-
-  const hasAnyManagementAccess = manageableMemberships.length > 0;
-  const teamsSectionLoading = membershipsLoading || loadingTeams;
-  const activeTeamRows = teamsWithStatus.filter(
-    (team) => team.id === selectedTeamId,
-  );
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
@@ -476,16 +485,68 @@ jogador2@email.com"
             </>
           ) : (
             <section className="rounded-2xl border border-[var(--border-color)] p-5">
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-                Gestão avançada
+              <header className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
+                    Organigrama
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
+                    Estrutura de funções do time
+                  </h3>
+                </div>
+                <span className="text-2xl">🧩</span>
+              </header>
+
+              <p className="text-sm text-[var(--text-secondary)]">
+                Sem permissão de gestão para o time selecionado. Esta secção é
+                apenas de visualização.
               </p>
-              <h3 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                Permissões insuficientes
-              </h3>
-              <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                Sem permissão de gestão para o time selecionado. Pode escolher
-                outro time no escopo da gestão.
-              </p>
+
+              <div className="mt-4 space-y-3">
+                {loadingRoster && (
+                  <p className="text-sm text-[var(--text-secondary)]">
+                    Carregando organigrama...
+                  </p>
+                )}
+
+                {!loadingRoster &&
+                  roleMembersByRole.map(({ option, members }) => (
+                    <div
+                      key={option.role}
+                      className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-app)]/60 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-[var(--text-primary)]">
+                          {option.emoji} {option.label}
+                        </p>
+                        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
+                          {members.length > 0
+                            ? `${members.length} ${
+                                members.length === 1 ? "pessoa" : "pessoas"
+                              }`
+                            : "Por atribuir"}
+                        </span>
+                      </div>
+
+                      {members.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {members.map((member) => (
+                            <span
+                              key={`${option.role}:${member.id}`}
+                              className="rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1 text-xs font-medium text-[var(--text-primary)]"
+                            >
+                              {getMemberEmoji(member.id)} {member.displayName}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
+
+              {rolesError && (
+                <p className="mt-3 text-xs font-bold text-red-500">{rolesError}</p>
+              )}
             </section>
           )}
         </>
