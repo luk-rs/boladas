@@ -1,6 +1,7 @@
 import { UpcomingGame } from "../types";
 import { formatSchedule } from "../utils";
 import { EmojiStack } from "./EmojiStack";
+import { SurfaceTile } from "../../../../components/layout/SurfaceTile";
 
 export type GamesSectionProps = {
   games: UpcomingGame[];
@@ -19,22 +20,11 @@ export function GamesSection({
 }: GamesSectionProps) {
   return (
     <section className="rounded-2xl p-5">
-      <header className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-            Jogos
-          </p>
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-            Próximos jogos
-          </h2>
-        </div>
-        <span className="text-2xl">🏟️</span>
-      </header>
-      <div className="mt-4 space-y-3">
+      <div className="space-y-3">
         {loading ? (
           <>
-            <div className="h-32 rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)]/60" />
-            <div className="h-32 rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)]/60" />
+            <SurfaceTile variant="dashed" className="h-32 p-0" />
+            <SurfaceTile variant="dashed" className="h-32 p-0" />
           </>
         ) : games.length > 0 ? (
           games.map((game, index) => {
@@ -43,12 +33,13 @@ export function GamesSection({
             const isCancelling = cancellingGameId === game.id;
 
             return (
-              <div
+              <SurfaceTile
                 key={game.id}
-                className={`rounded-xl px-4 py-4 ${
+                variant="soft"
+                className={`px-4 py-4 ${
                   index === 0
                     ? "bg-emerald-50/80 dark:bg-emerald-900/20"
-                    : "bg-[var(--bg-app)]"
+                    : ""
                 }`}
               >
                 <div className="space-y-3">
@@ -75,7 +66,10 @@ export function GamesSection({
 
                     <div className="space-y-3">
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
+                        <SurfaceTile
+                          variant="strong"
+                          className="flex items-center gap-2 px-3 py-2"
+                        >
                           <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
                             👕
                           </span>
@@ -90,8 +84,11 @@ export function GamesSection({
                               Sem camisolas
                             </span>
                           )}
-                        </div>
-                        <div className="flex items-center gap-2">
+                        </SurfaceTile>
+                        <SurfaceTile
+                          variant="strong"
+                          className="flex items-center gap-2 px-3 py-2"
+                        >
                           <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
                             🦺
                           </span>
@@ -106,7 +103,7 @@ export function GamesSection({
                               Sem coletes
                             </span>
                           )}
-                        </div>
+                        </SurfaceTile>
                       </div>
                     </div>
                   </div>
@@ -125,13 +122,16 @@ export function GamesSection({
                     </div>
                   )}
                 </div>
-              </div>
+              </SurfaceTile>
             );
           })
         ) : (
-          <div className="rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] p-4 text-center text-sm text-[var(--text-secondary)]">
+          <SurfaceTile
+            variant="dashed"
+            className="p-4 text-center text-sm text-[var(--text-secondary)]"
+          >
             Sem próximos jogos.
-          </div>
+          </SurfaceTile>
         )}
       </div>
     </section>

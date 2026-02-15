@@ -11,6 +11,7 @@ import {
 } from "../../features/auth/oauthProviders";
 import { startJoinOAuth } from "../../features/auth/oauthFlow";
 import { OAuthIconButtons } from "../../features/auth/OAuthIconButtons";
+import { SurfaceTile } from "../../components/layout/SurfaceTile";
 
 export function JoinPage() {
   const { token } = useParams<{ token: string }>();
@@ -119,7 +120,10 @@ export function JoinPage() {
   if (pageError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[var(--bg-app)] p-6">
-        <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-surface)] p-8 text-center shadow-mui">
+        <SurfaceTile
+          variant="strong"
+          className="w-full max-w-sm rounded-2xl p-8 text-center shadow-xl"
+        >
           <div className="text-4xl mb-4">😕</div>
           <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">
             Ops!
@@ -131,14 +135,17 @@ export function JoinPage() {
           >
             Ir para Login
           </button>
-        </div>
+        </SurfaceTile>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 p-6">
-      <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-surface)] p-8 text-center shadow-mui animate-in zoom-in duration-300">
+      <SurfaceTile
+        variant="strong"
+        className="w-full max-w-sm rounded-2xl p-8 text-center shadow-xl shadow-black/30 animate-in zoom-in duration-300"
+      >
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary-100 text-4xl">
           ✉️
         </div>
@@ -195,7 +202,7 @@ export function JoinPage() {
             </p>
           )}
         </div>
-      </div>
+      </SurfaceTile>
     </div>
   );
 }

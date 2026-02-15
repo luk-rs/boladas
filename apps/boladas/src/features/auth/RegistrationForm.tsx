@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase";
 import { WheelDatePicker } from "../../components/ui/WheelDatePicker";
 import { WheelTimePicker } from "../../components/ui/WheelTimePicker";
 import { WheelDayOfWeekPicker } from "../../components/ui/WheelDayOfWeekPicker";
+import { BottomSheet } from "../../components/ui/BottomSheet";
 import {
   AUTH_ENABLED_PROVIDERS_ENV_VAR,
   getOAuthProvider,
@@ -13,6 +14,7 @@ import {
 import { startRegistrationOAuth } from "./oauthFlow";
 import type { PendingRegistrationData } from "./registrationStorage";
 import { OAuthIconButtons } from "./OAuthIconButtons";
+import { SurfaceTile } from "../../components/layout/SurfaceTile";
 
 export function RegistrationForm({
   onCancel,
@@ -109,7 +111,10 @@ export function RegistrationForm({
   if (status === "authenticating" || status === "registering") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 p-6">
-        <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-surface)] p-8 shadow-mui text-center space-y-6 animate-pulse">
+        <SurfaceTile
+          variant="strong"
+          className="w-full max-w-sm rounded-2xl p-8 text-center space-y-6 animate-pulse shadow-xl shadow-black/30"
+        >
           <div className="flex justify-center">
             <div className="h-16 w-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
@@ -134,7 +139,7 @@ export function RegistrationForm({
               Cancelar
             </button>
           )}
-        </div>
+        </SurfaceTile>
       </div>
     );
   }
@@ -142,7 +147,10 @@ export function RegistrationForm({
   if (status === "success") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 p-6">
-        <div className="w-full max-w-sm rounded-3xl bg-[var(--bg-surface)] p-8 shadow-mui text-center space-y-4">
+        <SurfaceTile
+          variant="strong"
+          className="w-full max-w-sm rounded-2xl p-8 text-center space-y-4 shadow-xl shadow-black/30"
+        >
           <div className="text-5xl">✅</div>
           <h2 className="text-2xl font-bold text-[var(--text-primary)] text-green-500">
             Sucesso!
@@ -150,7 +158,7 @@ export function RegistrationForm({
           <p className="text-[var(--text-secondary)]">
             Seu time foi criado com sucesso.
           </p>
-        </div>
+        </SurfaceTile>
       </div>
     );
   }
@@ -158,7 +166,10 @@ export function RegistrationForm({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 p-6">
       <div className="w-full max-w-sm z-10 animate-in fade-in zoom-in duration-500">
-        <section className="rounded-3xl bg-[var(--bg-surface)] p-8 shadow-mui space-y-6">
+        <SurfaceTile
+          variant="strong"
+          className="rounded-2xl p-8 space-y-6 shadow-xl shadow-black/30"
+        >
           <header className="text-center">
             <h2 className="text-2xl font-bold text-[var(--text-primary)]">
               Registrar Novo Time
@@ -364,81 +375,70 @@ export function RegistrationForm({
               Voltar para o Login
             </button>
           </div>
-        </section>
+        </SurfaceTile>
       </div>
 
-      {/* Date Picker Bottom Sheet / Overlay */}
-      {activePicker && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
-          <div className="animate-in slide-in-from-bottom duration-300 w-full max-w-[450px] mx-auto bg-[var(--bg-app)] rounded-t-3xl p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-6 px-1">
-              <h3 className="font-bold text-lg text-[var(--text-primary)]">
-                {activePicker === "seasonStart" && "Início da Temporada"}
-                {activePicker === "holidayStart" && "Início das Férias"}
-                {activePicker === "addGame" && "Novo Horário de Jogo"}
-              </h3>
-              <button
-                onClick={() => {
-                  if (activePicker === "addGame") {
-                    setFormData({
-                      ...formData,
-                      gameDefinitions: [...formData.gameDefinitions, newGame],
-                    });
-                  } else if (
-                    activePicker === "seasonStart" &&
-                    !formData.seasonStart
-                  ) {
-                    setFormData({
-                      ...formData,
-                      seasonStart: new Date().toISOString().split("T")[0],
-                    });
-                  } else if (
-                    activePicker === "holidayStart" &&
-                    !formData.holidayStart
-                  ) {
-                    setFormData({
-                      ...formData,
-                      holidayStart: new Date().toISOString().split("T")[0],
-                    });
-                  }
-                  setActivePicker(null);
-                }}
-                className="bg-primary-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary-600/20 active:scale-95"
-              >
-                Concluir
-              </button>
-            </div>
-
-            {activePicker === "addGame" ? (
-              <div className="flex gap-4">
-                <div className="flex-[2]">
-                  <WheelDayOfWeekPicker
-                    value={newGame.dayOfWeek}
-                    onChange={(v) => setNewGame({ ...newGame, dayOfWeek: v })}
-                  />
-                </div>
-                <div className="flex-[3]">
-                  <WheelTimePicker
-                    value={newGame.startTime}
-                    onChange={(v) => setNewGame({ ...newGame, startTime: v })}
-                  />
-                </div>
-              </div>
-            ) : (
-              <WheelDatePicker
-                showYear={false}
-                value={
-                  (formData as any)[activePicker] ||
-                  new Date().toISOString().split("T")[0]
-                }
-                onChange={(val) =>
-                  setFormData({ ...formData, [activePicker]: val })
-                }
+      <BottomSheet
+        open={Boolean(activePicker)}
+        title={
+          activePicker === "seasonStart"
+            ? "Início da Temporada"
+            : activePicker === "holidayStart"
+              ? "Início das Férias"
+              : "Novo Horário de Jogo"
+        }
+        onClose={() => setActivePicker(null)}
+        onConfirm={() => {
+          if (activePicker === "addGame") {
+            setFormData({
+              ...formData,
+              gameDefinitions: [...formData.gameDefinitions, newGame],
+            });
+          } else if (activePicker === "seasonStart" && !formData.seasonStart) {
+            setFormData({
+              ...formData,
+              seasonStart: new Date().toISOString().split("T")[0],
+            });
+          } else if (activePicker === "holidayStart" && !formData.holidayStart) {
+            setFormData({
+              ...formData,
+              holidayStart: new Date().toISOString().split("T")[0],
+            });
+          }
+          setActivePicker(null);
+        }}
+      >
+        {activePicker === "addGame" ? (
+          <div className="flex gap-4">
+            <div className="flex-[2]">
+              <WheelDayOfWeekPicker
+                value={newGame.dayOfWeek}
+                onChange={(v) => setNewGame({ ...newGame, dayOfWeek: v })}
               />
-            )}
+            </div>
+            <div className="flex-[3]">
+              <WheelTimePicker
+                value={newGame.startTime}
+                onChange={(v) => setNewGame({ ...newGame, startTime: v })}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <WheelDatePicker
+            showYear={false}
+            value={
+              activePicker
+                ? (formData as any)[activePicker] ||
+                  new Date().toISOString().split("T")[0]
+                : new Date().toISOString().split("T")[0]
+            }
+            onChange={(val) => {
+              if (!activePicker) return;
+              setFormData({ ...formData, [activePicker]: val });
+            }}
+          />
+        )}
+      </BottomSheet>
     </div>
   );
 }

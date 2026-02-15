@@ -3,6 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { WheelDatePicker } from "../../../components/ui/WheelDatePicker";
 import { WheelTimePicker } from "../../../components/ui/WheelTimePicker";
 import { WheelPicker } from "../../../components/ui/WheelPicker";
+import { BottomSheet } from "../../../components/ui/BottomSheet";
+import { PageScaffold } from "../../../components/layout/PageScaffold";
+import { SectionShell } from "../../../components/layout/SectionShell";
+import { SurfaceTile } from "../../../components/layout/SurfaceTile";
 import { supabase } from "../../../lib/supabase";
 import { MANAGER_ROLES, MIN_TEAM_MEMBERS } from "../dashboard/constants";
 import { useTeams } from "../useTeams";
@@ -557,47 +561,46 @@ export function ConvocationFormPage() {
 
   if (membershipsLoading || loadingSchedules) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-        <p className="mt-3 text-xs text-[var(--text-secondary)]">
-          A preparar formulário de convocatória...
-        </p>
-      </div>
+      <PageScaffold className="space-y-4">
+        <SurfaceTile
+          variant="soft"
+          className="flex flex-col items-center justify-center py-20 text-center"
+        >
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+          <p className="mt-3 text-xs text-[var(--text-secondary)]">
+            A preparar formulário de convocatória...
+          </p>
+        </SurfaceTile>
+      </PageScaffold>
     );
   }
 
   if (manageableMemberships.length === 0) {
     return (
-      <div className="space-y-5 rounded-2xl p-6 text-center">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-          Acesso negado
-        </h2>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Apenas team admin, manager ou secretary podem criar convocatórias.
-        </p>
-        <button
-          type="button"
-          onClick={handleDismiss}
-          className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white active:scale-95"
-        >
-          Voltar ao Perfil
-        </button>
-      </div>
+      <PageScaffold align="center" className="space-y-4">
+        <SurfaceTile variant="strong" className="space-y-5 p-6 text-center">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+            Acesso negado
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Apenas team admin, manager ou secretary podem criar convocatórias.
+          </p>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white active:scale-95"
+          >
+            Voltar ao Perfil
+          </button>
+        </SurfaceTile>
+      </PageScaffold>
     );
   }
 
   return (
-    <div className="space-y-6 pb-20">
-      <header className="rounded-2xl p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-          Convocatória
-        </p>
-        <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-          Nova convocatória
-        </h2>
-      </header>
-
-      <section className="space-y-4 rounded-2xl p-5">
+    <PageScaffold className="space-y-6">
+      <SectionShell title="Nova convocatória" variant="strong">
+        <div className="space-y-4">
         <label className="block space-y-2">
           <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             Time
@@ -758,140 +761,88 @@ export function ConvocationFormPage() {
         </div>
 
         {error && <p className="text-xs font-bold text-red-500">{error}</p>}
-      </section>
-
-      {activePicker === "team" && teamPickerOptions.length > 0 && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
-          <div className="animate-in slide-in-from-bottom duration-300 w-full max-w-[450px] mx-auto bg-[var(--bg-app)] rounded-t-3xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6 px-1">
-              <h3 className="font-bold text-lg text-[var(--text-primary)]">
-                Selecionar Time
-              </h3>
-              <button
-                type="button"
-                onClick={() => setActivePicker(null)}
-                className="bg-primary-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary-600/20 active:scale-95"
-              >
-                Concluir
-              </button>
-            </div>
-
-            <div className="bg-[var(--bg-app)] rounded-2xl p-2 items-center min-w-[140px]">
-              <div className="text-[10px] font-bold text-center uppercase text-[var(--text-secondary)] mb-1">
-                Time
-              </div>
-              <WheelPicker
-                options={teamPickerOptions.map((option) => option.label)}
-                value={selectedTeamPickerLabel ?? ""}
-                onChange={(value) => {
-                  const selectedOption = teamPickerOptions.find(
-                    (option) => option.label === String(value),
-                  );
-                  if (!selectedOption) return;
-                  if (!selectedOption.isSelectable) {
-                    setError(
-                      `A equipa "${selectedOption.displayName}" ainda está incompleta (${selectedOption.memberCount}/${MIN_TEAM_MEMBERS}).`,
-                    );
-                    return;
-                  }
-                  setError(null);
-                  setSelectedTeamId(selectedOption.teamId);
-                }}
-              />
-            </div>
-            <p className="mt-3 text-xs text-[var(--text-secondary)]">
-              Equipas incompletas aparecem na lista, mas não podem ser
-              selecionadas.
-            </p>
-          </div>
         </div>
-      )}
+      </SectionShell>
 
-      {activePicker === "definition" && definitionOptions.length > 0 && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
-          <div className="animate-in slide-in-from-bottom duration-300 w-full max-w-[450px] mx-auto bg-[var(--bg-app)] rounded-t-3xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6 px-1">
-              <h3 className="font-bold text-lg text-[var(--text-primary)]">
-                Selecionar definição
-              </h3>
-              <button
-                type="button"
-                onClick={() => setActivePicker(null)}
-                className="bg-primary-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary-600/20 active:scale-95"
-              >
-                Concluir
-              </button>
-            </div>
+      <BottomSheet
+        open={activePicker === "team" && teamPickerOptions.length > 0}
+        title="Selecionar Time"
+        onClose={() => setActivePicker(null)}
+        onConfirm={() => setActivePicker(null)}
+      >
+        <SurfaceTile variant="soft" className="items-center p-2 min-w-[140px]">
+          <div className="mb-1 text-center ui-caption">Time</div>
+          <WheelPicker
+            options={teamPickerOptions.map((option) => option.label)}
+            value={selectedTeamPickerLabel ?? ""}
+            onChange={(value) => {
+              const selectedOption = teamPickerOptions.find(
+                (option) => option.label === String(value),
+              );
+              if (!selectedOption) return;
+              if (!selectedOption.isSelectable) {
+                setError(
+                  `A equipa "${selectedOption.displayName}" ainda está incompleta (${selectedOption.memberCount}/${MIN_TEAM_MEMBERS}).`,
+                );
+                return;
+              }
+              setError(null);
+              setSelectedTeamId(selectedOption.teamId);
+            }}
+          />
+        </SurfaceTile>
+        <p className="mt-3 text-xs text-[var(--text-secondary)]">
+          Equipas incompletas aparecem na lista, mas não podem ser selecionadas.
+        </p>
+      </BottomSheet>
 
-            <div className="bg-[var(--bg-app)] rounded-2xl p-2 items-center min-w-[140px]">
-              <div className="text-[10px] font-bold text-center uppercase text-[var(--text-secondary)] mb-1">
-                Definição
-              </div>
-              <WheelPicker
-                options={definitionOptions.map((option) => option.label)}
-                value={
-                  selectedDefinitionOption?.label ??
-                  definitionOptions[0]?.label ??
-                  ""
-                }
-                onChange={(value) => {
-                  const selectedOption = definitionOptions.find(
-                    (option) => option.label === String(value),
-                  );
-                  if (!selectedOption) return;
-                  setScheduleMode("definition");
-                  setSelectedDefinitionId(selectedOption.id);
-                  setError(null);
-                }}
-              />
-            </div>
-            <p className="mt-3 text-xs text-[var(--text-secondary)]">
-              Ao escolher uma definição, a data e hora usam o próximo horário
-              disponível dessa definição.
-            </p>
-          </div>
-        </div>
-      )}
+      <BottomSheet
+        open={activePicker === "definition" && definitionOptions.length > 0}
+        title="Selecionar definição"
+        onClose={() => setActivePicker(null)}
+        onConfirm={() => setActivePicker(null)}
+      >
+        <SurfaceTile variant="soft" className="items-center p-2 min-w-[140px]">
+          <div className="mb-1 text-center ui-caption">Definição</div>
+          <WheelPicker
+            options={definitionOptions.map((option) => option.label)}
+            value={
+              selectedDefinitionOption?.label ?? definitionOptions[0]?.label ?? ""
+            }
+            onChange={(value) => {
+              const selectedOption = definitionOptions.find(
+                (option) => option.label === String(value),
+              );
+              if (!selectedOption) return;
+              setScheduleMode("definition");
+              setSelectedDefinitionId(selectedOption.id);
+              setError(null);
+            }}
+          />
+        </SurfaceTile>
+        <p className="mt-3 text-xs text-[var(--text-secondary)]">
+          Ao escolher uma definição, a data e hora usam o próximo horário
+          disponível dessa definição.
+        </p>
+      </BottomSheet>
 
-      {activePicker === "date" && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
-          <div className="animate-in slide-in-from-bottom duration-300 w-full max-w-[450px] mx-auto bg-[var(--bg-app)] rounded-t-3xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6 px-1">
-              <h3 className="font-bold text-lg text-[var(--text-primary)]">
-                Escolher Data
-              </h3>
-              <button
-                type="button"
-                onClick={() => setActivePicker(null)}
-                className="bg-primary-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary-600/20 active:scale-95"
-              >
-                Concluir
-              </button>
-            </div>
-            <WheelDatePicker value={dateValue} onChange={handleDateChange} />
-          </div>
-        </div>
-      )}
+      <BottomSheet
+        open={activePicker === "date"}
+        title="Escolher Data"
+        onClose={() => setActivePicker(null)}
+        onConfirm={() => setActivePicker(null)}
+      >
+        <WheelDatePicker value={dateValue} onChange={handleDateChange} />
+      </BottomSheet>
 
-      {activePicker === "time" && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
-          <div className="animate-in slide-in-from-bottom duration-300 w-full max-w-[450px] mx-auto bg-[var(--bg-app)] rounded-t-3xl p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6 px-1">
-              <h3 className="font-bold text-lg text-[var(--text-primary)]">
-                Escolher Hora
-              </h3>
-              <button
-                type="button"
-                onClick={() => setActivePicker(null)}
-                className="bg-primary-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary-600/20 active:scale-95"
-              >
-                Concluir
-              </button>
-            </div>
-            <WheelTimePicker value={timeValue} onChange={handleTimeChange} />
-          </div>
-        </div>
-      )}
-    </div>
+      <BottomSheet
+        open={activePicker === "time"}
+        title="Escolher Hora"
+        onClose={() => setActivePicker(null)}
+        onConfirm={() => setActivePicker(null)}
+      >
+        <WheelTimePicker value={timeValue} onChange={handleTimeChange} />
+      </BottomSheet>
+    </PageScaffold>
   );
 }

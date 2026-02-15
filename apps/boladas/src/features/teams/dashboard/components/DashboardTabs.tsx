@@ -1,3 +1,5 @@
+import { SurfaceTile } from "../../../../components/layout/SurfaceTile";
+
 export type DashboardTabId = "games" | "convocations" | "teams";
 
 type TabDef = {
@@ -24,8 +26,9 @@ export function DashboardTabs({
   className = "",
 }: DashboardTabsProps) {
   return (
-    <div
-      className={`rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] p-1 shadow-sm ${className}`}
+    <SurfaceTile
+      variant="strong"
+      className={`rounded-full p-1 shadow-sm ${className}`}
       role="tablist"
       aria-label="Dashboard"
     >
@@ -41,7 +44,7 @@ export function DashboardTabs({
               className={`flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-colors active:scale-[0.99] ${
                 isActive
                   ? "bg-primary-600 text-white"
-                  : "text-[var(--text-primary)] opacity-70 hover:opacity-100"
+                  : "text-[var(--text-primary)] opacity-75 hover:opacity-100"
               }`}
               onClick={() => onChange(tab.id)}
             >
@@ -53,6 +56,6 @@ export function DashboardTabs({
           );
         })}
       </div>
-    </div>
+    </SurfaceTile>
   );
 }

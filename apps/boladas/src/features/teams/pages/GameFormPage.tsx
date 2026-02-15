@@ -1,4 +1,7 @@
 import { WheelTimePicker } from "../../../components/ui/WheelTimePicker";
+import { BottomSheet } from "../../../components/ui/BottomSheet";
+import { PageScaffold } from "../../../components/layout/PageScaffold";
+import { SurfaceTile } from "../../../components/layout/SurfaceTile";
 import { PLAYER_EMOJIS } from "../dashboard/constants";
 import {
   GameFormProvider,
@@ -151,8 +154,8 @@ function GameFormPageView() {
   };
 
   return (
-    <div className="page-content space-y-6">
-      <header className="flex flex-wrap items-center gap-3 rounded-2xl p-4">
+    <PageScaffold className="space-y-6">
+      <SurfaceTile variant="soft" className="flex flex-wrap items-center gap-3">
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           {teamName}
         </h2>
@@ -169,7 +172,7 @@ function GameFormPageView() {
           <span className="text-base">🕘</span>
           {timeValue}
         </button>
-      </header>
+      </SurfaceTile>
 
       {loading ? (
         <div className="space-y-3">
@@ -179,14 +182,17 @@ function GameFormPageView() {
             <span className="text-lg">🦺</span>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="h-64 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)]/60" />
-            <div className="h-64 rounded-2xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)]/60" />
+            <SurfaceTile variant="dashed" className="h-64 p-0" />
+            <SurfaceTile variant="dashed" className="h-64 p-0" />
           </div>
         </div>
       ) : error ? (
-        <div className="rounded-2xl border border-dashed border-rose-200 bg-rose-50 p-4 text-center text-sm text-rose-600">
+        <SurfaceTile
+          variant="danger"
+          className="border-dashed p-4 text-center text-sm text-rose-600"
+        >
           {error}
-        </div>
+        </SurfaceTile>
       ) : (
         <div className="space-y-3">
           <div className="flex items-center justify-center gap-3 text-sm font-semibold text-[var(--text-secondary)]">
@@ -195,7 +201,7 @@ function GameFormPageView() {
             <span className="text-lg">🦺</span>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <section className="flex h-full flex-col rounded-2xl p-4">
+            <SurfaceTile variant="soft" className="flex h-full flex-col">
               <div className="space-y-0">
                 {teamPlayers.shirts.length ? (
                   teamPlayers.shirts.map((player, index) =>
@@ -217,9 +223,9 @@ function GameFormPageView() {
                   <span className="text-lg">＋</span>
                 </button>
               </div>
-            </section>
+            </SurfaceTile>
 
-            <section className="flex h-full flex-col rounded-2xl p-4">
+            <SurfaceTile variant="soft" className="flex h-full flex-col">
               <div className="space-y-0">
                 {teamPlayers.coletes.length ? (
                   teamPlayers.coletes.map((player, index) =>
@@ -241,7 +247,7 @@ function GameFormPageView() {
                   <span className="text-lg">＋</span>
                 </button>
               </div>
-            </section>
+            </SurfaceTile>
           </div>
           <div className="space-y-3 text-xs">
             <p className="text-[10px] uppercase tracking-[0.3em] text-center text-[var(--text-secondary)]">
@@ -300,25 +306,14 @@ function GameFormPageView() {
         </div>
       )}
 
-      {showTimePicker && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
-          <div className="animate-in slide-in-from-bottom duration-300 w-full max-w-[450px] mx-auto bg-[var(--bg-app)] rounded-t-3xl p-6 shadow-2xl">
-            <div className="flex justify-between items-center mb-6 px-1">
-              <h3 className="font-bold text-lg text-[var(--text-primary)]">
-                Ajustar Hora
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowTimePicker(false)}
-                className="bg-primary-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary-600/20 active:scale-95"
-              >
-                Concluir
-              </button>
-            </div>
-            <WheelTimePicker value={timeValue} onChange={setTimeValue} />
-          </div>
-        </div>
-      )}
-    </div>
+      <BottomSheet
+        open={showTimePicker}
+        title="Ajustar Hora"
+        onClose={() => setShowTimePicker(false)}
+        onConfirm={() => setShowTimePicker(false)}
+      >
+        <WheelTimePicker value={timeValue} onChange={setTimeValue} />
+      </BottomSheet>
+    </PageScaffold>
   );
 }

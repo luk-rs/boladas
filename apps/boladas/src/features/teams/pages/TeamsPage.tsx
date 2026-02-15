@@ -6,6 +6,9 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { WheelPicker } from "../../../components/ui/WheelPicker";
+import { BottomSheet } from "../../../components/ui/BottomSheet";
+import { PageScaffold } from "../../../components/layout/PageScaffold";
+import { SurfaceTile } from "../../../components/layout/SurfaceTile";
 import { useAuth } from "../../auth/useAuth";
 import { TeamsSection } from "../dashboard/components/TeamsSection";
 import {
@@ -16,9 +19,24 @@ import { useTeams } from "../useTeams";
 import {
   ROLE_TOGGLE_OPTIONS,
   TeamSettingsProvider,
+  type ExtraRole,
   getMemberEmoji,
   useTeamSettingsContext,
 } from "./team-settings/context/TeamSettingsContext";
+
+const INACTIVE_ROLE_EMOJI_CLASS =
+  "opacity-85 [filter:grayscale(1)_saturate(0)_brightness(0.72)]";
+
+const ROLE_ACTIVE_OUTLINE_GLOW_BY_ROLE: Record<ExtraRole, string> = {
+  team_admin:
+    "ring-1 ring-sky-300/70 shadow-[0_0_0_1px_rgba(56,189,248,0.8),0_0_10px_rgba(56,189,248,0.65),0_0_18px_rgba(56,189,248,0.45)]",
+  manager:
+    "ring-1 ring-emerald-300/70 shadow-[0_0_0_1px_rgba(16,185,129,0.8),0_0_10px_rgba(16,185,129,0.65),0_0_18px_rgba(16,185,129,0.45)]",
+  secretary:
+    "ring-1 ring-indigo-300/70 shadow-[0_0_0_1px_rgba(129,140,248,0.8),0_0_10px_rgba(129,140,248,0.65),0_0_18px_rgba(129,140,248,0.45)]",
+  accountant:
+    "ring-1 ring-amber-300/70 shadow-[0_0_0_1px_rgba(245,158,11,0.8),0_0_10px_rgba(245,158,11,0.65),0_0_18px_rgba(245,158,11,0.45)]",
+};
 
 export function TeamsPage() {
   return (
@@ -79,8 +97,7 @@ function TeamsPageView() {
     string | undefined
   >(undefined);
 
-  const hasTeamAdminRole =
-    selectedTeam?.roles.includes("team_admin") ?? false;
+  const hasTeamAdminRole = selectedTeam?.roles.includes("team_admin") ?? false;
   const canDeleteSelectedTeam =
     Boolean(selectedTeam) && (isSystemAdmin || hasTeamAdminRole);
 
@@ -93,7 +110,9 @@ function TeamsPageView() {
 
   useEffect(() => {
     if (!showTeamPicker) return;
-    setPendingTeamWheelLabel(selectedTeamWheelLabel ?? teamWheelOptions[0]?.label);
+    setPendingTeamWheelLabel(
+      selectedTeamWheelLabel ?? teamWheelOptions[0]?.label,
+    );
   }, [showTeamPicker, selectedTeamWheelLabel, teamWheelOptions]);
 
   useEffect(() => {
@@ -150,7 +169,9 @@ function TeamsPageView() {
     () =>
       ROLE_TOGGLE_OPTIONS.map((option) => ({
         option,
-        members: rosterMembers.filter((member) => member.roles.has(option.role)),
+        members: rosterMembers.filter((member) =>
+          member.roles.has(option.role),
+        ),
       })),
     [rosterMembers],
   );
@@ -167,25 +188,11 @@ function TeamsPageView() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <header className="text-center">
-        <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-          Equipas
-        </h2>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Plantel e gestão por permissões
-        </p>
-      </header>
-
+    <PageScaffold title="Equipas">
       {hasAnyManagementAccess && (
-        <section className="rounded-2xl p-5">
-          <header className="mb-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-              Time
-            </p>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-              Escopo da gestão
-            </h3>
+        <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
+          <header className="mb-3">
+            <p className="ui-section-title">Escopo da gestão</p>
           </header>
           <button
             type="button"
@@ -196,10 +203,12 @@ function TeamsPageView() {
               );
               setShowTeamPicker(true);
             }}
-            className="flex w-full cursor-pointer items-center justify-between rounded-2xl border-2 border-transparent bg-[var(--bg-app)] p-4 font-medium text-[var(--text-primary)] transition-all hover:border-primary-500/50"
+            className="group flex w-full cursor-pointer items-center justify-between rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)]/95 px-4 py-3.5 font-semibold text-[var(--text-primary)] shadow-sm transition-all hover:border-primary-500/55 hover:bg-[var(--bg-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/60"
           >
             <span>{selectedTeam?.teamName ?? "Selecione o time"}</span>
-            <span className="text-lg opacity-40">⌄</span>
+            <span className="text-base text-[var(--text-secondary)] transition-transform duration-150 group-hover:translate-y-[1px]">
+              ⌄
+            </span>
           </button>
           <p className="mt-2 text-xs text-[var(--text-secondary)]">
             Selecione qualquer time em que participa. As secções de gestão
@@ -222,37 +231,26 @@ function TeamsPageView() {
 
       {selectedTeamCanManage ? (
         <>
-          <section className="rounded-2xl p-5">
-            <header className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-                  Papéis
-                </p>
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                  Atribuir funções no elenco
-                </h3>
-              </div>
-              <span className="text-2xl">👥</span>
+          <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
+            <header className="mb-3">
+              <p className="ui-section-title">Atribuir funções no elenco</p>
             </header>
 
             <div className="space-y-4">
-              <div className="space-y-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-app)]/70 p-3">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
-                    Só 1
-                  </p>
-                  <p className="text-xs text-[var(--text-primary)]">
-                    🧭 Manager · 🗂️ Secretário · 💰 Tesoureiro
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
-                    Múltiplos
-                  </p>
-                  <p className="text-xs text-[var(--text-primary)]">
-                    🛡️ Team admin
-                  </p>
-                </div>
+              <div className="rounded-xl border border-slate-300/35 bg-slate-500/10 p-3 dark:border-slate-600/45 dark:bg-slate-700/15">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Regras de papéis
+                </p>
+                <p className="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Manager · Secretário · Tesoureiro{" "}
+                  <span className="text-slate-500 dark:text-slate-400">
+                    (só 1)
+                  </span>{" "}
+                  · Team admin{" "}
+                  <span className="text-slate-500 dark:text-slate-400">
+                    (múltiplos)
+                  </span>
+                </p>
               </div>
 
               {loadingRoster && rosterMembers.length === 0 && (
@@ -268,71 +266,72 @@ function TeamsPageView() {
               )}
 
               {rosterMembers.length > 0 && (
-                <div className="space-y-2">
-                  {rosterMembers.map((member) => {
-                    const activeEmojiList = ROLE_TOGGLE_OPTIONS.filter((option) =>
-                      member.roles.has(option.role),
-                    )
-                      .map((option) => option.emoji)
-                      .join(" ");
+                <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-app)]/70 p-2">
+                  <div className="space-y-2">
+                    {rosterMembers.map((member) => {
+                      return (
+                        <div
+                          key={member.id}
+                          className="rounded-lg bg-[var(--bg-app)]/55 p-3"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
+                                {getMemberEmoji(member.id)} {member.displayName}
+                              </p>
+                              <p className="truncate text-xs text-[var(--text-secondary)]">
+                                {member.email || "sem email"}
+                              </p>
+                            </div>
 
-                    return (
-                      <div
-                        key={member.id}
-                        className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-app)]/80 p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
-                              {getMemberEmoji(member.id)} {member.displayName}
-                            </p>
-                            <p className="truncate text-xs text-[var(--text-secondary)]">
-                              {member.email || "sem email"}
-                              {activeEmojiList ? ` • ${activeEmojiList}` : ""}
-                            </p>
-                          </div>
+                            <div className="flex flex-wrap justify-end gap-2">
+                              {ROLE_TOGGLE_OPTIONS.map((option) => {
+                                const isActive = member.roles.has(option.role);
+                                const actionKey = `${member.id}:${option.role}`;
+                                const isLoading = roleActionKey === actionKey;
+                                const isProtectedLastHolder =
+                                  isActive && roleHolderCount[option.role] <= 1;
+                                const activeOutlineClass = isActive
+                                  ? ROLE_ACTIVE_OUTLINE_GLOW_BY_ROLE[option.role]
+                                  : "";
+                                const emojiVisualClass = isLoading
+                                  ? "text-sm text-slate-400 dark:text-slate-500"
+                                  : isActive
+                                    ? "opacity-100"
+                                    : INACTIVE_ROLE_EMOJI_CLASS;
 
-                          <div className="flex flex-wrap justify-end gap-2">
-                            {ROLE_TOGGLE_OPTIONS.map((option) => {
-                              const isActive = member.roles.has(option.role);
-                              const actionKey = `${member.id}:${option.role}`;
-                              const isLoading = roleActionKey === actionKey;
-                              const isProtectedLastHolder =
-                                isActive && roleHolderCount[option.role] <= 1;
-
-                              return (
-                                <button
-                                  key={option.role}
-                                  type="button"
-                                  onClick={() =>
-                                    void handleToggleRole(
-                                      member.id,
-                                      option.role,
-                                      isActive,
-                                    )
-                                  }
-                                  disabled={
-                                    (roleActionKey !== null &&
-                                      roleActionKey !== actionKey) ||
-                                    isProtectedLastHolder
-                                  }
-                                  title={option.label}
-                                  aria-label={option.label}
-                                  className={`flex h-9 min-w-9 items-center justify-center rounded-full border px-2 text-sm transition-all active:scale-95 disabled:opacity-60 ${
-                                    isActive
-                                      ? "border-primary-500 bg-primary-500 text-white"
-                                      : "border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-primary)]"
-                                  }`}
-                                >
-                                  {isLoading ? "⏳" : option.emoji}
-                                </button>
-                              );
-                            })}
+                                return (
+                                  <button
+                                    key={option.role}
+                                    type="button"
+                                    onClick={() =>
+                                      void handleToggleRole(
+                                        member.id,
+                                        option.role,
+                                        isActive,
+                                      )
+                                    }
+                                    disabled={
+                                      (roleActionKey !== null &&
+                                        roleActionKey !== actionKey) ||
+                                      isProtectedLastHolder
+                                    }
+                                    title={option.label}
+                                    aria-label={option.label}
+                                    className={`flex h-9 min-w-9 items-center justify-center rounded-full bg-transparent p-0 text-[1.15rem] transition-[transform,box-shadow] duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50 ${activeOutlineClass}`}
+                                  >
+                                    <span className={emojiVisualClass}>
+                                      {isLoading ? "⏳" : option.emoji}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -342,17 +341,9 @@ function TeamsPageView() {
             </div>
           </section>
 
-          <section className="rounded-2xl p-5">
-            <header className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-                  Convites
-                </p>
-                <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                  Gestão de convites
-                </h3>
-              </div>
-              <span className="text-2xl">🔗</span>
+          <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
+            <header className="mb-3">
+              <p className="ui-section-title">Gestão de convites</p>
             </header>
 
             <div className="space-y-4">
@@ -418,23 +409,20 @@ jogador2@email.com"
           </section>
 
           {selectedTeam && (
-            <section className="rounded-2xl border border-rose-300/60 p-5">
-              <header className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-rose-600 dark:text-rose-300">
-                    Zona de risco
-                  </p>
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                    Apagar time
-                  </h3>
-                </div>
-                <span className="text-2xl">🗑️</span>
+            <section className="rounded-2xl p-4">
+              <header className="mb-3">
+                <p className="ui-section-title text-rose-600 dark:text-rose-300">
+                  Apagar time
+                </p>
               </header>
 
               <div className="space-y-3">
                 <p className="text-sm text-[var(--text-secondary)]">
-                  Esta ação remove <strong>{selectedTeam.teamName}</strong> e todos
-                  os dados associados.
+                  Esta ação remove{" "}
+                  <strong className="font-bold text-rose-600 dark:text-rose-300">
+                    {selectedTeam.teamName}
+                  </strong>{" "}
+                  e todos os dados associados.
                 </p>
 
                 {canDeleteSelectedTeam ? (
@@ -484,22 +472,14 @@ jogador2@email.com"
           )}
         </>
       ) : (
-        <section className="rounded-2xl border border-[var(--border-color)] p-5">
-          <header className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-                Organigrama
-              </p>
-              <h3 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                Estrutura de funções do time
-              </h3>
-            </div>
-            <span className="text-2xl">🧩</span>
+        <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4">
+          <header className="mb-3">
+            <p className="ui-section-title">Estrutura de funções do time</p>
           </header>
 
           <p className="text-sm text-[var(--text-secondary)]">
-            Sem permissão de gestão para o time selecionado. Esta secção é apenas
-            de visualização.
+            Sem permissão de gestão para o time selecionado. Esta secção é
+            apenas de visualização.
           </p>
 
           <div className="mt-4 space-y-3">
@@ -550,59 +530,49 @@ jogador2@email.com"
         </section>
       )}
 
-      {hasAnyManagementAccess && showTeamPicker && teamWheelOptions.length > 0 && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 transition-all">
-          <div className="mx-auto w-full max-w-[450px] animate-in rounded-t-3xl bg-[var(--bg-app)] p-6 shadow-2xl slide-in-from-bottom duration-300">
-            <div className="mb-6 flex items-center justify-between px-1">
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                Selecionar Time
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  const nextLabel =
-                    pendingTeamWheelLabel ?? selectedTeamWheelLabel ?? "";
-                  const selectedOption = teamWheelOptions.find(
-                    (option) => option.label === nextLabel,
-                  );
+      <BottomSheet
+        open={
+          hasAnyManagementAccess &&
+          showTeamPicker &&
+          teamWheelOptions.length > 0
+        }
+        title="Selecionar Time"
+        onClose={() => setShowTeamPicker(false)}
+        onConfirm={() => {
+          const nextLabel =
+            pendingTeamWheelLabel ?? selectedTeamWheelLabel ?? "";
+          const selectedOption = teamWheelOptions.find(
+            (option) => option.label === nextLabel,
+          );
 
-                  if (!selectedOption) {
-                    setShowTeamPicker(false);
-                    return;
-                  }
+          if (!selectedOption) {
+            setShowTeamPicker(false);
+            return;
+          }
 
-                  if (selectedOption.teamId !== selectedTeamId) {
-                    setSelectedTeamId(selectedOption.teamId);
-                    resetInviteOutput();
-                  }
+          if (selectedOption.teamId !== selectedTeamId) {
+            setSelectedTeamId(selectedOption.teamId);
+            resetInviteOutput();
+          }
 
-                  setShowTeamPicker(false);
-                }}
-                className="rounded-xl bg-primary-600 px-6 py-2 font-bold text-white shadow-lg shadow-primary-600/20 active:scale-95"
-              >
-                Concluir
-              </button>
-            </div>
-
-            <div className="items-center rounded-2xl bg-[var(--bg-app)] p-2 min-w-[140px]">
-              <div className="mb-1 text-center text-[10px] font-bold uppercase text-[var(--text-secondary)]">
-                Time
-              </div>
-              <WheelPicker
-                options={teamWheelOptions.map((option) => option.label)}
-                value={pendingTeamWheelLabel ?? selectedTeamWheelLabel ?? ""}
-                onChange={(value) => {
-                  setPendingTeamWheelLabel(String(value));
-                }}
-              />
-            </div>
-            <p className="mt-3 text-xs text-[var(--text-secondary)]">
-              A seleção fica pendente até clicar em "Concluir".
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
+          setShowTeamPicker(false);
+        }}
+      >
+        <SurfaceTile variant="soft" className="items-center p-2 min-w-[140px]">
+          <div className="mb-1 text-center ui-caption">Time</div>
+          <WheelPicker
+            options={teamWheelOptions.map((option) => option.label)}
+            value={pendingTeamWheelLabel ?? selectedTeamWheelLabel ?? ""}
+            onChange={(value) => {
+              setPendingTeamWheelLabel(String(value));
+            }}
+          />
+        </SurfaceTile>
+        <p className="mt-3 text-xs text-[var(--text-secondary)]">
+          A seleção fica pendente até clicar em "Concluir".
+        </p>
+      </BottomSheet>
+    </PageScaffold>
   );
 }
 

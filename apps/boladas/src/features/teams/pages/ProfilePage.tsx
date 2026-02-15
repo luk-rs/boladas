@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../../lib/supabase";
+import { PageScaffold } from "../../../components/layout/PageScaffold";
+import { SurfaceTile } from "../../../components/layout/SurfaceTile";
 import { useAuth } from "../../auth/useAuth";
 import { useTeams } from "../useTeams";
 
@@ -345,8 +347,8 @@ export function ProfilePage() {
   );
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <header className="rounded-3xl p-5 sm:p-6">
+    <PageScaffold className="space-y-6">
+      <section className="rounded-2xl p-5 sm:p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">Perfil</h2>
           {headerLoading && (
@@ -357,7 +359,7 @@ export function ProfilePage() {
         </div>
 
         <div className="mt-5 space-y-4">
-          <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
+          <SurfaceTile variant="soft" className="space-y-4">
             <div className="flex items-center gap-3">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-[var(--bg-surface)] bg-primary-100 text-primary-600 shadow dark:bg-primary-900/30 dark:text-primary-400">
                 <span className="text-3xl">👤</span>
@@ -389,9 +391,10 @@ export function ProfilePage() {
                       : "text-amber-500 dark:text-amber-300",
                 },
               ].map((stat) => (
-                <div
+                <SurfaceTile
                   key={stat.label}
-                  className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-2 text-center"
+                  variant="strong"
+                  className="p-2 text-center"
                 >
                   <p className={`text-base font-bold ${stat.tone}`}>
                     {stat.value}
@@ -399,13 +402,13 @@ export function ProfilePage() {
                   <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
                     {stat.label}
                   </p>
-                </div>
+                </SurfaceTile>
               ))}
             </div>
-          </section>
+          </SurfaceTile>
 
           <div className="grid gap-4">
-            <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
+            <SurfaceTile variant="soft">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
                 Medalhas
               </p>
@@ -435,13 +438,16 @@ export function ProfilePage() {
                   </article>
                 ))}
               </div>
-            </section>
+            </SurfaceTile>
 
-            <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
+            <SurfaceTile variant="soft">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
                 Star Stats
               </p>
-              <div className="mt-3 flex items-center justify-between rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2">
+              <SurfaceTile
+                variant="strong"
+                className="mt-3 flex items-center justify-between px-3 py-2"
+              >
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                   Rolling 5
                 </p>
@@ -458,13 +464,14 @@ export function ProfilePage() {
                     </button>
                   ))}
                 </div>
-              </div>
+              </SurfaceTile>
 
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {spotlightStats.map((stat) => (
-                  <div
+                  <SurfaceTile
                     key={stat.label}
-                    className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-2.5 text-center"
+                    variant="strong"
+                    className="px-2 py-2.5 text-center"
                   >
                     <p
                       className={`text-base font-bold ${
@@ -478,14 +485,13 @@ export function ProfilePage() {
                     <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
                       {stat.label}
                     </p>
-                  </div>
+                  </SurfaceTile>
                 ))}
               </div>
-            </section>
+            </SurfaceTile>
           </div>
         </div>
-      </header>
-
-    </div>
+      </section>
+    </PageScaffold>
   );
 }

@@ -13,6 +13,7 @@ import {
   REGISTRATION_ERROR_KEY,
   REGISTRATION_LOCK_KEY,
 } from "./registrationStorage";
+import { SurfaceTile } from "../../components/layout/SurfaceTile";
 
 export function SignIn({
   inviteToken,
@@ -113,7 +114,10 @@ export function SignIn({
           </p>
         </div>
 
-        <section className="rounded-3xl bg-[var(--bg-surface)] p-8 shadow-mui text-center space-y-6">
+        <SurfaceTile
+          variant="strong"
+          className="rounded-2xl p-8 text-center space-y-6 shadow-xl shadow-black/30 backdrop-blur-sm"
+        >
           <header>
             <h2 className="text-2xl font-bold text-[var(--text-primary)]">
               {inviteToken ? "Aceitar Convite" : "Entrar no App"}
@@ -126,11 +130,14 @@ export function SignIn({
           </header>
 
           {!supabase ? (
-            <div className="rounded-xl bg-red-50 p-4 border border-red-100">
+            <SurfaceTile
+              variant="danger"
+              className="border-red-200 p-4 text-center text-sm text-red-600"
+            >
               <p className="text-sm text-red-600 font-medium">
                 ⚠️ Erro de Configuração: Supabase não identificado.
               </p>
-            </div>
+            </SurfaceTile>
           ) : (
             <div className="space-y-4 pt-2">
               <OAuthIconButtons
@@ -150,13 +157,13 @@ export function SignIn({
               )}
 
               {(error || authError) && (
-                <p className="text-sm font-medium text-red-500 animate-bounce text-center">
+                <p className="text-sm font-medium text-red-500 text-center">
                   {error || authError}
                 </p>
               )}
             </div>
           )}
-        </section>
+        </SurfaceTile>
 
         {!inviteToken && (
           <div className="mt-8 text-center animate-in slide-in-from-bottom-4 duration-700 delay-300">

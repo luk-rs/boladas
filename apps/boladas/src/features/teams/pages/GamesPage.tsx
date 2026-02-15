@@ -3,6 +3,7 @@ import {
   ProfileDashboardProvider,
   useProfileDashboardContext,
 } from "../dashboard/context/ProfileDashboardContext";
+import { PageScaffold } from "../../../components/layout/PageScaffold";
 
 export function GamesPage() {
   return (
@@ -22,7 +23,10 @@ function GamesPageView() {
   } = useProfileDashboardContext();
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <PageScaffold
+      title="Jogos"
+      className="space-y-4"
+    >
       <GamesSection
         games={games}
         loading={loadingGames}
@@ -30,6 +34,6 @@ function GamesPageView() {
         cancellingGameId={cancellingGameId}
         onCancelGame={onCancelGame}
       />
-    </div>
+    </PageScaffold>
   );
 }

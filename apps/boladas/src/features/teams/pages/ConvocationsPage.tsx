@@ -3,6 +3,7 @@ import {
   ProfileDashboardProvider,
   useProfileDashboardContext,
 } from "../dashboard/context/ProfileDashboardContext";
+import { PageScaffold } from "../../../components/layout/PageScaffold";
 
 export function ConvocationsPage() {
   return (
@@ -31,7 +32,10 @@ function ConvocationsPageView() {
   } = useProfileDashboardContext();
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+    <PageScaffold
+      title="Convocatórias"
+      className="space-y-4"
+    >
       <ConvocationsSection
         convocations={convocations}
         loading={loadingConvocations}
@@ -48,6 +52,6 @@ function ConvocationsPageView() {
         holdProgressById={holdProgressById}
         onHoldProgress={onHoldProgress}
       />
-    </div>
+    </PageScaffold>
   );
 }

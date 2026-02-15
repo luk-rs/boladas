@@ -2,6 +2,7 @@ import { useAuth } from "../../auth/useAuth";
 import { useTeams } from "../useTeams";
 import { SystemAdminTeams } from "../SystemAdminTeams";
 import { Navigate } from "react-router-dom";
+import { PageScaffold } from "../../../components/layout/PageScaffold";
 
 export function SystemAdminPage() {
   const { isSystemAdmin } = useAuth();
@@ -19,8 +20,9 @@ export function SystemAdminPage() {
   }
 
   return (
-    <>
-      <h2>System Administration</h2>
+    <PageScaffold
+      title="System Administration"
+    >
       <SystemAdminTeams
         allTeams={allTeams}
         pendingRequests={pendingRequests}
@@ -29,6 +31,6 @@ export function SystemAdminPage() {
         onApproveRequest={approveRequest}
         onDenyRequest={denyRequest}
       />
-    </>
+    </PageScaffold>
   );
 }

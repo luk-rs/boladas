@@ -1,4 +1,7 @@
 import { Toggle } from "../../../components/ui/Toggle";
+import { PageScaffold } from "../../../components/layout/PageScaffold";
+import { SectionShell } from "../../../components/layout/SectionShell";
+import { SurfaceTile } from "../../../components/layout/SurfaceTile";
 import {
   usePreferences,
   type MenuPosition,
@@ -17,30 +20,12 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <header className="text-center">
-        <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-          Configurações
-        </h2>
-        <p className="text-sm text-[var(--text-secondary)]">
-          Preferências da aplicação
-        </p>
-      </header>
-
-      <section className="rounded-2xl p-5">
-        <header className="mb-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
-              Preferências
-            </p>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-              Ajustes da aplicação
-            </h3>
-          </div>
-          <span className="text-2xl">⚙️</span>
-        </header>
-
-        <div className="space-y-4 divide-y divide-[var(--border-color)]">
+    <PageScaffold title="Configurações">
+      <SectionShell title="Ajustes da aplicação">
+        <SurfaceTile
+          variant="strong"
+          className="space-y-4 divide-y divide-[var(--border-color)] p-4"
+        >
           <Toggle
             label="Menu à Direita"
             subLabel="Alternar posição do menu radial"
@@ -55,8 +40,8 @@ export function SettingsPage() {
             onChange={(checked) => toggleTheme(checked ? "dark" : "light")}
             icon={theme === "dark" ? "🌙" : "☀️"}
           />
-        </div>
-      </section>
-    </div>
+        </SurfaceTile>
+      </SectionShell>
+    </PageScaffold>
   );
 }
