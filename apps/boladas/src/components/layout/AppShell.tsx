@@ -139,7 +139,7 @@ export function AppShell() {
 
   return (
     <div className="app-shell">
-      <main className="flex-1 overflow-y-auto p-4 pb-24">
+      <main className="flex-1 overflow-y-auto px-3 pb-20 pt-3">
         <Outlet context={{ activeTeam }} />
       </main>
       <RadialMenu

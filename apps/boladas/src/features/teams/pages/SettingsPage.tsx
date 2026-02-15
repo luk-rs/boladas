@@ -27,7 +27,7 @@ export function SettingsPage() {
         </p>
       </header>
 
-      <section className="rounded-2xl p-5 shadow-mui">
+      <section className="rounded-2xl p-5">
         <header className="mb-4 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">

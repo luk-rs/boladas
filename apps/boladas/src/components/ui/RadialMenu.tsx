@@ -38,8 +38,8 @@ export function RadialMenu({
 
   return (
     <div
-      className={`absolute bottom-8 flex flex-col items-center z-50`}
-      style={{ [position]: "2rem" }}
+      className={`absolute bottom-4 flex flex-col items-center z-50`}
+      style={{ [position]: "1rem" }}
     >
       <div className="relative">
         {/* Inner Ring */}

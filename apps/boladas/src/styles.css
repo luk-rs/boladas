@@ -58,7 +58,6 @@
 @layer utilities {
   .app-shell {
     @apply w-full bg-[var(--bg-app)] text-[var(--text-primary)] relative flex flex-col;
-    max-width: 430px;
     min-height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
@@ -67,6 +66,7 @@
 
   @media (min-width: 768px) {
     .app-shell {
+      max-width: 430px;
       border-left: 1px solid rgba(148, 163, 184, 0.18);
       border-right: 1px solid rgba(148, 163, 184, 0.18);
       box-shadow: 0 20px 60px rgba(2, 6, 23, 0.35);

@@ -152,7 +152,7 @@ function GameFormPageView() {
 
   return (
     <div className="page-content space-y-6">
-      <header className="flex flex-wrap items-center gap-3 rounded-2xl p-4 shadow-mui">
+      <header className="flex flex-wrap items-center gap-3 rounded-2xl p-4">
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           {teamName}
         </h2>
@@ -195,7 +195,7 @@ function GameFormPageView() {
             <span className="text-lg">🦺</span>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <section className="flex h-full flex-col rounded-2xl p-4 shadow-mui">
+            <section className="flex h-full flex-col rounded-2xl p-4">
               <div className="space-y-0">
                 {teamPlayers.shirts.length ? (
                   teamPlayers.shirts.map((player, index) =>
@@ -219,7 +219,7 @@ function GameFormPageView() {
               </div>
             </section>
 
-            <section className="flex h-full flex-col rounded-2xl p-4 shadow-mui">
+            <section className="flex h-full flex-col rounded-2xl p-4">
               <div className="space-y-0">
                 {teamPlayers.coletes.length ? (
                   teamPlayers.coletes.map((player, index) =>
