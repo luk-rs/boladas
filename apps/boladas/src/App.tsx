@@ -5,9 +5,11 @@ import { useAuth } from "./features/auth/useAuth";
 import { usePendingRegistration } from "./features/auth/usePendingRegistration";
 import { useTeams } from "./features/teams/useTeams";
 import { AppRoutes } from "./AppRoutes";
+import { useGlobalInstalledPullToRefresh } from "./app/useGlobalInstalledPullToRefresh";
 
 export default function App() {
   const { isAuthed } = useAuth();
+  useGlobalInstalledPullToRefresh();
   const isPopup = useMemo(() => {
     if (typeof window === "undefined") return false;
     const params = new URLSearchParams(window.location.search);
