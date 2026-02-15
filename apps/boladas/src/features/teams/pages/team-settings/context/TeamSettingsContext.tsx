@@ -151,6 +151,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
   const {
     memberships,
     createEmailInvite,
+    refreshMemberships,
     error: hookError,
     loading: hookLoading,
   } = useTeams();
@@ -474,6 +475,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
         if (error) {
           setRolesError(error.message);
         } else {
+          await refreshMemberships();
           await loadRosterMembers(selectedTeam.teamId);
         }
 
@@ -520,10 +522,18 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      await refreshMemberships();
       await loadRosterMembers(selectedTeam.teamId);
       setRoleActionKey(null);
     },
-    [loadRosterMembers, rosterMembers, selectedTeam?.teamId, selectedTeamCanManage, selectedTeam?.teamName],
+    [
+      loadRosterMembers,
+      refreshMemberships,
+      rosterMembers,
+      selectedTeam?.teamId,
+      selectedTeamCanManage,
+      selectedTeam?.teamName,
+    ],
   );
 
   const value = useMemo(

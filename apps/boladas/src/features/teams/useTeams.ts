@@ -436,6 +436,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
     acceptInvite,
     createEmailInvite,
     createGenericInvite,
+    refreshMemberships: loadMemberships,
   };
 }
 
