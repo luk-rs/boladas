@@ -32,36 +32,6 @@ export function AppShell() {
       path: "/profile",
     },
     {
-      id: "games",
-      label: "Jogos",
-      icon: (
-        <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
-          <path d="M4.5 9.5h15" />
-          <path d="M7.5 4.5v3" />
-          <path d="M16.5 4.5v3" />
-          <rect x="4.5" y="6.5" width="15" height="13" rx="2.2" />
-          <path d="M9 13h2.5" />
-          <path d="M12.5 13H15" />
-          <path d="M9 16h2.5" />
-          <path d="M12.5 16H15" />
-        </svg>
-      ),
-      path: "/games",
-    },
-    {
-      id: "convocations",
-      label: "Convocatórias",
-      icon: (
-        <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
-          <path d="M4.5 13.5v-3a7.5 7.5 0 0 1 15 0v3" />
-          <path d="M6.5 13.5h11" />
-          <path d="M7.5 16.5h9" />
-          <path d="M10 19h4" />
-        </svg>
-      ),
-      path: "/convocations",
-    },
-    {
       id: "settings",
       label: "Configurações",
       icon: (
@@ -94,6 +64,65 @@ export function AppShell() {
   ];
 
   const backofficeItems = [
+    {
+      id: "games",
+      label: "Jogos",
+      icon: (
+        <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
+          <path d="M4.5 9.5h15" />
+          <path d="M7.5 4.5v3" />
+          <path d="M16.5 4.5v3" />
+          <rect x="4.5" y="6.5" width="15" height="13" rx="2.2" />
+          <path d="M9 13h2.5" />
+          <path d="M12.5 13H15" />
+          <path d="M9 16h2.5" />
+          <path d="M12.5 16H15" />
+        </svg>
+      ),
+      path: "/games",
+    },
+    {
+      id: "convocations",
+      label: "Convocatórias",
+      icon: (
+        <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
+          <path d="M4.5 13.5v-3a7.5 7.5 0 0 1 15 0v3" />
+          <path d="M6.5 13.5h11" />
+          <path d="M7.5 16.5h9" />
+          <path d="M10 19h4" />
+        </svg>
+      ),
+      path: "/convocations",
+    },
+    {
+      id: "standings",
+      label: "Classificação",
+      icon: (
+        <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
+          <path d="M6 19.5h12" />
+          <path d="M8 19.5v-6.5" />
+          <path d="M12 19.5v-10" />
+          <path d="M16 19.5v-4" />
+          <path d="M8 10.5h8" />
+        </svg>
+      ),
+      path: "/standings",
+      disabled: true,
+    },
+    {
+      id: "stats",
+      label: "Estatísticas",
+      icon: (
+        <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
+          <path d="M5 19.5h14" />
+          <path d="M7 16l3-3 2.5 2.5L17 11" />
+          <path d="M17 11h-3" />
+          <path d="M17 11v3" />
+        </svg>
+      ),
+      path: "/stats",
+      disabled: true,
+    },
     {
       id: "teams",
       label: "Equipas",
