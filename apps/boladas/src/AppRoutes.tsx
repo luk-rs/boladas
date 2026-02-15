@@ -5,11 +5,12 @@ import { LoginPage } from "./features/auth/pages/LoginPage";
 import { SystemAdminPage } from "./features/teams/pages/SystemAdminPage";
 import { AppShell } from "./components/layout/AppShell";
 import { GamesPage } from "./features/teams/pages/GamesPage";
+import { ConvocationsPage } from "./features/teams/pages/ConvocationsPage";
 import { StandingsPage } from "./features/teams/pages/StandingsPage";
 import { StatsPage } from "./features/teams/pages/StatsPage";
 import { ProfilePage } from "./features/teams/pages/ProfilePage";
 import { SettingsPage } from "./features/teams/pages/SettingsPage";
-import { TeamSettingsPage } from "./features/teams/pages/TeamSettingsPage";
+import { TeamsPage } from "./features/teams/pages/TeamsPage";
 import { GameFormPage } from "./features/teams/pages/GameFormPage";
 import { ConvocationFormPage } from "./features/teams/pages/ConvocationFormPage";
 import { JoinPage } from "./features/invites/JoinPage";
@@ -30,16 +31,21 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/" element={<Navigate to="/profile" replace />} />
           <Route path="/games" element={<GamesPage />} />
+          <Route path="/convocations" element={<ConvocationsPage />} />
           <Route path="/games/new/:convocationId" element={<GameFormPage />} />
           <Route path="/convocations/new" element={<ConvocationFormPage />} />
           <Route path="/standings" element={<StandingsPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/team-management" element={<TeamSettingsPage />} />
+          <Route path="/teams" element={<TeamsPage />} />
+          <Route
+            path="/team-management"
+            element={<Navigate to="/teams" replace />}
+          />
           <Route
             path="/team-settings"
-            element={<Navigate to="/team-management" replace />}
+            element={<Navigate to="/teams" replace />}
           />
         </Route>
 

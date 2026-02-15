@@ -33,7 +33,7 @@ type TeamSchedule = {
   isComplete: boolean;
 };
 
-const RETURN_TO_PROFILE_URL = "/profile?tab=convocations";
+const RETURN_TO_PROFILE_URL = "/convocations";
 const DEFAULT_TIME = "19:00";
 const DAY_LABELS = [
   "Domingo",

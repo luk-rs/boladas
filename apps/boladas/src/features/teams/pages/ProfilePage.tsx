@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../auth/useAuth";
 import { useTeams } from "../useTeams";
-import { ProfileDashboard } from "../dashboard/ProfileDashboard";
 
 type HeaderStats = {
   games: number;
@@ -71,6 +71,8 @@ function getDayDiffFromToday(isoDate: string, todayStart: Date) {
 }
 
 export function ProfilePage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { sessionUserId, sessionEmail } = useAuth();
   const { memberships } = useTeams();
   const teamIds = useMemo(
@@ -85,6 +87,21 @@ export function ProfilePage() {
     () => resolveRoleLabel(memberships.map((membership) => membership.roles)),
     [memberships],
   );
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam === "games") {
+      navigate("/games", { replace: true });
+      return;
+    }
+    if (tabParam === "convocations") {
+      navigate("/convocations", { replace: true });
+      return;
+    }
+    if (tabParam === "teams") {
+      navigate("/teams", { replace: true });
+    }
+  }, [navigate, searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -469,7 +486,6 @@ export function ProfilePage() {
         </div>
       </header>
 
-      <ProfileDashboard withPadding={false} />
     </div>
   );
 }

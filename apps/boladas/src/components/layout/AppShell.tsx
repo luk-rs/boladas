@@ -4,16 +4,11 @@ import { useTeams } from "../../features/teams/useTeams";
 import { useAuth } from "../../features/auth/useAuth";
 import { usePreferences } from "../../features/preferences/usePreferences";
 
-const TEAM_MANAGEMENT_ROLES = new Set(["team_admin", "manager"]);
-
 export function AppShell() {
   const { signOut } = useAuth();
   const { memberships } = useTeams();
   const { menuPosition } = usePreferences();
   const activeTeam = memberships[0];
-  const canManageTeams = memberships.some((membership) =>
-    membership.roles.some((role) => TEAM_MANAGEMENT_ROLES.has(role)),
-  );
 
   const iconProps = {
     className: "h-5 w-5",
@@ -35,6 +30,36 @@ export function AppShell() {
         </svg>
       ),
       path: "/profile",
+    },
+    {
+      id: "games",
+      label: "Jogos",
+      icon: (
+        <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
+          <path d="M4.5 9.5h15" />
+          <path d="M7.5 4.5v3" />
+          <path d="M16.5 4.5v3" />
+          <rect x="4.5" y="6.5" width="15" height="13" rx="2.2" />
+          <path d="M9 13h2.5" />
+          <path d="M12.5 13H15" />
+          <path d="M9 16h2.5" />
+          <path d="M12.5 16H15" />
+        </svg>
+      ),
+      path: "/games",
+    },
+    {
+      id: "convocations",
+      label: "Convocatórias",
+      icon: (
+        <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
+          <path d="M4.5 13.5v-3a7.5 7.5 0 0 1 15 0v3" />
+          <path d="M6.5 13.5h11" />
+          <path d="M7.5 16.5h9" />
+          <path d="M10 19h4" />
+        </svg>
+      ),
+      path: "/convocations",
     },
     {
       id: "settings",
@@ -68,22 +93,20 @@ export function AppShell() {
     },
   ];
 
-  const backofficeItems = canManageTeams
-    ? [
-        {
-          id: "team-management",
-          label: "Gestão de Time",
-          icon: (
-            <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
-              <path d="M12 3.5l7 3v5.5c0 4.3-2.8 6.9-7 8.5-4.2-1.6-7-4.2-7-8.5V6.5l7-3z" />
-              <circle cx="12" cy="10" r="2.2" />
-              <path d="M9 14c.8-1 1.8-1.5 3-1.5s2.2.5 3 1.5" />
-            </svg>
-          ),
-          path: "/team-management",
-        },
-      ]
-    : undefined;
+  const backofficeItems = [
+    {
+      id: "teams",
+      label: "Equipas",
+      icon: (
+        <svg viewBox="0 0 24 24" aria-hidden {...iconProps}>
+          <path d="M12 3.5l7 3v5.5c0 4.3-2.8 6.9-7 8.5-4.2-1.6-7-4.2-7-8.5V6.5l7-3z" />
+          <circle cx="12" cy="10" r="2.2" />
+          <path d="M9 14c.8-1 1.8-1.5 3-1.5s2.2.5 3 1.5" />
+        </svg>
+      ),
+      path: "/teams",
+    },
+  ];
 
   return (
     <div className="app-shell">

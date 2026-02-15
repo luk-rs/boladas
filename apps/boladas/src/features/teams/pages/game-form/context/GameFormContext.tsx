@@ -229,7 +229,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
 
       if (!cancelError) {
         setActionMessage("Convocatória rejeitada.");
-        navigate("/profile", { replace: true });
+        navigate("/games", { replace: true });
         return;
       }
 
@@ -288,7 +288,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
         }
 
         setActionMessage("Convocatória rejeitada.");
-        navigate("/profile", { replace: true });
+        navigate("/games", { replace: true });
         return;
       }
 
@@ -296,7 +296,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
         setActionMessage(rejectError.message);
       } else {
         setActionMessage("Convocatória rejeitada.");
-        navigate("/profile", { replace: true });
+        navigate("/games", { replace: true });
       }
     } finally {
       setActionState("idle");
@@ -362,7 +362,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
 
           if (!legacyCreateError) {
             setActionMessage("Jogo criado com sucesso.");
-            navigate("/profile", { replace: true });
+            navigate("/games", { replace: true });
             return;
           }
 
@@ -388,7 +388,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
         setActionMessage(rpcError.message);
       } else {
         setActionMessage("Jogo criado com sucesso.");
-        navigate("/profile", { replace: true });
+        navigate("/games", { replace: true });
       }
     } finally {
       setActionState("idle");
