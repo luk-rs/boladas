@@ -252,12 +252,19 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
   const deleteTeam = async (teamId: string) => {
     if (!supabase) return;
 
+    setError(null);
+    setStatus(null);
+
     const { error: deleteError } = await supabase
       .from("teams")
       .delete()
       .eq("id", teamId);
     if (deleteError) setError(deleteError.message);
-    else await loadAdminData();
+    else {
+      setStatus("Team deleted.");
+      await loadAdminData();
+      await loadMemberships();
+    }
   };
 
   const approveRequest = async (requestId: string) => {

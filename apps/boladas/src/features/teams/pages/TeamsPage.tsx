@@ -1,9 +1,17 @@
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { WheelPicker } from "../../../components/ui/WheelPicker";
+import { useAuth } from "../../auth/useAuth";
 import { TeamsSection } from "../dashboard/components/TeamsSection";
 import {
   ProfileDashboardProvider,
   useProfileDashboardContext,
 } from "../dashboard/context/ProfileDashboardContext";
+import { useTeams } from "../useTeams";
 import {
   ROLE_TOGGLE_OPTIONS,
   TeamSettingsProvider,
@@ -22,6 +30,8 @@ export function TeamsPage() {
 }
 
 function TeamsPageView() {
+  const { isSystemAdmin } = useAuth();
+  const { deleteTeam } = useTeams();
   const {
     teamsWithStatus,
     loadingTeams,
@@ -59,12 +69,75 @@ function TeamsPageView() {
     handleToggleRole,
     rolesError,
   } = useTeamSettingsContext();
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [deleteArmedSecondsLeft, setDeleteArmedSecondsLeft] = useState(0);
+  const [deleteAttempted, setDeleteAttempted] = useState(false);
+
+  const hasTeamAdminRole =
+    selectedInviteTeam?.roles.includes("team_admin") ?? false;
+  const canDeleteSelectedTeam =
+    Boolean(selectedInviteTeam) && (isSystemAdmin || hasTeamAdminRole);
+
+  useEffect(() => {
+    setDeleteArmed(false);
+    setDeleteBusy(false);
+    setDeleteArmedSecondsLeft(0);
+    setDeleteAttempted(false);
+  }, [selectedInviteTeamId]);
+
+  useEffect(() => {
+    if (!deleteArmed) {
+      setDeleteArmedSecondsLeft(0);
+      return;
+    }
+
+    const ARM_WINDOW_MS = 8000;
+    const expiresAt = Date.now() + ARM_WINDOW_MS;
+    setDeleteArmedSecondsLeft(Math.ceil(ARM_WINDOW_MS / 1000));
+
+    const intervalId = window.setInterval(() => {
+      const remainingMs = Math.max(0, expiresAt - Date.now());
+      const remainingSeconds = Math.ceil(remainingMs / 1000);
+      setDeleteArmedSecondsLeft(remainingSeconds);
+
+      if (remainingMs <= 0) {
+        setDeleteArmed(false);
+      }
+    }, 200);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [deleteArmed]);
+
+  const handleArmDelete = () => {
+    if (deleteBusy || !canDeleteSelectedTeam) return;
+    setDeleteAttempted(false);
+    setDeleteArmed(true);
+  };
+
+  const handleCancelDelete = () => {
+    if (deleteBusy) return;
+    setDeleteArmed(false);
+  };
+
+  const handleApproveDelete = async () => {
+    if (deleteBusy || !selectedInviteTeam || !canDeleteSelectedTeam) return;
+    setDeleteBusy(true);
+    setDeleteArmed(false);
+    setDeleteAttempted(true);
+    await deleteTeam(selectedInviteTeam.teamId);
+    setDeleteBusy(false);
+  };
 
   if (hookLoading) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center p-6 text-center">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" />
-        <p className="mt-4 text-sm text-[var(--text-secondary)]">Carregando...</p>
+        <p className="mt-4 text-sm text-[var(--text-secondary)]">
+          Carregando...
+        </p>
       </div>
     );
   }
@@ -74,7 +147,9 @@ function TeamsPageView() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <header className="text-center">
-        <h2 className="text-2xl font-bold text-[var(--text-primary)]">Equipas</h2>
+        <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+          Equipas
+        </h2>
         <p className="text-sm text-[var(--text-secondary)]">
           Plantel e gestão por permissões
         </p>
@@ -147,7 +222,9 @@ function TeamsPageView() {
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-secondary)]">
                     Múltiplos
                   </p>
-                  <p className="text-xs text-[var(--text-primary)]">🛡️ Team admin</p>
+                  <p className="text-xs text-[var(--text-primary)]">
+                    🛡️ Team admin
+                  </p>
                 </div>
               </div>
 
@@ -166,8 +243,8 @@ function TeamsPageView() {
               {rosterMembers.length > 0 && (
                 <div className="space-y-2">
                   {rosterMembers.map((member) => {
-                    const activeEmojiList = ROLE_TOGGLE_OPTIONS.filter((option) =>
-                      member.roles.has(option.role),
+                    const activeEmojiList = ROLE_TOGGLE_OPTIONS.filter(
+                      (option) => member.roles.has(option.role),
                     )
                       .map((option) => option.emoji)
                       .join(" ");
@@ -254,7 +331,8 @@ function TeamsPageView() {
             <div className="space-y-4">
               <p className="text-sm text-[var(--text-secondary)]">
                 Gere convites privados para vários emails de uma vez. Cada email
-                receberá um link único (7 dias) para entrar como <strong>Membro</strong>.
+                receberá um link único (7 dias) para entrar como{" "}
+                <strong>Membro</strong>.
               </p>
 
               <label className="block space-y-2">
@@ -306,9 +384,78 @@ jogador2@email.com"
                 </button>
               </div>
 
-              {hookError && <p className="text-xs text-red-500">{hookError}</p>}
+              {hookError && !deleteAttempted && (
+                <p className="text-xs text-red-500">{hookError}</p>
+              )}
             </div>
           </section>
+
+          {selectedInviteTeam && (
+            <section className="rounded-2xl border border-rose-300/60 p-5">
+              <header className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-rose-600 dark:text-rose-300">
+                    Zona de risco
+                  </p>
+                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                    Apagar time
+                  </h3>
+                </div>
+                <span className="text-2xl">🗑️</span>
+              </header>
+
+              <div className="space-y-3">
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Esta ação remove{" "}
+                  <strong>{selectedInviteTeam.teamName}</strong> e todos os
+                  dados associados.
+                </p>
+
+                {canDeleteSelectedTeam ? (
+                  deleteArmed ? (
+                    <div className="flex w-full items-center justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={handleCancelDelete}
+                        disabled={deleteBusy}
+                        className="rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-2 text-xs font-semibold text-[var(--text-primary)] transition-all active:scale-95 disabled:opacity-60"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleApproveDelete()}
+                        disabled={deleteBusy}
+                        className="rounded-full bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition-all active:scale-95 disabled:opacity-60"
+                      >
+                        {deleteBusy ? "A apagar..." : "Confirmar apagar"}
+                      </button>
+                    </div>
+                  ) : (
+                    <SlideToArmDeleteControl
+                      disabled={deleteBusy}
+                      onArm={handleArmDelete}
+                    />
+                  )
+                ) : (
+                  <p className="text-xs font-semibold text-[var(--text-secondary)]">
+                    Só team admin ou system admin podem apagar este time.
+                  </p>
+                )}
+
+                {deleteArmed && (
+                  <p className="text-xs text-amber-600 dark:text-amber-300">
+                    Confirmação armada por {deleteArmedSecondsLeft} segundo
+                    {deleteArmedSecondsLeft === 1 ? "" : "s"}.
+                  </p>
+                )}
+
+                {canDeleteSelectedTeam && deleteAttempted && hookError && (
+                  <p className="text-xs font-bold text-red-500">{hookError}</p>
+                )}
+              </div>
+            </section>
+          )}
         </>
       ) : (
         <section className="rounded-2xl border border-[var(--border-color)] p-5">
@@ -319,8 +466,8 @@ jogador2@email.com"
             Permissões insuficientes
           </h3>
           <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            Convites e gestão de papéis só ficam disponíveis para manager ou team
-            admin.
+            Convites e gestão de papéis só ficam disponíveis para manager ou
+            team admin.
           </p>
         </section>
       )}
@@ -371,6 +518,133 @@ jogador2@email.com"
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+type SlideToArmDeleteControlProps = {
+  disabled: boolean;
+  onArm: () => void;
+};
+
+function SlideToArmDeleteControl({
+  disabled,
+  onArm,
+}: SlideToArmDeleteControlProps) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const pointerIdRef = useRef<number | null>(null);
+  const progressRef = useRef(0);
+  const [dragX, setDragX] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  const THUMB_SIZE = 40;
+  const TRACK_PADDING = 4;
+  const ARM_THRESHOLD = 0.98;
+
+  const updateDrag = (nextX: number, maxX: number) => {
+    const clampedX = Math.min(Math.max(nextX, 0), maxX);
+    const nextProgress = maxX > 0 ? clampedX / maxX : 0;
+    progressRef.current = nextProgress;
+    setProgress(nextProgress);
+    setDragX(clampedX);
+  };
+
+  const readPointer = (clientX: number) => {
+    const track = trackRef.current;
+    if (!track) {
+      return { nextX: 0, maxX: 1 };
+    }
+    const rect = track.getBoundingClientRect();
+    const maxX = Math.max(rect.width - THUMB_SIZE - TRACK_PADDING * 2, 1);
+    const pointerX = clientX - rect.left;
+    const nextX = pointerX - THUMB_SIZE / 2 - TRACK_PADDING;
+    return { nextX, maxX };
+  };
+
+  const canStartDrag = (clientX: number) => {
+    const track = trackRef.current;
+    if (!track) return false;
+    const rect = track.getBoundingClientRect();
+    const startZoneRight = rect.left + THUMB_SIZE + TRACK_PADDING * 2 + 8;
+    return clientX <= startZoneRight;
+  };
+
+  const reset = () => {
+    progressRef.current = 0;
+    setProgress(0);
+    setDragX(0);
+  };
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (disabled) return;
+    if (!canStartDrag(event.clientX)) return;
+    pointerIdRef.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const { nextX, maxX } = readPointer(event.clientX);
+    updateDrag(nextX, maxX);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (disabled || pointerIdRef.current !== event.pointerId) return;
+    const { nextX, maxX } = readPointer(event.clientX);
+    updateDrag(nextX, maxX);
+  };
+
+  const handlePointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (pointerIdRef.current !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const shouldArm = progressRef.current >= ARM_THRESHOLD;
+    pointerIdRef.current = null;
+    reset();
+
+    if (shouldArm) {
+      onArm();
+    }
+  };
+
+  const handlePointerCancel = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (pointerIdRef.current !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    pointerIdRef.current = null;
+    reset();
+  };
+
+  const fillWidth = TRACK_PADDING + dragX + THUMB_SIZE;
+
+  return (
+    <div
+      ref={trackRef}
+      className={`relative h-12 w-full touch-none select-none overflow-hidden rounded-full border ${
+        disabled
+          ? "cursor-not-allowed border-rose-200/50 opacity-60"
+          : "cursor-ew-resize border-rose-300/70"
+      }`}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+    >
+      <div className="absolute inset-0 bg-rose-50/70 dark:bg-rose-950/30" />
+      <div
+        className="absolute inset-y-0 left-0 rounded-r-full bg-rose-500/20 transition-[width] duration-75"
+        style={{
+          width: `${fillWidth}px`,
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-14 text-[10px] font-bold uppercase tracking-[0.14em] text-rose-700 dark:text-rose-200">
+        Arraste até ao fim para apagar
+      </div>
+      <div
+        className="pointer-events-none absolute top-1 flex h-10 w-10 items-center justify-center rounded-full bg-rose-600 text-base text-white shadow-lg transition-[left] duration-75"
+        style={{ left: `${TRACK_PADDING + dragX}px` }}
+      >
+        »
+      </div>
     </div>
   );
 }

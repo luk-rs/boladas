@@ -255,6 +255,15 @@ declare
   target_id uuid;
 begin
   target_id := coalesce(new.team_member_id, old.team_member_id);
+
+  if not exists (
+    select 1
+    from public.team_members tm
+    where tm.id = target_id
+  ) then
+    return null;
+  end if;
+
   select count(*) into base_count
   from public.team_member_roles tmr
   join public.roles r on r.name = tmr.role
@@ -461,9 +470,14 @@ create policy "teams_update_owner"
   on public.teams for update
   using (created_by = auth.uid());
 
-create policy "teams_delete_system_admin"
+drop policy if exists "teams_delete_system_admin" on public.teams;
+
+create policy "teams_delete_system_admin_or_team_admin"
   on public.teams for delete
-  using (public.is_system_admin());
+  using (
+    public.is_system_admin()
+    or public.is_team_admin(id)
+  );
 
 -- Team members: members can read, admins can manage
 create policy "team_members_select_team"
