@@ -568,7 +568,7 @@ export function ConvocationFormPage() {
 
   if (manageableMemberships.length === 0) {
     return (
-      <div className="space-y-5 rounded-2xl bg-[var(--bg-surface)] p-6 text-center shadow-mui">
+      <div className="space-y-5 rounded-2xl p-6 text-center shadow-mui">
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">
           Acesso negado
         </h2>
@@ -588,7 +588,7 @@ export function ConvocationFormPage() {
 
   return (
     <div className="space-y-6 pb-20">
-      <header className="rounded-2xl bg-[var(--bg-surface)] p-5 shadow-mui">
+      <header className="rounded-2xl p-5 shadow-mui">
         <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
           Convocatória
         </p>
@@ -597,7 +597,7 @@ export function ConvocationFormPage() {
         </h2>
       </header>
 
-      <section className="space-y-4 rounded-2xl bg-[var(--bg-surface)] p-5 shadow-mui">
+      <section className="space-y-4 rounded-2xl p-5 shadow-mui">
         <label className="block space-y-2">
           <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
             Time

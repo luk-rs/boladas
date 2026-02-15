@@ -38,7 +38,7 @@ export function RadialMenu({
 
   return (
     <div
-      className={`fixed bottom-8 flex flex-col items-center z-50`}
+      className={`absolute bottom-8 flex flex-col items-center z-50`}
       style={{ [position]: "2rem" }}
     >
       <div className="relative">

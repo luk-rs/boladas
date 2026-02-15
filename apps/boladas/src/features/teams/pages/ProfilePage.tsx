@@ -346,7 +346,7 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <header className="rounded-3xl bg-[var(--bg-surface)] p-5 shadow-mui sm:p-6">
+      <header className="rounded-3xl p-5 shadow-mui sm:p-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">Perfil</h2>
           {headerLoading && (

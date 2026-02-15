@@ -89,7 +89,7 @@ function TeamsPageView() {
 
       {hasManagementAccess ? (
         <>
-          <section className="rounded-2xl bg-[var(--bg-surface)] p-5 shadow-mui">
+          <section className="rounded-2xl p-5 shadow-mui">
             <header className="mb-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
                 Time
@@ -120,7 +120,7 @@ function TeamsPageView() {
             )}
           </section>
 
-          <section className="rounded-2xl bg-[var(--bg-surface)] p-5 shadow-mui">
+          <section className="rounded-2xl p-5 shadow-mui">
             <header className="mb-4 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
@@ -238,7 +238,7 @@ function TeamsPageView() {
             </div>
           </section>
 
-          <section className="rounded-2xl bg-[var(--bg-surface)] p-5 shadow-mui">
+          <section className="rounded-2xl p-5 shadow-mui">
             <header className="mb-4 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
@@ -311,7 +311,7 @@ jogador2@email.com"
           </section>
         </>
       ) : (
-        <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-5 shadow-mui">
+        <section className="rounded-2xl border border-[var(--border-color)] p-5 shadow-mui">
           <p className="text-xs uppercase tracking-[0.2em] text-[var(--text-secondary)]">
             Gestão avançada
           </p>
