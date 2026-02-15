@@ -60,6 +60,7 @@ export function AppShell() {
         </svg>
       ),
       onClick: signOut,
+      iconClassName: "text-rose-700 dark:text-rose-400",
     },
   ];
 

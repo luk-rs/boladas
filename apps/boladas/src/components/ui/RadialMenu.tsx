@@ -9,6 +9,7 @@ export interface RadialMenuItem {
   path?: string;
   onClick?: () => void;
   disabled?: boolean;
+  iconClassName?: string;
 }
 
 interface RadialMenuProps {
@@ -44,13 +45,13 @@ export function RadialMenu({
       <div className="relative">
         {/* Inner Ring */}
         {items.map((item, index) => {
-          const angleRange = 100;
+          const angleRange = 96;
           const step = angleRange / (items.length - 1 || 1);
           const currentAngle =
             position === "right" ? 180 - step * index : 0 + step * index;
 
           const radian = (currentAngle * Math.PI) / 180;
-          const radius = 110;
+          const radius = 106;
           const x = isOpen ? Math.cos(radian) * radius : 0;
           const y = isOpen ? -Math.sin(radian) * radius : 0;
           const isActive = item.path
@@ -79,7 +80,7 @@ export function RadialMenu({
                   : "active:scale-95 cursor-pointer " +
                     (isActive
                       ? "bg-primary-500 text-white"
-                      : "bg-[var(--bg-surface)] text-[var(--text-primary)]")
+                      : "opacity-65 hover:opacity-100 bg-[var(--bg-surface)] text-[var(--text-primary)]")
               }`}
               style={{
                 [position]: 0,
@@ -91,8 +92,24 @@ export function RadialMenu({
               }}
               title={item.label + (item.disabled ? " (Bloqueado)" : "")}
             >
-              <span className="flex h-5 w-5 items-center justify-center">
+              <span
+                className={`relative z-10 flex h-5 w-5 items-center justify-center ${
+                  item.iconClassName ?? ""
+                }`}
+              >
                 {item.icon}
+              </span>
+              <span
+                aria-hidden
+                className={`pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold ${
+                  item.disabled
+                    ? "text-[var(--text-secondary)]/45"
+                    : isActive
+                      ? "text-[var(--text-primary)]"
+                      : "text-[var(--text-secondary)]/65"
+                }`}
+              >
+                {item.label}
               </span>
             </button>
           );
@@ -101,17 +118,15 @@ export function RadialMenu({
         {/* Outer Ring (Backoffice) */}
         {backofficeItems &&
           backofficeItems.map((item, index) => {
-            const angleRange = 90; // Slightly narrower range for outer ring to keep it reachable
+            const angleRange = 91.2;
             const step = angleRange / (backofficeItems.length - 1 || 1);
-            // Offset angle slightly so they don't overlap perfectly with inner ring lines if same count
-            const offset = 5;
             const currentAngle =
               position === "right"
-                ? 180 - step * index - offset
-                : 0 + step * index + offset;
+                ? 180 - step * index
+                : 0 + step * index;
 
             const radian = (currentAngle * Math.PI) / 180;
-            const radius = 180; // Larger radius
+            const radius = 175;
             const x = isOpen ? Math.cos(radian) * radius : 0;
             const y = isOpen ? -Math.sin(radian) * radius : 0;
             const isActive = item.path
@@ -140,7 +155,7 @@ export function RadialMenu({
                     : "active:scale-95 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 " +
                       (isActive
                         ? "bg-amber-500 text-white"
-                        : "bg-[var(--bg-surface)] text-[var(--text-primary)]")
+                        : "opacity-65 hover:opacity-100 bg-[var(--bg-surface)] text-[var(--text-primary)]")
                 }`}
                 style={{
                   [position]: 0,
@@ -152,8 +167,24 @@ export function RadialMenu({
                 }}
                 title={item.label}
               >
-                <span className="flex h-6 w-6 items-center justify-center">
+                <span
+                  className={`relative z-10 flex h-6 w-6 items-center justify-center ${
+                    item.iconClassName ?? ""
+                  }`}
+                >
                   {item.icon}
+                </span>
+                <span
+                  aria-hidden
+                  className={`pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap text-[9px] font-semibold ${
+                    item.disabled
+                      ? "text-[var(--text-secondary)]/45"
+                      : isActive
+                        ? "text-[var(--text-primary)]"
+                        : "text-[var(--text-secondary)]/65"
+                  }`}
+                >
+                  {item.label}
                 </span>
               </button>
             );
