@@ -53,14 +53,13 @@ type TeamOption = {
   teamId: string;
   displayName: string;
   label: string;
-  isSelectable: boolean;
 };
 
 type TeamSettingsContextValue = {
   hookLoading: boolean;
   hookError: string | null;
   manageableMemberships: ManageableMembership[];
-  selectedInviteTeam:
+  selectedTeam:
     | {
         teamId: string;
         teamName: string;
@@ -70,10 +69,11 @@ type TeamSettingsContextValue = {
     | undefined;
   showTeamPicker: boolean;
   setShowTeamPicker: (value: boolean) => void;
+  selectedTeamCanManage: boolean;
   teamWheelOptions: TeamOption[];
   selectedTeamWheelLabel: string | undefined;
-  selectedInviteTeamId: string;
-  setSelectedInviteTeamId: (value: string) => void;
+  selectedTeamId: string;
+  setSelectedTeamId: (value: string) => void;
   teamPickerError: string | null;
   clearTeamPickerError: () => void;
   emailsTextareaRef: RefObject<HTMLTextAreaElement>;
@@ -154,7 +154,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
     error: hookError,
     loading: hookLoading,
   } = useTeams();
-  const [selectedInviteTeamId, setSelectedInviteTeamIdState] = useState("");
+  const [selectedTeamId, setSelectedTeamIdState] = useState("");
   const [showTeamPicker, setShowTeamPicker] = useState(false);
   const [teamPickerError, setTeamPickerError] = useState<string | null>(null);
   const [emailsInput, setEmailsInput] = useState("");
@@ -182,49 +182,46 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (manageableMemberships.length === 0) {
-      setSelectedInviteTeamIdState("");
+    if (memberships.length === 0) {
+      setSelectedTeamIdState("");
       return;
     }
 
-    const hasSelectedTeam = manageableMemberships.some(
-      (membership) => membership.teamId === selectedInviteTeamId,
+    const hasSelectedTeam = memberships.some(
+      (membership) => membership.teamId === selectedTeamId,
     );
     if (!hasSelectedTeam) {
-      setSelectedInviteTeamIdState(manageableMemberships[0].teamId);
+      setSelectedTeamIdState(memberships[0].teamId);
     }
-  }, [manageableMemberships, selectedInviteTeamId]);
+  }, [memberships, selectedTeamId]);
 
   const clearTeamPickerError = useCallback(() => {
     setTeamPickerError(null);
   }, []);
 
-  const setSelectedInviteTeamId = useCallback(
+  const setSelectedTeamId = useCallback(
     (value: string) => {
-      const canManageTeam = manageableMemberships.some(
+      const isMemberOfTeam = memberships.some(
         (membership) => membership.teamId === value,
       );
 
-      if (!canManageTeam) {
-        const blockedTeam = memberships.find((membership) => membership.teamId === value);
-        if (blockedTeam) {
-          setTeamPickerError(
-            `Sem permissão para gerir "${blockedTeam.teamName}". Só team admin ou manager podem selecionar este time.`,
-          );
-        }
+      if (!isMemberOfTeam) {
+        setTeamPickerError("Time inválido para o utilizador atual.");
         return;
       }
 
       setTeamPickerError(null);
-      setSelectedInviteTeamIdState(value);
+      setSelectedTeamIdState(value);
     },
-    [manageableMemberships, memberships],
+    [memberships],
   );
 
-  const selectedInviteTeam =
-    manageableMemberships.find(
-      (membership) => membership.teamId === selectedInviteTeamId,
-    ) ?? manageableMemberships[0];
+  const selectedTeam =
+    memberships.find((membership) => membership.teamId === selectedTeamId) ??
+    memberships[0];
+
+  const selectedTeamCanManage =
+    selectedTeam?.roles.some((role) => TEAM_MANAGEMENT_ROLES.has(role)) ?? false;
 
   const teamWheelOptions = useMemo(() => {
     const seen = new Map<string, number>();
@@ -233,22 +230,17 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
       const nextCount = (seen.get(baseName) ?? 0) + 1;
       seen.set(baseName, nextCount);
       const displayName = nextCount === 1 ? baseName : `${baseName} (${nextCount})`;
-      const isSelectable = membership.roles.some((role) =>
-        TEAM_MANAGEMENT_ROLES.has(role),
-      );
       return {
         teamId: membership.teamId,
         displayName,
-        label: isSelectable ? displayName : `${displayName} - Sem acesso`,
-        isSelectable,
+        label: displayName,
       };
     });
   }, [memberships]);
 
   const selectedTeamWheelLabel =
-    teamWheelOptions.find((option) => option.teamId === selectedInviteTeam?.teamId)
+    teamWheelOptions.find((option) => option.teamId === selectedTeam?.teamId)
       ?.label ??
-    teamWheelOptions.find((option) => option.isSelectable)?.label ??
     teamWheelOptions[0]?.label;
 
   const roleHolderCount = useMemo(() => {
@@ -310,14 +302,14 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!selectedInviteTeam?.teamId) {
+    if (!selectedTeam?.teamId) {
       setRosterMembers([]);
       setLoadingRoster(false);
       return;
     }
     setRolesError(null);
-    void loadRosterMembers(selectedInviteTeam.teamId);
-  }, [selectedInviteTeam?.teamId, loadRosterMembers]);
+    void loadRosterMembers(selectedTeam.teamId);
+  }, [selectedTeam?.teamId, loadRosterMembers]);
 
   const syncEmailsTextareaHeight = () => {
     const textarea = emailsTextareaRef.current;
@@ -337,7 +329,11 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
   };
 
   const prepareInviteBatch = useCallback(async () => {
-    if (!selectedInviteTeam) return null;
+    if (!selectedTeam) return null;
+    if (!selectedTeamCanManage) {
+      setInviteError(`Sem permissão para gerir "${selectedTeam.teamName}".`);
+      return null;
+    }
 
     const { valid, invalid } = parseEmails(emailsInput);
     if (valid.length === 0) {
@@ -354,7 +350,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
 
     if (
       cachedBatch &&
-      cachedBatch.teamId === selectedInviteTeam.teamId &&
+      cachedBatch.teamId === selectedTeam.teamId &&
       cachedBatch.emailsKey === emailsKey
     ) {
       return {
@@ -368,7 +364,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
     const failures: string[] = [...baseFailures];
 
     for (const email of valid) {
-      const response = await createEmailInvite(selectedInviteTeam.teamId, email);
+      const response = await createEmailInvite(selectedTeam.teamId, email);
       if (!response.token) {
         failures.push(response.error ? `${email} (${response.error})` : email);
         continue;
@@ -380,7 +376,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
 
     const nextAggregateMessage =
       results.length > 0
-        ? buildAggregateInviteMessage(selectedInviteTeam.teamName, results)
+        ? buildAggregateInviteMessage(selectedTeam.teamName, results)
         : "";
 
     if (results.length === 0) {
@@ -393,7 +389,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
     }
 
     setCachedBatch({
-      teamId: selectedInviteTeam.teamId,
+      teamId: selectedTeam.teamId,
       emailsKey,
       results,
       aggregateMessage: nextAggregateMessage,
@@ -404,11 +400,15 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
       aggregateMessage: nextAggregateMessage,
       failures,
     };
-  }, [cachedBatch, createEmailInvite, emailsInput, selectedInviteTeam]);
+  }, [cachedBatch, createEmailInvite, emailsInput, selectedTeam, selectedTeamCanManage]);
 
   const handleInviteAction = useCallback(
     async (action: InviteAction) => {
-      if (!selectedInviteTeam) return;
+      if (!selectedTeam) return;
+      if (!selectedTeamCanManage) {
+        setInviteError(`Sem permissão para gerir "${selectedTeam.teamName}".`);
+        return;
+      }
 
       setLoadingAction(action);
       setInviteError(null);
@@ -449,12 +449,16 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
 
       setLoadingAction(null);
     },
-    [prepareInviteBatch, selectedInviteTeam],
+    [prepareInviteBatch, selectedTeam, selectedTeamCanManage],
   );
 
   const handleToggleRole = useCallback(
     async (memberId: string, role: ExtraRole, isActive: boolean) => {
-      if (!supabase || !selectedInviteTeam?.teamId) return;
+      if (!supabase || !selectedTeam?.teamId) return;
+      if (!selectedTeamCanManage) {
+        setRolesError(`Sem permissão para gerir "${selectedTeam.teamName}".`);
+        return;
+      }
 
       const actionKey = `${memberId}:${role}`;
       setRoleActionKey(actionKey);
@@ -470,7 +474,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
         if (error) {
           setRolesError(error.message);
         } else {
-          await loadRosterMembers(selectedInviteTeam.teamId);
+          await loadRosterMembers(selectedTeam.teamId);
         }
 
         setRoleActionKey(null);
@@ -516,10 +520,10 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      await loadRosterMembers(selectedInviteTeam.teamId);
+      await loadRosterMembers(selectedTeam.teamId);
       setRoleActionKey(null);
     },
-    [loadRosterMembers, rosterMembers, selectedInviteTeam?.teamId],
+    [loadRosterMembers, rosterMembers, selectedTeam?.teamId, selectedTeamCanManage, selectedTeam?.teamName],
   );
 
   const value = useMemo(
@@ -527,13 +531,14 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
       hookLoading,
       hookError,
       manageableMemberships,
-      selectedInviteTeam,
+      selectedTeam,
       showTeamPicker,
       setShowTeamPicker,
+      selectedTeamCanManage,
       teamWheelOptions,
       selectedTeamWheelLabel,
-      selectedInviteTeamId,
-      setSelectedInviteTeamId,
+      selectedTeamId,
+      setSelectedTeamId,
       teamPickerError,
       clearTeamPickerError,
       emailsTextareaRef,
@@ -556,12 +561,13 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
       hookLoading,
       hookError,
       manageableMemberships,
-      selectedInviteTeam,
+      selectedTeam,
       showTeamPicker,
+      selectedTeamCanManage,
       teamWheelOptions,
       selectedTeamWheelLabel,
-      selectedInviteTeamId,
-      setSelectedInviteTeamId,
+      selectedTeamId,
+      setSelectedTeamId,
       teamPickerError,
       clearTeamPickerError,
       emailsInput,
