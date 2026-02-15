@@ -226,20 +226,29 @@ export function ProfilePage() {
       {
         id: "attendance",
         icon: "🥇",
+        badgeIcon: stats.attendanceRate >= 70 ? "🔥" : "📈",
         title: stats.attendanceRate >= 70 ? "Presenca de Ferro" : "Rumo ao Podio",
         detail: `${stats.attendanceRate}% de presenca`,
+        badgeGlowClass:
+          "[filter:drop-shadow(0_0_4px_rgba(251,191,36,0.95))_drop-shadow(0_0_8px_rgba(251,191,36,0.65))]",
       },
       {
         id: "confirmed",
         icon: "⚽",
+        badgeIcon: stats.confirmed >= 10 ? "🎯" : "🚀",
         title: stats.confirmed >= 10 ? "Craque da Semana" : "Em Aquecimento",
         detail: `${stats.confirmed} confirmacoes`,
+        badgeGlowClass:
+          "[filter:drop-shadow(0_0_4px_rgba(56,189,248,0.95))_drop-shadow(0_0_8px_rgba(56,189,248,0.65))]",
       },
       {
         id: "teams",
         icon: "🛡️",
+        badgeIcon: stats.teams > 1 ? "⭐" : "🤝",
         title: stats.teams > 1 ? "Veterano de Times" : "Camisa Fiel",
         detail: `${stats.teams} ${stats.teams === 1 ? "time" : "times"}`,
+        badgeGlowClass:
+          "[filter:drop-shadow(0_0_4px_rgba(168,85,247,0.95))_drop-shadow(0_0_8px_rgba(168,85,247,0.65))]",
       },
     ],
     [stats.attendanceRate, stats.confirmed, stats.teams],
@@ -267,7 +276,7 @@ export function ProfilePage() {
           )}
         </div>
 
-        <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(280px,auto)_minmax(0,1fr)]">
+        <div className="mt-5 space-y-4">
           <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-[var(--bg-surface)] bg-primary-100 text-primary-600 shadow dark:bg-primary-900/30 dark:text-primary-400">
@@ -315,25 +324,33 @@ export function ProfilePage() {
             </div>
           </section>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
             <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
                 Medalhas
               </p>
-              <div className="mt-3 space-y-2">
+              <div className="mt-3 flex flex-wrap items-start gap-3">
                 {medals.map((medal) => (
-                  <article
-                    key={medal.id}
-                    className="flex items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2"
-                  >
-                    <span className="text-lg">{medal.icon}</span>
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold text-[var(--text-primary)]">
-                        {medal.title}
-                      </p>
-                      <p className="text-[10px] text-[var(--text-secondary)]">
-                        {medal.detail}
-                      </p>
+                  <article key={medal.id} className="group relative flex items-start">
+                    <button
+                      type="button"
+                      aria-label={`${medal.title}: ${medal.detail}`}
+                      title={`${medal.title}: ${medal.detail}`}
+                      className="relative flex h-14 w-14 items-center justify-center transition-transform group-hover:-translate-y-0.5 group-focus-within:-translate-y-0.5"
+                    >
+                      <span className="relative inline-flex h-11 w-11 items-center justify-center">
+                        <span className="text-4xl leading-none">{medal.icon}</span>
+                        <span
+                          className={`absolute bottom-0 right-0 z-10 translate-x-[28%] translate-y-[28%] text-lg leading-none ${medal.badgeGlowClass}`}
+                        >
+                          {medal.badgeIcon}
+                        </span>
+                      </span>
+                    </button>
+
+                    <div className="pointer-events-none absolute -top-12 left-1/2 z-10 min-w-max -translate-x-1/2 rounded-xl bg-slate-900/90 px-2 py-1.5 text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                      <p className="text-[10px] font-bold">{medal.title}</p>
+                      <p className="text-[10px] font-medium opacity-90">{medal.detail}</p>
                     </div>
                   </article>
                 ))}
