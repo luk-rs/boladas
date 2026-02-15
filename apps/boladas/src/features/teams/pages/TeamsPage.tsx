@@ -160,11 +160,13 @@ function TeamsPageView() {
     setDeleteBusy(false);
   };
 
-  const hasAnyManagementAccess = manageableMemberships.length > 0;
+  const canSelectActiveTeam = teamWheelOptions.length > 0;
   const teamsSectionLoading = membershipsLoading || loadingTeams;
   const activeTeamRows = teamsWithStatus.filter(
     (team) => team.id === selectedTeamId,
   );
+  const selectedTeamRows =
+    activeTeamRows.length > 0 ? activeTeamRows : teamsWithStatus;
   const roleMembersByRole = useMemo(
     () =>
       ROLE_TOGGLE_OPTIONS.map((option) => ({
@@ -189,10 +191,10 @@ function TeamsPageView() {
 
   return (
     <PageScaffold title="Equipas">
-      {hasAnyManagementAccess && (
+      {canSelectActiveTeam && (
         <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
           <header className="mb-3">
-            <p className="ui-section-title">Escopo da gestão</p>
+            <p className="ui-section-title">Equipa ativa</p>
           </header>
           <button
             type="button"
@@ -211,8 +213,8 @@ function TeamsPageView() {
             </span>
           </button>
           <p className="mt-2 text-xs text-[var(--text-secondary)]">
-            Selecione qualquer time em que participa. As secções de gestão
-            ajustam-se ao papel no time selecionado.
+            Selecione qualquer time em que participa para atualizar os dados e
+            permissões abaixo.
           </p>
           {teamPickerError && (
             <p className="mt-2 text-xs font-bold text-amber-600 dark:text-amber-300">
@@ -223,7 +225,7 @@ function TeamsPageView() {
       )}
 
       <TeamsSection
-        teams={hasAnyManagementAccess ? activeTeamRows : teamsWithStatus}
+        teams={canSelectActiveTeam ? selectedTeamRows : teamsWithStatus}
         loading={teamsSectionLoading}
         activeTooltipId={activeTooltipId}
         onTooltipChange={onTooltipChange}
@@ -292,7 +294,9 @@ function TeamsPageView() {
                                 const isProtectedLastHolder =
                                   isActive && roleHolderCount[option.role] <= 1;
                                 const activeOutlineClass = isActive
-                                  ? ROLE_ACTIVE_OUTLINE_GLOW_BY_ROLE[option.role]
+                                  ? ROLE_ACTIVE_OUTLINE_GLOW_BY_ROLE[
+                                      option.role
+                                    ]
                                   : "";
                                 const emojiVisualClass = isLoading
                                   ? "text-sm text-slate-400 dark:text-slate-500"
@@ -472,15 +476,10 @@ jogador2@email.com"
           )}
         </>
       ) : (
-        <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4">
+        <section className="rounded-2xl p-4">
           <header className="mb-3">
             <p className="ui-section-title">Estrutura de funções do time</p>
           </header>
-
-          <p className="text-sm text-[var(--text-secondary)]">
-            Sem permissão de gestão para o time selecionado. Esta secção é
-            apenas de visualização.
-          </p>
 
           <div className="mt-4 space-y-3">
             {loadingRoster && (
@@ -495,30 +494,25 @@ jogador2@email.com"
                   key={option.role}
                   className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-app)]/60 p-3"
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-[var(--text-primary)]">
-                      {option.emoji} {option.label}
-                    </p>
-                    <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--text-secondary)]">
-                      {members.length > 0
-                        ? `${members.length} ${
-                            members.length === 1 ? "pessoa" : "pessoas"
-                          }`
-                        : "Por atribuir"}
-                    </span>
-                  </div>
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">
+                    {option.emoji} {option.label}
+                  </p>
 
-                  {members.length > 0 && (
+                  {members.length > 0 ? (
                     <div className="mt-2 flex flex-wrap gap-2">
                       {members.map((member) => (
                         <span
                           key={`${option.role}:${member.id}`}
-                          className="rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1 text-xs font-medium text-[var(--text-primary)]"
+                          className="rounded-full bg-[var(--bg-surface)]/70 px-3 py-1 text-xs font-medium text-[var(--text-primary)]"
                         >
                           {getMemberEmoji(member.id)} {member.displayName}
                         </span>
                       ))}
                     </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-[var(--text-secondary)]">
+                      Sem atribuições.
+                    </p>
                   )}
                 </div>
               ))}
@@ -532,9 +526,7 @@ jogador2@email.com"
 
       <BottomSheet
         open={
-          hasAnyManagementAccess &&
-          showTeamPicker &&
-          teamWheelOptions.length > 0
+          canSelectActiveTeam && showTeamPicker && teamWheelOptions.length > 0
         }
         title="Selecionar Time"
         onClose={() => setShowTeamPicker(false)}

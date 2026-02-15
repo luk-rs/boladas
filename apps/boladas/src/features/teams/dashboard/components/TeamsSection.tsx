@@ -33,9 +33,6 @@ export function TeamsSection({
               className="flex items-center justify-between px-4 py-3"
             >
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-[var(--text-primary)]">
-                  {team.name}
-                </p>
                 {team.memberCount === 0 ? (
                   <span className="text-xs text-[var(--text-secondary)]">
                     Sem jogadores
@@ -56,7 +53,9 @@ export function TeamsSection({
                     : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200"
                 }`}
               >
-                {team.memberCount >= MIN_TEAM_MEMBERS ? "Completa" : "Incompleta"}
+                {team.memberCount >= MIN_TEAM_MEMBERS
+                  ? "Completa"
+                  : "Incompleta"}
               </span>
             </SurfaceTile>
           ))
