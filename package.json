@@ -10,7 +10,7 @@
     "dev": "./scripts/dev.sh",
     "dev:services": "concurrently --kill-others --prefix '[{name}]' --names 'api,app' --prefix-colors 'yellow,cyan' 'pnpm dev:api' 'pnpm dev:app'",
     "dev:api": "pnpm -C apps/api dev",
-    "dev:app": "pnpm -C apps/boladas dev",
+    "dev:app": "pnpm -C apps/boladas dev --host 0.0.0.0 --port 5173",
     "build": "pnpm -C apps/boladas build && pnpm -C apps/api build",
     "lint": "pnpm -C apps/boladas lint && pnpm -C apps/api lint",
     "typecheck": "pnpm -C apps/boladas typecheck && pnpm -C apps/api typecheck"

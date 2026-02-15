@@ -1,14 +1,18 @@
+import { useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { RadialMenu } from "../ui/RadialMenu";
 import { useTeams } from "../../features/teams/useTeams";
 import { useAuth } from "../../features/auth/useAuth";
 import { usePreferences } from "../../features/preferences/usePreferences";
+import { useInstalledPullToRefresh } from "./useInstalledPullToRefresh";
 
 export function AppShell() {
   const { signOut } = useAuth();
   const { memberships } = useTeams();
   const { menuPosition } = usePreferences();
   const activeTeam = memberships[0];
+  const mainRef = useRef<HTMLElement>(null);
+  const pullToRefreshHandlers = useInstalledPullToRefresh(mainRef);
 
   const iconProps = {
     className: "h-5 w-5",
@@ -140,7 +144,14 @@ export function AppShell() {
 
   return (
     <div className="app-shell">
-      <main className="flex-1 overflow-y-auto px-3 pb-20 pt-3">
+      <main
+        ref={mainRef}
+        onTouchStart={pullToRefreshHandlers.onTouchStart}
+        onTouchMove={pullToRefreshHandlers.onTouchMove}
+        onTouchEnd={pullToRefreshHandlers.onTouchEnd}
+        onTouchCancel={pullToRefreshHandlers.onTouchCancel}
+        className="flex-1 overflow-y-auto px-3 pb-20 pt-3"
+      >
         <Outlet context={{ activeTeam }} />
       </main>
       <RadialMenu
