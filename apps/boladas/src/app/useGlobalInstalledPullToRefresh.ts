@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const DEFAULT_PULL_THRESHOLD_PX = 110;
 
@@ -29,6 +29,8 @@ export function useGlobalInstalledPullToRefresh(
   const pullDistanceRef = useRef(0);
   const pullEligibleRef = useRef(false);
   const refreshPendingRef = useRef(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const isStandaloneMode = useMemo(() => {
     if (typeof window === "undefined") return false;
@@ -50,11 +52,13 @@ export function useGlobalInstalledPullToRefresh(
       pullStartYRef.current = null;
       pullDistanceRef.current = 0;
       pullEligibleRef.current = false;
+      setPullDistance(0);
     };
 
     const refreshInstalledApp = async () => {
       if (refreshPendingRef.current) return;
       refreshPendingRef.current = true;
+      setIsRefreshing(true);
 
       try {
         if ("serviceWorker" in navigator) {
@@ -85,6 +89,7 @@ export function useGlobalInstalledPullToRefresh(
       pullEligibleRef.current = isAtTop;
       pullStartYRef.current = touch.clientY;
       pullDistanceRef.current = 0;
+      setPullDistance(0);
     };
 
     const onTouchMove = (event: TouchEvent) => {
@@ -95,6 +100,7 @@ export function useGlobalInstalledPullToRefresh(
 
       const delta = touch.clientY - pullStartYRef.current;
       pullDistanceRef.current = Math.max(delta, 0);
+      setPullDistance(pullDistanceRef.current);
     };
 
     const onTouchEnd = () => {
@@ -117,6 +123,20 @@ export function useGlobalInstalledPullToRefresh(
       document.removeEventListener("touchend", onTouchEnd);
       document.removeEventListener("touchcancel", onTouchEnd);
       resetPullState();
+      setIsRefreshing(false);
     };
   }, [isStandaloneMode, thresholdPx]);
+
+  const progress = Math.min(pullDistance / thresholdPx, 1);
+  const isArmed = pullDistance >= thresholdPx;
+  const shouldShowIndicator = isStandaloneMode && (pullDistance > 8 || isRefreshing);
+
+  return {
+    isStandaloneMode,
+    pullDistance,
+    progress,
+    isArmed,
+    isRefreshing,
+    shouldShowIndicator,
+  };
 }
