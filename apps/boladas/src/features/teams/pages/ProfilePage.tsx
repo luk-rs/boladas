@@ -256,12 +256,75 @@ export function ProfilePage() {
 
   const spotlightStats = useMemo(
     () => [
-      { label: "Jogos", value: String(stats.games) },
-      { label: "Confirmados", value: String(stats.confirmed) },
-      { label: "Presenca", value: `${stats.attendanceRate}%` },
-      { label: "Ausencias", value: String(stats.unavailable) },
+      {
+        label: "Presencas",
+        value: String(stats.confirmed),
+        available: true,
+      },
+      {
+        label: "% Pres.",
+        value: `${stats.attendanceRate}%`,
+        available: true,
+      },
+      {
+        label: "xG",
+        value: "—",
+        available: false,
+      },
+      {
+        label: "xG Eq.",
+        value: "—",
+        available: false,
+      },
+      {
+        label: "Vitorias",
+        value: "—",
+        available: false,
+      },
+      {
+        label: "% Vit.",
+        value: "—",
+        available: false,
+      },
     ],
-    [stats],
+    [stats.attendanceRate, stats.confirmed],
+  );
+
+  const rollingFive = useMemo(
+    () => [
+      {
+        id: "m1",
+        symbol: "−",
+        label: "Jogo 1: sem resultado",
+        className: "bg-slate-500 text-slate-50",
+      },
+      {
+        id: "m2",
+        symbol: "×",
+        label: "Jogo 2: derrota",
+        className: "bg-red-500 text-white",
+      },
+      {
+        id: "m3",
+        symbol: "✓",
+        label: "Jogo 3: vitoria",
+        className: "bg-emerald-500 text-white",
+      },
+      {
+        id: "m4",
+        symbol: "✓",
+        label: "Jogo 4: vitoria",
+        className: "bg-emerald-500 text-white",
+      },
+      {
+        id: "m5",
+        symbol: "◌",
+        label: "Jogo 5: por disputar",
+        className:
+          "bg-transparent text-slate-300 ring-1 ring-slate-300 dark:text-slate-400 dark:ring-slate-500",
+      },
+    ],
+    [],
   );
 
   return (
@@ -361,13 +424,38 @@ export function ProfilePage() {
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
                 Star Stats
               </p>
-              <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="mt-3 flex items-center justify-between rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                  Rolling 5
+                </p>
+                <div className="flex items-center gap-1.5">
+                  {rollingFive.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      title={item.label}
+                      aria-label={item.label}
+                      className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-black ${item.className}`}
+                    >
+                      {item.symbol}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-2 grid grid-cols-3 gap-2">
                 {spotlightStats.map((stat) => (
                   <div
                     key={stat.label}
                     className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-2 py-2.5 text-center"
                   >
-                    <p className="text-base font-bold text-primary-600 dark:text-primary-400">
+                    <p
+                      className={`text-base font-bold ${
+                        stat.available
+                          ? "text-primary-600 dark:text-primary-400"
+                          : "text-[var(--text-secondary)]"
+                      }`}
+                    >
                       {stat.value}
                     </p>
                     <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
