@@ -70,7 +70,7 @@ export function SignIn({
 
       if (!result.ok) throw new Error(result.error);
     } catch (err) {
-      console.error("Login error:", err);
+      console.error("Erro de login:", err);
       setAuthError(
         err instanceof Error ? err.message : "Erro ao iniciar login OAuth",
       );
@@ -120,12 +120,12 @@ export function SignIn({
         >
           <header>
             <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-              {inviteToken ? "Aceitar Convite" : "Entrar no App"}
+              {inviteToken ? "Aceitar convite" : "Entrar na aplicação"}
             </h2>
             <p className="mt-2 text-sm text-[var(--text-secondary)] leading-relaxed">
               {inviteToken
-                ? "Conecte sua conta para participar do grupo e começar a jogar."
-                : "Acesse sua conta para gerenciar seus grupos, jogos e estatísticas."}
+                ? "Liga a tua conta para entrares no grupo e começares a jogar."
+                : "Acede à tua conta para gerires os teus grupos, jogos e estatísticas."}
             </p>
           </header>
 
@@ -168,7 +168,7 @@ export function SignIn({
         {!inviteToken && (
           <div className="mt-8 text-center animate-in slide-in-from-bottom-4 duration-700 delay-300">
             <p className="text-primary-100/70 text-sm mb-4 font-medium">
-              Ainda não tem um time?
+              Ainda não tens uma equipa?
             </p>
             <button
               onClick={() => {
@@ -178,7 +178,7 @@ export function SignIn({
               }}
               className="px-8 py-3 rounded-xl bg-white/10 text-white font-bold backdrop-blur-md border border-white/20 hover:bg-white/20 transition-all active:scale-95"
             >
-              Criar Novo Grupo
+              Criar novo grupo
             </button>
           </div>
         )}

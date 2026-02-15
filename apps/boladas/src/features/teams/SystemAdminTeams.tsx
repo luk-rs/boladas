@@ -39,7 +39,7 @@ export function SystemAdminTeams({
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="New team name"
+              placeholder="Nome da nova equipa"
               className="h-10 flex-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-app)] px-3 text-sm text-[var(--text-primary)] outline-none focus:border-primary-400"
             />
             <button
@@ -82,13 +82,13 @@ export function SystemAdminTeams({
         </div>
       </SectionShell>
 
-      <SectionShell title="Pending team requests" variant="strong">
+      <SectionShell title="Pedidos pendentes de equipa" variant="strong">
         {pendingRequests.length === 0 ? (
           <SurfaceTile
             variant="dashed"
             className="p-4 text-center text-sm text-[var(--text-secondary)]"
           >
-            None pending.
+            Sem pedidos pendentes.
           </SurfaceTile>
         ) : (
           <div className="space-y-3">
@@ -99,7 +99,7 @@ export function SystemAdminTeams({
                     {req.name}
                   </p>
                   <p className="text-xs text-[var(--text-secondary)]">
-                    Requested by: {req.requested_by}
+                    Pedido por: {req.requested_by}
                   </p>
                 </div>
                 <div className="flex items-center justify-end gap-2">

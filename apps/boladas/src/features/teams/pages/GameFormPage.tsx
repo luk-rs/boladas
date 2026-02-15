@@ -251,7 +251,7 @@ function GameFormPageView() {
           </div>
           <div className="space-y-3 text-xs">
             <p className="text-[10px] uppercase tracking-[0.3em] text-center text-[var(--text-secondary)]">
-              Stats
+              Estatísticas
             </p>
             <div className="space-y-2">
               {statRows.map((row) => (
@@ -308,7 +308,7 @@ function GameFormPageView() {
 
       <BottomSheet
         open={showTimePicker}
-        title="Ajustar Hora"
+        title="Ajustar hora"
         onClose={() => setShowTimePicker(false)}
         onConfirm={() => setShowTimePicker(false)}
       >

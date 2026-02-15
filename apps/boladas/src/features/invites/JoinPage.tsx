@@ -133,7 +133,7 @@ export function JoinPage() {
             onClick={() => navigate("/login")}
             className="w-full rounded-2xl bg-[var(--bg-app)] py-3 font-bold text-[var(--text-primary)]"
           >
-            Ir para Login
+            Ir para o login
           </button>
         </SurfaceTile>
       </div>
@@ -150,10 +150,10 @@ export function JoinPage() {
           ✉️
         </div>
         <h1 className="text-xl font-bold text-[var(--text-primary)]">
-          Convite para Time
+          Convite para equipa
         </h1>
         <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          Você foi convidado para entrar no time:
+          Foste convidado para entrar na equipa:
         </p>
         <h2 className="mt-4 text-2xl font-black text-primary-600">
           {teamInfo?.team_name}
@@ -165,7 +165,7 @@ export function JoinPage() {
               onClick={handleJoin}
               className="w-full rounded-2xl bg-primary-600 py-4 font-bold text-white shadow-lg shadow-primary-600/30 transition-all hover:bg-primary-700 active:scale-95"
             >
-              {loading ? "Entrando..." : "Entrar no Time"}
+              {loading ? "A entrar..." : "Entrar na equipa"}
             </button>
           ) : (
             <>
@@ -198,7 +198,7 @@ export function JoinPage() {
 
           {isAuthed && (
             <p className="text-xs text-[var(--text-secondary)]">
-              Logado como {sessionEmail}
+              Sessão iniciada como {sessionEmail}
             </p>
           )}
         </div>

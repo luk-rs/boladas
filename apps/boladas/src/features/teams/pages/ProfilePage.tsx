@@ -45,9 +45,9 @@ const ROLE_PRIORITY = [
 
 const ROLE_LABELS: Record<(typeof ROLE_PRIORITY)[number], string> = {
   player: "Jogador",
-  manager: "Manager",
-  team_admin: "Admin do Time",
-  secretary: "Secretario",
+  manager: "Gestor",
+  team_admin: "Admin da equipa",
+  secretary: "Secretário",
   accountant: "Tesoureiro",
   member: "Membro",
 };
@@ -153,20 +153,26 @@ export function ProfilePage() {
       if (cancelled) return;
 
       if (profileResult.error) {
-        console.error("Failed to load profile header name:", profileResult.error);
+        console.error(
+          "Falha ao carregar o nome do cabeçalho de perfil:",
+          profileResult.error,
+        );
       }
       if (votesResult.error) {
-        console.error("Failed to load profile header stats:", votesResult.error);
+        console.error(
+          "Falha ao carregar as estatísticas do cabeçalho de perfil:",
+          votesResult.error,
+        );
       }
       if (upcomingResult.error) {
         console.error(
-          "Failed to load profile header upcoming games:",
+          "Falha ao carregar os próximos jogos no cabeçalho de perfil:",
           upcomingResult.error,
         );
       }
       if (couchVotesResult.error) {
         console.error(
-          "Failed to load profile header open convocation alerts:",
+          "Falha ao carregar alertas de convocatórias abertas no cabeçalho de perfil:",
           couchVotesResult.error,
         );
       }
@@ -246,8 +252,8 @@ export function ProfilePage() {
         id: "attendance",
         icon: "🥇",
         badgeIcon: stats.attendanceRate >= 70 ? "🔥" : "📈",
-        title: stats.attendanceRate >= 70 ? "Presenca de Ferro" : "Rumo ao Podio",
-        detail: `${stats.attendanceRate}% de presenca`,
+        title: stats.attendanceRate >= 70 ? "Presença de Ferro" : "Rumo ao Pódio",
+        detail: `${stats.attendanceRate}% de presença`,
         badgeGlowClass:
           "[filter:drop-shadow(0_0_4px_rgba(251,191,36,0.95))_drop-shadow(0_0_8px_rgba(251,191,36,0.65))]",
       },
@@ -256,7 +262,7 @@ export function ProfilePage() {
         icon: "⚽",
         badgeIcon: stats.confirmed >= 10 ? "🎯" : "🚀",
         title: stats.confirmed >= 10 ? "Craque da Semana" : "Em Aquecimento",
-        detail: `${stats.confirmed} confirmacoes`,
+        detail: `${stats.confirmed} confirmações`,
         badgeGlowClass:
           "[filter:drop-shadow(0_0_4px_rgba(56,189,248,0.95))_drop-shadow(0_0_8px_rgba(56,189,248,0.65))]",
       },
@@ -264,8 +270,8 @@ export function ProfilePage() {
         id: "teams",
         icon: "🛡️",
         badgeIcon: stats.teams > 1 ? "⭐" : "🤝",
-        title: stats.teams > 1 ? "Veterano de Times" : "Camisa Fiel",
-        detail: `${stats.teams} ${stats.teams === 1 ? "time" : "times"}`,
+        title: stats.teams > 1 ? "Veterano de equipas" : "Camisa Fiel",
+        detail: `${stats.teams} ${stats.teams === 1 ? "equipa" : "equipas"}`,
         badgeGlowClass:
           "[filter:drop-shadow(0_0_4px_rgba(168,85,247,0.95))_drop-shadow(0_0_8px_rgba(168,85,247,0.65))]",
       },
@@ -276,7 +282,7 @@ export function ProfilePage() {
   const spotlightStats = useMemo(
     () => [
       {
-        label: "Presencas",
+        label: "Presenças",
         value: String(stats.confirmed),
         available: true,
       },
@@ -296,7 +302,7 @@ export function ProfilePage() {
         available: false,
       },
       {
-        label: "Vitorias",
+        label: "Vitórias",
         value: "—",
         available: false,
       },
@@ -326,13 +332,13 @@ export function ProfilePage() {
       {
         id: "m3",
         symbol: "✓",
-        label: "Jogo 3: vitoria",
+        label: "Jogo 3: vitória",
         className: "bg-emerald-500 text-white",
       },
       {
         id: "m4",
         symbol: "✓",
-        label: "Jogo 4: vitoria",
+        label: "Jogo 4: vitória",
         className: "bg-emerald-500 text-white",
       },
       {
@@ -375,14 +381,14 @@ export function ProfilePage() {
             <div className="mt-4 grid grid-cols-2 gap-2">
               {[
                 {
-                  label: "Proximos jogos",
+                  label: "Próximos jogos",
                   value: String(stats.upcomingGames),
                   tone: stats.hasGameToday
                     ? "text-emerald-500 dark:text-emerald-300"
                     : "text-primary-600 dark:text-primary-400",
                 },
                 {
-                  label: "No sofa",
+                  label: "No sofá",
                   value: String(stats.pendingCouch),
                   tone: stats.hasPendingCouchToday
                     ? "text-red-500 dark:text-red-300"
@@ -442,14 +448,14 @@ export function ProfilePage() {
 
             <SurfaceTile variant="soft">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]">
-                Star Stats
+                Estatísticas em destaque
               </p>
               <SurfaceTile
                 variant="strong"
                 className="mt-3 flex items-center justify-between px-3 py-2"
               >
                 <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-                  Rolling 5
+                  Últimos 5
                 </p>
                 <div className="flex items-center gap-1.5">
                   {rollingFive.map((item) => (

@@ -37,7 +37,7 @@ export const ROLE_TOGGLE_OPTIONS: Array<{
   isUnique: boolean;
 }> = [
   { role: "team_admin", emoji: "🛡️", label: "Admin", isUnique: false },
-  { role: "manager", emoji: "🧭", label: "Manager", isUnique: true },
+  { role: "manager", emoji: "🧭", label: "Gestor", isUnique: true },
   { role: "secretary", emoji: "🗂️", label: "Secretário", isUnique: true },
   { role: "accountant", emoji: "💰", label: "Tesoureiro", isUnique: true },
 ];
@@ -126,7 +126,7 @@ function buildAggregateInviteMessage(teamName: string, results: InviteResult[]) 
   const rows = results.map(
     (result) => `Email: ${result.email}\nConvite privado: ${result.link}`,
   );
-  return `Time: ${teamName}\n\n${rows.join("\n\n")}`;
+  return `Equipa: ${teamName}\n\n${rows.join("\n\n")}`;
 }
 
 function getMemberLabel(
@@ -207,7 +207,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
       );
 
       if (!isMemberOfTeam) {
-        setTeamPickerError("Time inválido para o utilizador atual.");
+        setTeamPickerError("Equipa inválida para o utilizador atual.");
         return;
       }
 
@@ -227,7 +227,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
   const teamWheelOptions = useMemo(() => {
     const seen = new Map<string, number>();
     return memberships.map((membership) => {
-      const baseName = membership.teamName || "Time";
+      const baseName = membership.teamName || "Equipa";
       const nextCount = (seen.get(baseName) ?? 0) + 1;
       seen.set(baseName, nextCount);
       const displayName = nextCount === 1 ? baseName : `${baseName} (${nextCount})`;
@@ -605,7 +605,7 @@ export function useTeamSettingsContext() {
   const context = useContext(TeamSettingsContext);
   if (!context) {
     throw new Error(
-      "useTeamSettingsContext must be used inside TeamSettingsProvider.",
+      "useTeamSettingsContext tem de ser usado dentro de TeamSettingsProvider.",
     );
   }
   return context;

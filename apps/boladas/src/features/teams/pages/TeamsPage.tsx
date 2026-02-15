@@ -183,7 +183,7 @@ function TeamsPageView() {
       <div className="flex h-[60vh] flex-col items-center justify-center p-6 text-center">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" />
         <p className="mt-4 text-sm text-[var(--text-secondary)]">
-          Carregando...
+          A carregar...
         </p>
       </div>
     );
@@ -207,14 +207,14 @@ function TeamsPageView() {
             }}
             className="group flex w-full cursor-pointer items-center justify-between rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)]/95 px-4 py-3.5 font-semibold text-[var(--text-primary)] shadow-sm transition-all hover:border-primary-500/55 hover:bg-[var(--bg-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/60"
           >
-            <span>{selectedTeam?.teamName ?? "Selecione o time"}</span>
+            <span>{selectedTeam?.teamName ?? "Seleciona a equipa"}</span>
             <span className="text-base text-[var(--text-secondary)] transition-transform duration-150 group-hover:translate-y-[1px]">
               ⌄
             </span>
           </button>
           <p className="mt-2 text-xs text-[var(--text-secondary)]">
-            Selecione qualquer time em que participa para atualizar os dados e
-            permissões abaixo.
+            Seleciona qualquer equipa em que participas para atualizar os dados
+            e permissões abaixo.
           </p>
           {teamPickerError && (
             <p className="mt-2 text-xs font-bold text-amber-600 dark:text-amber-300">
@@ -244,11 +244,11 @@ function TeamsPageView() {
                   Regras de papéis
                 </p>
                 <p className="mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Manager · Secretário · Tesoureiro{" "}
+                  Gestor · Secretário · Tesoureiro{" "}
                   <span className="text-slate-500 dark:text-slate-400">
                     (só 1)
                   </span>{" "}
-                  · Team admin{" "}
+                  · Admin da equipa{" "}
                   <span className="text-slate-500 dark:text-slate-400">
                     (múltiplos)
                   </span>
@@ -257,13 +257,13 @@ function TeamsPageView() {
 
               {loadingRoster && rosterMembers.length === 0 && (
                 <p className="text-sm text-[var(--text-secondary)]">
-                  Carregando elenco...
+                  A carregar elenco...
                 </p>
               )}
 
               {!loadingRoster && rosterMembers.length === 0 && (
                 <p className="text-sm text-[var(--text-secondary)]">
-                  Nenhum membro encontrado para este time.
+                  Nenhum membro encontrado para esta equipa.
                 </p>
               )}
 
@@ -416,7 +416,7 @@ jogador2@email.com"
             <section className="rounded-2xl p-4">
               <header className="mb-3">
                 <p className="ui-section-title text-rose-600 dark:text-rose-300">
-                  Apagar time
+                  Apagar equipa
                 </p>
               </header>
 
@@ -446,7 +446,7 @@ jogador2@email.com"
                         disabled={deleteBusy}
                         className="rounded-full bg-rose-600 px-4 py-2 text-xs font-semibold text-white transition-all active:scale-95 disabled:opacity-60"
                       >
-                        {deleteBusy ? "A apagar..." : "Confirmar apagar"}
+                        {deleteBusy ? "A eliminar..." : "Confirmar eliminação"}
                       </button>
                     </div>
                   ) : (
@@ -457,7 +457,8 @@ jogador2@email.com"
                   )
                 ) : (
                   <p className="text-xs font-semibold text-[var(--text-secondary)]">
-                    Só team admin ou system admin podem apagar este time.
+                    Só admin da equipa ou administrador do sistema podem apagar
+                    esta equipa.
                   </p>
                 )}
 
@@ -478,13 +479,13 @@ jogador2@email.com"
       ) : (
         <section className="rounded-2xl p-4">
           <header className="mb-3">
-            <p className="ui-section-title">Estrutura de funções do time</p>
+            <p className="ui-section-title">Estrutura de funções da equipa</p>
           </header>
 
           <div className="mt-4 space-y-3">
             {loadingRoster && (
               <p className="text-sm text-[var(--text-secondary)]">
-                Carregando organigrama...
+                A carregar organigrama...
               </p>
             )}
 
@@ -528,7 +529,7 @@ jogador2@email.com"
         open={
           canSelectActiveTeam && showTeamPicker && teamWheelOptions.length > 0
         }
-        title="Selecionar Time"
+        title="Selecionar equipa"
         onClose={() => setShowTeamPicker(false)}
         onConfirm={() => {
           const nextLabel =
@@ -551,7 +552,7 @@ jogador2@email.com"
         }}
       >
         <SurfaceTile variant="soft" className="items-center p-2 min-w-[140px]">
-          <div className="mb-1 text-center ui-caption">Time</div>
+          <div className="mb-1 text-center ui-caption">Equipa</div>
           <WheelPicker
             options={teamWheelOptions.map((option) => option.label)}
             value={pendingTeamWheelLabel ?? selectedTeamWheelLabel ?? ""}

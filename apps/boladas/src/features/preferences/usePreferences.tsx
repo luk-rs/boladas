@@ -98,7 +98,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 export function usePreferences() {
   const context = useContext(PreferencesContext);
   if (!context) {
-    throw new Error("usePreferences must be used inside PreferencesProvider.");
+    throw new Error(
+      "usePreferences tem de ser usado dentro de PreferencesProvider.",
+    );
   }
   return context;
 }

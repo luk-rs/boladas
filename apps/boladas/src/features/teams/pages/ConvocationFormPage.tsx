@@ -583,14 +583,15 @@ export function ConvocationFormPage() {
             Acesso negado
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">
-            Apenas team admin, manager ou secretary podem criar convocatórias.
+            Apenas admin da equipa, gestor ou secretário podem criar
+            convocatórias.
           </p>
           <button
             type="button"
             onClick={handleDismiss}
             className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white active:scale-95"
           >
-            Voltar ao Perfil
+            Voltar ao perfil
           </button>
         </SurfaceTile>
       </PageScaffold>
@@ -603,14 +604,14 @@ export function ConvocationFormPage() {
         <div className="space-y-4">
         <label className="block space-y-2">
           <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
-            Time
+            Equipa
           </span>
           <button
             type="button"
             onClick={() => setActivePicker("team")}
             className="w-full rounded-2xl bg-[var(--bg-app)] border-2 border-transparent hover:border-primary-500/50 p-4 transition-all text-[var(--text-primary)] font-medium cursor-pointer flex justify-between items-center"
           >
-            <span>{selectedTeam?.name ?? "Selecione um time completo"}</span>
+            <span>{selectedTeam?.name ?? "Seleciona uma equipa completa"}</span>
             <span className="text-lg opacity-40">⌄</span>
           </button>
           <p className="text-xs text-[var(--text-secondary)]">
@@ -766,12 +767,12 @@ export function ConvocationFormPage() {
 
       <BottomSheet
         open={activePicker === "team" && teamPickerOptions.length > 0}
-        title="Selecionar Time"
+        title="Selecionar equipa"
         onClose={() => setActivePicker(null)}
         onConfirm={() => setActivePicker(null)}
       >
         <SurfaceTile variant="soft" className="items-center p-2 min-w-[140px]">
-          <div className="mb-1 text-center ui-caption">Time</div>
+          <div className="mb-1 text-center ui-caption">Equipa</div>
           <WheelPicker
             options={teamPickerOptions.map((option) => option.label)}
             value={selectedTeamPickerLabel ?? ""}

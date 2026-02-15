@@ -88,7 +88,7 @@ export function RegistrationForm({
       return;
     }
     if (!isProviderEnabled(providerId)) {
-      setError("Este método de registro não está disponível neste ambiente.");
+      setError("Este método de registo não está disponível neste ambiente.");
       return;
     }
 
@@ -121,12 +121,12 @@ export function RegistrationForm({
           <h2 className="text-2xl font-bold text-[var(--text-primary)]">
             {status === "authenticating"
               ? "Autenticando..."
-              : "Criando Time..."}
+              : "A criar equipa..."}
           </h2>
           <p className="text-[var(--text-secondary)]">
             {status === "authenticating"
               ? `Complete o login com ${activeProviderLabel} na janela que se abriu.`
-              : "Estamos preparando seu novo espaço de jogo."}
+              : "Estamos a preparar o teu novo espaço de jogo."}
           </p>
           {status === "authenticating" && (
             <button
@@ -156,7 +156,7 @@ export function RegistrationForm({
             Sucesso!
           </h2>
           <p className="text-[var(--text-secondary)]">
-            Seu time foi criado com sucesso.
+            A tua equipa foi criada com sucesso.
           </p>
         </SurfaceTile>
       </div>
@@ -172,24 +172,24 @@ export function RegistrationForm({
         >
           <header className="text-center">
             <h2 className="text-2xl font-bold text-[var(--text-primary)]">
-              Registrar Novo Time
+              Registar nova equipa
             </h2>
             <p className="mt-2 text-xs text-[var(--text-secondary)] uppercase tracking-widest font-bold">
-              Configurações iniciais
+              Definições iniciais
             </p>
           </header>
 
           <div className="space-y-4">
             <div className="space-y-1">
               <label className="text-xs font-bold text-[var(--text-secondary)] uppercase px-1">
-                Nome do Time
+                Nome da equipa
               </label>
               <input
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="Ex: Dream Team FC"
+                placeholder="Ex.: Dream Team FC"
                 className={`w-full rounded-2xl bg-[var(--bg-app)] border-2 p-4 outline-none transition-all text-[var(--text-primary)] font-medium ${
                   hasTeamName
                     ? "border-transparent focus:border-primary-500"
@@ -316,7 +316,7 @@ export function RegistrationForm({
             {!isFormValid && (
               <div className="rounded-xl border border-slate-300/25 bg-slate-500/10 p-3">
                 <p className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-wide">
-                  Para desbloquear "Registrar":
+                  Para desbloquear "Registar":
                 </p>
                 <ul className="mt-2 space-y-1">
                   <li
@@ -326,7 +326,7 @@ export function RegistrationForm({
                         : "text-[var(--text-secondary)]"
                     }`}
                   >
-                    {hasTeamName ? "✓" : "•"} Nome do time
+                    {hasTeamName ? "✓" : "•"} Nome da equipa
                   </li>
                   <li
                     className={`text-xs font-semibold ${
@@ -356,7 +356,7 @@ export function RegistrationForm({
                 void handleProviderSignIn(providerId);
               }}
               disabled={!isFormValid}
-              ariaLabelPrefix="Registrar com"
+              ariaLabelPrefix="Registar com"
             />
 
             {!hasConfiguredProviders && (
@@ -372,7 +372,7 @@ export function RegistrationForm({
               onClick={onCancel}
               className="w-full py-3 text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
-              Voltar para o Login
+              Voltar ao login
             </button>
           </div>
         </SurfaceTile>

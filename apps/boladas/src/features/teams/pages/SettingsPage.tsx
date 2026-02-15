@@ -20,22 +20,22 @@ export function SettingsPage() {
   };
 
   return (
-    <PageScaffold title="Configurações">
-      <SectionShell title="Ajustes da aplicação">
+    <PageScaffold title="Definições">
+      <SectionShell title="Definições da aplicação">
         <SurfaceTile
           variant="strong"
           className="space-y-4 divide-y divide-[var(--border-color)] p-4"
         >
           <Toggle
-            label="Menu à Direita"
+            label="Menu à direita"
             subLabel="Alternar posição do menu radial"
             checked={menuPosition === "right"}
             onChange={(checked) => togglePosition(checked ? "right" : "left")}
             icon="↕️"
           />
           <Toggle
-            label="Tema Escuro"
-            subLabel="Habilitar aparência escura"
+            label="Tema escuro"
+            subLabel="Ativar tema escuro"
             checked={theme === "dark"}
             onChange={(checked) => toggleTheme(checked ? "dark" : "light")}
             icon={theme === "dark" ? "🌙" : "☀️"}

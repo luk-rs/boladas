@@ -21,7 +21,7 @@ export function SystemAdminPage() {
 
   return (
     <PageScaffold
-      title="System Administration"
+      title="Administração do sistema"
     >
       <SystemAdminTeams
         allTeams={allTeams}

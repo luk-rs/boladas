@@ -103,15 +103,15 @@ export function useMembers(teamId: string | null) {
     setError(null);
     setStatus(null);
     if (!email.trim()) {
-      setError("Invite email is required.");
+      setError("O email do convite é obrigatório.");
       return;
     }
     if (!roles.includes("member") && !roles.includes("player")) {
-      setError("Invite must include base role (member or player).");
+      setError("O convite tem de incluir um papel base (membro ou jogador).");
       return;
     }
     if (roles.includes("member") && roles.includes("player")) {
-      setError("Invite can include only one base role.");
+      setError("O convite só pode incluir um papel base.");
       return;
     }
 
@@ -130,7 +130,7 @@ export function useMembers(teamId: string | null) {
       return;
     }
 
-    setStatus("Invite created.");
+    setStatus("Convite criado.");
     if (data) {
       // Optimistic update or just reload
       await loadInvites();

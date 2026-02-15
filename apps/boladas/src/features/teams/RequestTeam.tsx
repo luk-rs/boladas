@@ -16,25 +16,26 @@ export function RequestTeam({ onRequest, myRequests }: RequestTeamProps) {
 
   return (
     <section className="card">
-      <h2>Request a team</h2>
+      <h2>Pedir criação de equipa</h2>
       <p className="muted">
-        Submit a team creation request. A system admin must approve it.
+        Submete um pedido de criação de equipa. Um administrador do sistema tem
+        de o aprovar.
       </p>
       <div className="row">
         <input
           value={name}
           onChange={(event) => setName(event.target.value)}
-          placeholder="Team name"
+          placeholder="Nome da equipa"
         />
-        <button onClick={handleSubmit}>Request team</button>
+        <button onClick={handleSubmit}>Pedir equipa</button>
       </div>
       {myRequests.length > 0 && (
         <div className="stack">
-          <h4 className="muted">Your requests</h4>
+          <h4 className="muted">Os teus pedidos</h4>
           {myRequests.map((req) => (
             <div key={req.id} className="row">
               <span>{req.name}</span>
-              <span className="muted">Status: {req.status}</span>
+              <span className="muted">Estado: {req.status}</span>
             </div>
           ))}
         </div>

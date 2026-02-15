@@ -30,7 +30,7 @@ if (typeof document !== "undefined") {
 }
 
 const root = document.getElementById("root");
-if (!root) throw new Error("Root element not found");
+if (!root) throw new Error("Elemento root não encontrado");
 
 createRoot(root).render(
   <React.StrictMode>

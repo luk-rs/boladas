@@ -18,7 +18,7 @@ export function MemberList({
   onToggleExtraRole,
   canManage,
 }: MemberListProps) {
-  if (!canManage) return null; // Or show read-only list? Original showed it under "Team admin" section
+  if (!canManage) return null; // Ou mostrar lista só de leitura?
 
   return (
     <div className="stack">
@@ -40,13 +40,13 @@ export function MemberList({
                   onClick={() => onSetBaseRole(member.id, "member")}
                   disabled={memberRoles.includes("member")}
                 >
-                  Member
+                  Membro
                 </button>
                 <button
                   onClick={() => onSetBaseRole(member.id, "player")}
                   disabled={memberRoles.includes("player")}
                 >
-                  Player
+                  Jogador
                 </button>
               </div>
               <div className="row">

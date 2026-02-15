@@ -6,7 +6,7 @@ export function ProtectedRoute() {
   const location = useLocation();
 
   if (authLoading) {
-    return <div>Loading...</div>; // Or a proper spinner
+    return <div>A carregar...</div>;
   }
 
   // PWA check (optional, depending on if we want to force install for protected routes too)

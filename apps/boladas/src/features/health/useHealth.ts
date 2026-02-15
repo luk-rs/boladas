@@ -15,10 +15,10 @@ export function useHealth(isAuthed: boolean) {
     const fetchRandom = async () => {
       try {
         const res = await fetch(pollingUrl);
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        if (!res.ok) throw new Error(`Erro da API: ${res.status}`);
         const data = (await res.json()) as { value: number; timestamp: string };
         if (isMounted) {
-          setStatus(`API ok: ${data.value} at ${data.timestamp}`);
+          setStatus(`API OK: ${data.value} às ${data.timestamp}`);
         }
       } catch (err) {
         if (isMounted) setError((err as Error).message);

@@ -26,7 +26,7 @@ export default function App() {
     return (
       <div className="flex items-center justify-center h-screen bg-[var(--bg-app)]">
         <p className="text-[var(--text-secondary)] animate-pulse">
-          Authentication successful. Closing...
+          Autenticação concluída. A fechar...
         </p>
       </div>
     );

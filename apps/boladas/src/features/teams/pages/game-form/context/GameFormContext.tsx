@@ -147,7 +147,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       {
         id: "points",
         icon: "🏆",
-        label: "Total points",
+        label: "Pontos totais",
         left: teamStats.shirts.points,
         right: teamStats.coletes.points,
         suffix: "",
@@ -155,7 +155,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       {
         id: "win",
         icon: "📈",
-        label: "Avg win %",
+        label: "% médio de vitórias",
         left: teamStats.shirts.winPct,
         right: teamStats.coletes.winPct,
         suffix: "%",
@@ -163,7 +163,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       {
         id: "xg",
         icon: "⚽️",
-        label: "xGoals scored",
+        label: "xG marcados",
         left: teamStats.shirts.xg,
         right: teamStats.coletes.xg,
         suffix: "",
@@ -171,7 +171,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       {
         id: "xga",
         icon: "🥅",
-        label: "xGoals conceded",
+        label: "xG sofridos",
         left: teamStats.shirts.xga,
         right: teamStats.coletes.xga,
         suffix: "",
@@ -380,7 +380,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
           );
           if (rollbackError) {
             console.error(
-              "Failed to rollback convocation to open after game creation error:",
+              "Falha ao repor convocatória para aberta após erro na criação do jogo:",
               rollbackError,
             );
           }
@@ -413,7 +413,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
         );
 
         if (!response.ok) {
-          throw new Error(`API Error: ${response.status}`);
+          throw new Error(`Erro da API: ${response.status}`);
         }
 
         const data = (await response.json()) as TeamsResponse;
@@ -428,7 +428,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
         });
       } catch (err: any) {
         if (isMounted) {
-          setError(err.message || "Falha ao carregar equipes.");
+          setError(err.message || "Falha ao carregar equipas.");
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -512,7 +512,9 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
 export function useGameFormContext() {
   const context = useContext(GameFormContext);
   if (!context) {
-    throw new Error("useGameFormContext must be used inside GameFormProvider.");
+    throw new Error(
+      "useGameFormContext tem de ser usado dentro de GameFormProvider.",
+    );
   }
   return context;
 }

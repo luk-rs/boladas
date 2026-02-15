@@ -87,9 +87,11 @@ function useAuthState(): AuthContextValue {
         } else {
           // Unauthorized: No team and no pending registration
           console.warn(
-            "⛔ Access Denied: User has no teams and no pending registration.",
+            "⛔ Acesso negado: utilizador sem equipas e sem registo pendente.",
           );
-          setError("Access denied. You must be part of a team to login.");
+          setError(
+            "Acesso negado. Tens de pertencer a pelo menos uma equipa para iniciar sessão.",
+          );
           await signOut();
         }
       } else {
@@ -187,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used inside AuthProvider.");
+    throw new Error("useAuth tem de ser usado dentro de AuthProvider.");
   }
   return context;
 }

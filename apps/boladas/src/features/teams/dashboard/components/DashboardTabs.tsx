@@ -30,7 +30,7 @@ export function DashboardTabs({
       variant="strong"
       className={`rounded-full p-1 shadow-sm ${className}`}
       role="tablist"
-      aria-label="Dashboard"
+      aria-label="Painel"
     >
       <div className="flex items-center gap-1">
         {TABS.map((tab) => {

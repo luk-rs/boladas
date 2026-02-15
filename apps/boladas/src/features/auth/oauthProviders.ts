@@ -52,7 +52,7 @@ function parseEnabledProviders(raw: string | undefined): Set<OAuthProviderId> {
 export function getOAuthProvider(providerId: OAuthProviderId) {
   const provider = OAUTH_PROVIDERS.find((item) => item.id === providerId);
   if (!provider) {
-    throw new Error(`Unsupported OAuth provider: ${providerId}`);
+    throw new Error(`Provedor OAuth não suportado: ${providerId}`);
   }
   return provider;
 }

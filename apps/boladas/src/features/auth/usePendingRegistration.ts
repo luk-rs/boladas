@@ -17,7 +17,7 @@ function toRegistrationErrorMessage(err: unknown) {
       return message;
     }
   }
-  return "Não foi possível concluir o registo do time.";
+  return "Não foi possível concluir o registo da equipa.";
 }
 
 function isDuplicateTeamCreationError(err: unknown) {
@@ -68,7 +68,7 @@ export function usePendingRegistration() {
       processingRef.current = true;
       setStatus("processing");
       console.log(
-        "🔍 Pending registration found. Verifying profile existence...",
+        "🔍 Registo pendente encontrado. A validar existência do perfil...",
       );
 
       try {
@@ -93,7 +93,7 @@ export function usePendingRegistration() {
 
         if (!profileExists) {
           throw new Error(
-            "User profile could not be verified. Please try again.",
+            "Não foi possível validar o perfil de utilizador. Tenta novamente.",
           );
         }
 
@@ -101,7 +101,7 @@ export function usePendingRegistration() {
         const { name, seasonStart, holidayStart, gameDefinitions } =
           JSON.parse(registrationDataStr);
 
-        console.log("🚀 Executing Pending Registration:", { name });
+        console.log("🚀 A executar registo pendente:", { name });
 
         const { error: rpcError } = await supabase.rpc("register_team", {
           p_name: name,
@@ -113,7 +113,7 @@ export function usePendingRegistration() {
         if (rpcError) throw rpcError;
 
         // 4. Success
-        console.log("✅ Registration successful!");
+        console.log("✅ Registo concluído com sucesso!");
         localStorage.removeItem(REGISTRATION_STORAGE_KEY);
         localStorage.removeItem(REGISTRATION_ERROR_KEY);
         localStorage.removeItem(REGISTRATION_LOCK_KEY);
@@ -133,7 +133,7 @@ export function usePendingRegistration() {
         }
 
         const message = toRegistrationErrorMessage(err);
-        console.error("❌ Registration Failed:", err);
+        console.error("❌ Falha no registo:", err);
         setError(message);
         setStatus("error");
 
@@ -144,7 +144,10 @@ export function usePendingRegistration() {
         try {
           await supabase.auth.signOut({ scope: "local" });
         } catch (signOutError) {
-          console.error("❌ Failed to sign out after registration error:", signOutError);
+          console.error(
+            "❌ Falha ao terminar sessão após erro de registo:",
+            signOutError,
+          );
         }
 
         const loginUrl = new URL(`${window.location.origin}/login`);

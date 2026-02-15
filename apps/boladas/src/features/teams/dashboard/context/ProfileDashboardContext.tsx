@@ -189,7 +189,7 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
       .order("scheduled_at", { ascending: true });
 
     if (convocationError || !convocationRows) {
-      console.error("Failed to load convocations:", convocationError);
+      console.error("Falha ao carregar convocatórias:", convocationError);
       setConvocations([]);
       setLoadingConvocations(false);
       return;
@@ -210,7 +210,7 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
         .in("convocation_id", convocationIds);
 
       if (votesError) {
-        console.error("Failed to load convocation votes:", votesError);
+        console.error("Falha ao carregar votos das convocatórias:", votesError);
       }
       voteRows = (votes ?? []) as typeof voteRows;
     }
@@ -225,7 +225,7 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
         .in("id", userIds);
 
       if (profilesError) {
-        console.error("Failed to load profiles:", profilesError);
+        console.error("Falha ao carregar perfis:", profilesError);
       } else {
         (profilesData ?? []).forEach((profile) => {
           const label = profile.display_name ?? profile.email ?? "Jogador";
@@ -379,7 +379,7 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
       .order("scheduled_at", { ascending: true });
 
     if (gamesError || !gameRows) {
-      console.error("Failed to load games:", gamesError);
+      console.error("Falha ao carregar jogos:", gamesError);
       setGames([]);
       setLoadingGames(false);
       return;
@@ -520,7 +520,7 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
         .eq("user_id", sessionUserId);
 
       if (error) {
-        console.error("Failed to update convocation vote:", error);
+        console.error("Falha ao atualizar voto da convocatória:", error);
         void loadConvocations();
       }
     },
@@ -542,7 +542,7 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
       });
 
       if (error) {
-        console.error("Failed to update convocation status:", error);
+        console.error("Falha ao atualizar estado da convocatória:", error);
         return;
       }
 
@@ -568,7 +568,7 @@ export function ProfileDashboardProvider({ children }: { children: ReactNode }) 
       });
 
       if (error) {
-        console.error("Failed to cancel game:", error);
+        console.error("Falha ao dispensar jogo:", error);
         setCancellingGameId(null);
         return;
       }
@@ -721,7 +721,7 @@ export function useProfileDashboardContext() {
   const context = useContext(ProfileDashboardContext);
   if (!context) {
     throw new Error(
-      "useProfileDashboardContext must be used inside ProfileDashboardProvider.",
+      "useProfileDashboardContext tem de ser usado dentro de ProfileDashboardProvider.",
     );
   }
   return context;

@@ -36,14 +36,14 @@ export function InviteMember({ invites, onCreateInvite }: InviteMemberProps) {
 
   return (
     <div className="stack">
-      <h3>Invite Member</h3>
+      <h3>Convidar membro</h3>
       <div className="row">
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email address"
+          placeholder="Endereço de email"
         />
-        <button onClick={handleInvite}>Invite</button>
+        <button onClick={handleInvite}>Convidar</button>
       </div>
       <div className="row">
         <label>
@@ -52,7 +52,7 @@ export function InviteMember({ invites, onCreateInvite }: InviteMemberProps) {
             checked={roles.includes("member")}
             onChange={() => setBaseRole("member")}
           />
-          Member
+          Membro
         </label>
         <label>
           <input
@@ -60,7 +60,7 @@ export function InviteMember({ invites, onCreateInvite }: InviteMemberProps) {
             checked={roles.includes("player")}
             onChange={() => setBaseRole("player")}
           />
-          Player
+          Jogador
         </label>
         <label>
           <input
@@ -74,12 +74,12 @@ export function InviteMember({ invites, onCreateInvite }: InviteMemberProps) {
 
       {invites.length > 0 && (
         <div className="stack">
-          <h4>Pending Invites</h4>
+          <h4>Convites pendentes</h4>
           {invites.map((invite) => (
             <div key={invite.id} className="row">
               <span>{invite.email}</span>
               <span className="muted">
-                Expires: {new Date(invite.expires_at).toLocaleDateString()}
+                Expira em: {new Date(invite.expires_at).toLocaleDateString()}
               </span>
             </div>
           ))}

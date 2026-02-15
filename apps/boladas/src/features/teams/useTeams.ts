@@ -43,7 +43,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
       return {
         teamMemberId: row.id,
         teamId: row.team_id,
-        teamName: team?.name ?? "Team",
+        teamName: team?.name ?? "Equipa",
         roles: (row.roles ?? []).map((role: any) => role.role),
       };
     });
@@ -120,7 +120,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
     setError(null);
     setStatus(null);
     if (!name.trim()) {
-      setError("Team name is required.");
+      setError("O nome da equipa é obrigatório.");
       return;
     }
 
@@ -135,7 +135,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
       .single();
 
     if (teamError || !teamData) {
-      setError(teamError?.message ?? "Failed to create team.");
+      setError(teamError?.message ?? "Não foi possível criar a equipa.");
       return;
     }
 
@@ -146,7 +146,10 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
       .single();
 
     if (memberError || !memberData) {
-      setError(memberError?.message ?? "Failed to create team membership.");
+      setError(
+        memberError?.message ??
+          "Não foi possível criar a associação de membro à equipa.",
+      );
       return;
     }
 
@@ -165,7 +168,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
       return;
     }
 
-    setStatus("Team created.");
+    setStatus("Equipa criada.");
     await loadMemberships();
   };
 
@@ -175,7 +178,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
     setError(null);
     setStatus(null);
     if (!name.trim()) {
-      setError("Team name is required.");
+      setError("O nome da equipa é obrigatório.");
       return;
     }
 
@@ -184,7 +187,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
     });
     if (requestError) setError(requestError.message);
     else {
-      setStatus("Request submitted.");
+      setStatus("Pedido submetido.");
       await loadMyRequests();
     }
   };
@@ -199,7 +202,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
     setError(null);
     setStatus(null);
     if (!name.trim()) {
-      setError("Team name is required.");
+      setError("O nome da equipa é obrigatório.");
       return;
     }
 
@@ -214,7 +217,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
       .single();
 
     if (teamError || !teamData) {
-      setError(teamError?.message ?? "Failed to create team.");
+      setError(teamError?.message ?? "Não foi possível criar a equipa.");
       return;
     }
 
@@ -225,7 +228,10 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
       .single();
 
     if (memberError || !memberData) {
-      setError(memberError?.message ?? "Failed to create team membership.");
+      setError(
+        memberError?.message ??
+          "Não foi possível criar a associação de membro à equipa.",
+      );
       return;
     }
 
@@ -244,7 +250,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
       return;
     }
 
-    setStatus("Team created.");
+    setStatus("Equipa criada.");
     await loadAdminData();
     await loadMemberships();
   };
@@ -261,7 +267,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
       .eq("id", teamId);
     if (deleteError) setError(deleteError.message);
     else {
-      setStatus("Team deleted.");
+      setStatus("Equipa eliminada.");
       await loadAdminData();
       await loadMemberships();
     }
@@ -276,7 +282,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
 
     if (approveError) setError(approveError.message);
     else {
-      setStatus("Request approved.");
+      setStatus("Pedido aprovado.");
       await loadAdminData();
       await loadMemberships();
     }
@@ -291,7 +297,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
 
     if (denyError) setError(denyError.message);
     else {
-      setStatus("Request denied.");
+      setStatus("Pedido recusado.");
       await loadAdminData();
     }
   };
@@ -303,7 +309,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
     const { data: userData } = await supabase.auth.getUser();
     const user = userData.user;
     if (!user) {
-      setError("Please sign in before accepting an invite.");
+      setError("Inicia sessão antes de aceitares um convite.");
       return;
     }
 
@@ -341,7 +347,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
     if (!supabase) {
       return {
         token: null,
-        error: "Supabase client unavailable.",
+        error: "Cliente Supabase indisponível.",
       };
     }
 
@@ -349,7 +355,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
     if (!normalizedEmail) {
       return {
         token: null,
-        error: "Invite email is required.",
+        error: "O email do convite é obrigatório.",
       };
     }
 
@@ -382,7 +388,7 @@ function useTeamsState(userId: string | null, isSystemAdmin: boolean) {
         : null;
 
     if (!token) {
-      const tokenError = "Invite token was not returned.";
+      const tokenError = "O token do convite não foi devolvido.";
       setError(tokenError);
       return {
         token: null,
@@ -453,7 +459,7 @@ export function TeamsProvider({ children }: { children: ReactNode }) {
 export function useTeams() {
   const context = useContext(TeamsContext);
   if (!context) {
-    throw new Error("useTeams must be used inside TeamsProvider.");
+    throw new Error("useTeams tem de ser usado dentro de TeamsProvider.");
   }
   return context;
 }
