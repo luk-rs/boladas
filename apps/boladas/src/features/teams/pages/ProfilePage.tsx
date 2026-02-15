@@ -10,6 +10,11 @@ type HeaderStats = {
   unavailable: number;
   teams: number;
   attendanceRate: number;
+  upcomingGames: number;
+  pendingCouch: number;
+  hasGameToday: boolean;
+  hasPendingCouchToday: boolean;
+  hasPendingCouchYesterday: boolean;
 };
 
 type VoteState = "ball" | "couch" | "hospital";
@@ -20,6 +25,11 @@ const EMPTY_STATS: HeaderStats = {
   unavailable: 0,
   teams: 0,
   attendanceRate: 0,
+  upcomingGames: 0,
+  pendingCouch: 0,
+  hasGameToday: false,
+  hasPendingCouchToday: false,
+  hasPendingCouchYesterday: false,
 };
 
 const ROLE_PRIORITY = [
@@ -49,9 +59,24 @@ function resolveRoleLabel(roleGroups: string[][]) {
   return "Jogador";
 }
 
+function getDayDiffFromToday(isoDate: string, todayStart: Date) {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const dateStart = new Date(date);
+  dateStart.setHours(0, 0, 0, 0);
+
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  return Math.round((dateStart.getTime() - todayStart.getTime()) / MS_PER_DAY);
+}
+
 export function ProfilePage() {
   const { sessionUserId, sessionEmail } = useAuth();
   const { memberships } = useTeams();
+  const teamIds = useMemo(
+    () => memberships.map((membership) => membership.teamId),
+    [memberships],
+  );
   const [displayName, setDisplayName] = useState("Jogador");
   const [headerLoading, setHeaderLoading] = useState(true);
   const [stats, setStats] = useState<HeaderStats>(EMPTY_STATS);
@@ -65,7 +90,10 @@ export function ProfilePage() {
     let cancelled = false;
 
     const loadHeader = async () => {
-      const teamCount = memberships.length;
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayStartIso = todayStart.toISOString();
+      const teamCount = teamIds.length;
 
       if (!supabase || !sessionUserId) {
         if (cancelled) return;
@@ -77,14 +105,31 @@ export function ProfilePage() {
 
       setHeaderLoading(true);
 
-      const [profileResult, votesResult] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("display_name")
-          .eq("id", sessionUserId)
-          .maybeSingle(),
-        supabase.from("convocation_votes").select("state").eq("user_id", sessionUserId),
-      ]);
+      const [profileResult, votesResult, upcomingResult, couchVotesResult] =
+        await Promise.all([
+          supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", sessionUserId)
+            .maybeSingle(),
+          supabase
+            .from("convocation_votes")
+            .select("state")
+            .eq("user_id", sessionUserId),
+          teamCount > 0
+            ? supabase
+                .from("convocations")
+                .select("id, scheduled_at")
+                .in("team_id", teamIds)
+                .gte("scheduled_at", todayStartIso)
+                .in("status", ["open", "accepted"])
+            : Promise.resolve({ data: [], error: null }),
+          supabase
+            .from("convocation_votes")
+            .select("convocation:convocations(status,scheduled_at)")
+            .eq("user_id", sessionUserId)
+            .eq("state", "couch"),
+        ]);
 
       if (cancelled) return;
 
@@ -94,15 +139,64 @@ export function ProfilePage() {
       if (votesResult.error) {
         console.error("Failed to load profile header stats:", votesResult.error);
       }
+      if (upcomingResult.error) {
+        console.error(
+          "Failed to load profile header upcoming games:",
+          upcomingResult.error,
+        );
+      }
+      if (couchVotesResult.error) {
+        console.error(
+          "Failed to load profile header open convocation alerts:",
+          couchVotesResult.error,
+        );
+      }
 
       const profileName = profileResult.data?.display_name?.trim();
       const votes = (votesResult.data ?? []) as Array<{ state: VoteState }>;
+      const upcomingRows = (upcomingResult.data ?? []) as Array<{
+        scheduled_at?: string | null;
+      }>;
+      const couchVotes = (couchVotesResult.data ?? []) as Array<{
+        convocation:
+          | { status?: string | null; scheduled_at?: string | null }
+          | { status?: string | null; scheduled_at?: string | null }[]
+          | null;
+      }>;
       const games = votes.length;
       const confirmed = votes.filter((vote) => vote.state === "ball").length;
       const unavailable = votes.filter(
         (vote) => vote.state === "hospital",
       ).length;
       const attendanceRate = games > 0 ? Math.round((confirmed / games) * 100) : 0;
+      const upcomingGames = upcomingRows.length;
+      const hasGameToday = upcomingRows.some((row) => {
+        if (!row.scheduled_at) return false;
+        return getDayDiffFromToday(row.scheduled_at, todayStart) === 0;
+      });
+
+      const openCouchConvocations = couchVotes
+        .map((row) => {
+          return Array.isArray(row.convocation)
+            ? row.convocation[0]
+            : row.convocation;
+        })
+        .filter(
+          (
+            convocation,
+          ): convocation is { status?: string | null; scheduled_at: string } =>
+            Boolean(convocation?.scheduled_at) && convocation?.status === "open",
+        );
+
+      const pendingCouch = openCouchConvocations.length;
+      const hasPendingCouchToday = openCouchConvocations.some(
+        (convocation) =>
+          getDayDiffFromToday(convocation.scheduled_at, todayStart) === 0,
+      );
+      const hasPendingCouchYesterday = openCouchConvocations.some(
+        (convocation) =>
+          getDayDiffFromToday(convocation.scheduled_at, todayStart) === -1,
+      );
 
       setDisplayName(profileName || sessionEmail || "Jogador");
       setStats({
@@ -111,6 +205,11 @@ export function ProfilePage() {
         unavailable,
         teams: teamCount,
         attendanceRate,
+        upcomingGames,
+        pendingCouch,
+        hasGameToday,
+        hasPendingCouchToday,
+        hasPendingCouchYesterday,
       });
       setHeaderLoading(false);
     };
@@ -120,7 +219,7 @@ export function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [memberships.length, sessionEmail, sessionUserId]);
+  }, [sessionEmail, sessionUserId, teamIds]);
 
   const medals = useMemo(
     () => [
@@ -184,14 +283,28 @@ export function ProfilePage() {
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               {[
-                { label: "Jogos", value: String(stats.games) },
-                { label: "Presenca", value: `${stats.attendanceRate}%` },
+                {
+                  label: "Proximos jogos",
+                  value: String(stats.upcomingGames),
+                  tone: stats.hasGameToday
+                    ? "text-emerald-500 dark:text-emerald-300"
+                    : "text-primary-600 dark:text-primary-400",
+                },
+                {
+                  label: "No sofa",
+                  value: String(stats.pendingCouch),
+                  tone: stats.hasPendingCouchToday
+                    ? "text-red-500 dark:text-red-300"
+                    : stats.hasPendingCouchYesterday
+                      ? "text-orange-500 dark:text-orange-300"
+                      : "text-amber-500 dark:text-amber-300",
+                },
               ].map((stat) => (
                 <div
                   key={stat.label}
                   className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-2 text-center"
                 >
-                  <p className="text-base font-bold text-primary-600 dark:text-primary-400">
+                  <p className={`text-base font-bold ${stat.tone}`}>
                     {stat.value}
                   </p>
                   <p className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
