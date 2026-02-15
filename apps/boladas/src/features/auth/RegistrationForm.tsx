@@ -5,7 +5,6 @@ import { WheelTimePicker } from "../../components/ui/WheelTimePicker";
 import { WheelDayOfWeekPicker } from "../../components/ui/WheelDayOfWeekPicker";
 import {
   AUTH_ENABLED_PROVIDERS_ENV_VAR,
-  OAUTH_PROVIDERS,
   getOAuthProvider,
   hasEnabledProviders,
   isProviderEnabled,
@@ -13,6 +12,7 @@ import {
 } from "./oauthProviders";
 import { startRegistrationOAuth } from "./oauthFlow";
 import type { PendingRegistrationData } from "./registrationStorage";
+import { OAuthIconButtons } from "./OAuthIconButtons";
 
 export function RegistrationForm({
   onCancel,
@@ -339,43 +339,14 @@ export function RegistrationForm({
                 </ul>
               </div>
             )}
-            {OAUTH_PROVIDERS.map((provider) => {
-              const enabled = isProviderEnabled(provider.id);
-              const disabled = !isFormValid || !enabled;
-              const isLoading = activeProvider === provider.id && !disabled;
-
-              return (
-                <button
-                  key={provider.id}
-                  disabled={disabled}
-                  onClick={() => {
-                    void handleProviderSignIn(provider.id);
-                  }}
-                  className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl py-4 font-bold transition-all active:scale-95 ${
-                    disabled
-                      ? "bg-slate-100 dark:bg-slate-900 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60"
-                      : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg"
-                  }`}
-                >
-                  {isLoading ? (
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-                  ) : (
-                    <img
-                      src={provider.iconPath}
-                      alt={provider.label}
-                      className={`h-6 w-6 transition-transform ${
-                        disabled ? "grayscale opacity-50" : "group-hover:scale-110"
-                      }`}
-                    />
-                  )}
-                  <span>
-                    {isLoading
-                      ? "Conectando..."
-                      : `Registrar com ${provider.label}`}
-                  </span>
-                </button>
-              );
-            })}
+            <OAuthIconButtons
+              loadingProvider={activeProvider}
+              onSelectProvider={(providerId) => {
+                void handleProviderSignIn(providerId);
+              }}
+              disabled={!isFormValid}
+              ariaLabelPrefix="Registrar com"
+            />
 
             {!hasConfiguredProviders && (
               <div className="rounded-xl border border-amber-300/40 bg-amber-500/10 p-3 text-left">

@@ -5,12 +5,12 @@ import { useAuth } from "../../features/auth/useAuth";
 import { useTeams } from "../../features/teams/useTeams";
 import {
   AUTH_ENABLED_PROVIDERS_ENV_VAR,
-  OAUTH_PROVIDERS,
   hasEnabledProviders,
   isProviderEnabled,
   type OAuthProviderId,
 } from "../../features/auth/oauthProviders";
 import { startJoinOAuth } from "../../features/auth/oauthFlow";
+import { OAuthIconButtons } from "../../features/auth/OAuthIconButtons";
 
 export function JoinPage() {
   const { token } = useParams<{ token: string }>();
@@ -162,41 +162,13 @@ export function JoinPage() {
             </button>
           ) : (
             <>
-              {OAUTH_PROVIDERS.map((provider) => {
-                const enabled = isProviderEnabled(provider.id);
-                const disabled = loadingProvider !== null || !enabled;
-                const isLoading = loadingProvider === provider.id;
-
-                return (
-                  <button
-                    key={provider.id}
-                    onClick={() => {
-                      void handleLogin(provider.id);
-                    }}
-                    disabled={disabled}
-                    className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-white py-4 font-bold text-slate-700 shadow-md ring-1 ring-slate-200 transition-all ${
-                      disabled
-                        ? "opacity-70 cursor-not-allowed"
-                        : "hover:bg-slate-50 hover:shadow-lg active:scale-95"
-                    }`}
-                  >
-                    {isLoading ? (
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-                    ) : (
-                      <img
-                        src={provider.iconPath}
-                        alt={provider.label}
-                        className={`h-6 w-6 transition-transform ${
-                          disabled ? "opacity-60" : "group-hover:scale-110"
-                        }`}
-                      />
-                    )}
-                    <span>
-                      {isLoading ? "Conectando..." : `Entrar com ${provider.label}`}
-                    </span>
-                  </button>
-                );
-              })}
+              <OAuthIconButtons
+                loadingProvider={loadingProvider}
+                onSelectProvider={(providerId) => {
+                  void handleLogin(providerId);
+                }}
+                ariaLabelPrefix="Entrar com"
+              />
             </>
           )}
 

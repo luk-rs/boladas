@@ -3,12 +3,12 @@ import { supabase } from "../../lib/supabase";
 import { RegistrationForm } from "./RegistrationForm";
 import {
   AUTH_ENABLED_PROVIDERS_ENV_VAR,
-  OAUTH_PROVIDERS,
   hasEnabledProviders,
   isProviderEnabled,
   type OAuthProviderId,
 } from "./oauthProviders";
 import { startLoginOAuth } from "./oauthFlow";
+import { OAuthIconButtons } from "./OAuthIconButtons";
 import {
   REGISTRATION_ERROR_KEY,
   REGISTRATION_LOCK_KEY,
@@ -133,43 +133,13 @@ export function SignIn({
             </div>
           ) : (
             <div className="space-y-4 pt-2">
-              {OAUTH_PROVIDERS.map((provider) => {
-                const enabled = isProviderEnabled(provider.id);
-                const isLoading = loadingProvider === provider.id;
-                const disabled = loadingProvider !== null || !enabled;
-
-                return (
-                  <button
-                    key={provider.id}
-                    onClick={() => {
-                      void signInWithProvider(provider.id);
-                    }}
-                    disabled={disabled}
-                    className={`group relative flex w-full items-center justify-center gap-3 rounded-2xl bg-white dark:bg-slate-800 py-4 font-bold text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 transition-all ${
-                      disabled
-                        ? "opacity-70 cursor-not-allowed"
-                        : "hover:bg-slate-50 dark:hover:bg-slate-750 hover:shadow-lg active:scale-95"
-                    }`}
-                  >
-                    {isLoading ? (
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-                    ) : (
-                      <img
-                        src={provider.iconPath}
-                        alt={provider.label}
-                        className={`h-6 w-6 transition-transform ${
-                          disabled ? "opacity-60" : "group-hover:scale-110"
-                        }`}
-                      />
-                    )}
-                    <span>
-                      {isLoading
-                        ? "Conectando..."
-                        : `Continuar com ${provider.label}`}
-                    </span>
-                  </button>
-                );
-              })}
+              <OAuthIconButtons
+                loadingProvider={loadingProvider}
+                onSelectProvider={(providerId) => {
+                  void signInWithProvider(providerId);
+                }}
+                ariaLabelPrefix="Continuar com"
+              />
 
               {providerConfigError && (
                 <div className="rounded-xl border border-amber-300/40 bg-amber-500/10 p-3 text-left">

@@ -24,7 +24,7 @@ export const OAUTH_PROVIDERS: readonly OAuthProviderConfig[] = [
   {
     id: "facebook",
     label: "Meta",
-    iconPath: "/assets/providers/facebook.svg",
+    iconPath: "/assets/providers/meta.svg",
   },
 ] as const;
 
