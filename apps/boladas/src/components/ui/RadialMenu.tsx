@@ -73,7 +73,7 @@ export function RadialMenu({
                 }
               }}
               disabled={item.disabled}
-              className={`absolute bottom-0 flex h-12 w-12 items-center justify-center rounded-full border-none shadow-mui transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] ${
+              className={`absolute bottom-0 flex h-10 w-10 items-center justify-center rounded-full border-none shadow-mui transition-all duration-300 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] ${
                 item.disabled
                   ? "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
                   : "active:scale-95 cursor-pointer " +
@@ -91,7 +91,7 @@ export function RadialMenu({
               }}
               title={item.label + (item.disabled ? " (Bloqueado)" : "")}
             >
-              <span className="flex h-6 w-6 items-center justify-center">
+              <span className="flex h-5 w-5 items-center justify-center">
                 {item.icon}
               </span>
             </button>
@@ -134,7 +134,7 @@ export function RadialMenu({
                   }
                 }}
                 disabled={item.disabled}
-                className={`absolute bottom-0 flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-color)] shadow-xl transition-all duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] ${
+                className={`absolute bottom-0 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--border-color)] shadow-xl transition-all duration-500 ease-[cubic-bezier(0.175,0.885,0.32,1.275)] ${
                   item.disabled
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500"
                     : "active:scale-95 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 " +
@@ -152,7 +152,7 @@ export function RadialMenu({
                 }}
                 title={item.label}
               >
-                <span className="flex h-5 w-5 items-center justify-center">
+                <span className="flex h-6 w-6 items-center justify-center">
                   {item.icon}
                 </span>
               </button>
