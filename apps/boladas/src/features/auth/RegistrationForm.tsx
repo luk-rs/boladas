@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabase";
 import { WheelDatePicker } from "../../components/ui/WheelDatePicker";
 import { WheelTimePicker } from "../../components/ui/WheelTimePicker";
 import { WheelDayOfWeekPicker } from "../../components/ui/WheelDayOfWeekPicker";
@@ -15,6 +14,10 @@ import { startRegistrationOAuth } from "./oauthFlow";
 import type { PendingRegistrationData } from "./registrationStorage";
 import { OAuthIconButtons } from "./OAuthIconButtons";
 import { SurfaceTile } from "../../components/layout/SurfaceTile";
+import {
+  isAuthClientConfigured,
+  subscribeAuthStateChange,
+} from "./services/auth.service";
 
 export function RegistrationForm({
   onCancel,
@@ -56,6 +59,7 @@ export function RegistrationForm({
   const hasGameDefinition = formData.gameDefinitions.length > 0;
   const isFormValid = hasTeamName && hasSeasonStart && hasGameDefinition;
   const hasConfiguredProviders = hasEnabledProviders();
+  const hasAuthClient = isAuthClientConfigured();
   const activeProviderLabel = activeProvider
     ? getOAuthProvider(activeProvider).label
     : "OAuth";
@@ -63,18 +67,16 @@ export function RegistrationForm({
   const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
   useEffect(() => {
-    if (status !== "authenticating" || !supabase) return;
+    if (status !== "authenticating" || !hasAuthClient) return;
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const unsubscribe = subscribeAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
         setStatus("registering");
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, [status]);
+    return unsubscribe;
+  }, [status, hasAuthClient]);
 
   useEffect(() => {
     setError(initialError);

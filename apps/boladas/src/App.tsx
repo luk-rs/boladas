@@ -3,7 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import { useAuth } from "./features/auth/useAuth";
 import { usePendingRegistration } from "./features/auth/usePendingRegistration";
-import { useTeams } from "./features/teams/useTeams";
+import { useTeamScopeContext } from "./features/team-scope/context/TeamScopeContext";
 import { AppRoutes } from "./AppRoutes";
 import { useGlobalInstalledPullToRefresh } from "./app/useGlobalInstalledPullToRefresh";
 
@@ -79,7 +79,9 @@ function GlobalRegistrationHandler() {
 
 function GlobalInviteHandler() {
   const { isAuthed } = useAuth();
-  const { acceptInvite } = useTeams();
+  const {
+    actions: { acceptInvite },
+  } = useTeamScopeContext();
 
   const inviteToken = useMemo(() => {
     if (typeof window === "undefined") return null;

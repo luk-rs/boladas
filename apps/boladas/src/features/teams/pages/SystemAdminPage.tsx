@@ -1,19 +1,20 @@
 import { useAuth } from "../../auth/useAuth";
-import { useTeams } from "../useTeams";
 import { SystemAdminTeams } from "../SystemAdminTeams";
 import { Navigate } from "react-router-dom";
 import { PageScaffold } from "../../../components/layout/PageScaffold";
+import { useTeamManagementContext } from "../context/TeamManagementContext";
 
 export function SystemAdminPage() {
   const { isSystemAdmin } = useAuth();
   const {
-    allTeams,
-    pendingRequests,
-    createSystemTeam,
-    deleteTeam,
-    approveRequest,
-    denyRequest,
-  } = useTeams();
+    state: { allTeams, pendingRequests },
+    actions: {
+      createSystemTeam,
+      deleteTeam,
+      approveRequest,
+      denyRequest,
+    },
+  } = useTeamManagementContext();
 
   if (!isSystemAdmin) {
     return <Navigate to="/" replace />;

@@ -1,9 +1,4 @@
-export type TeamMembership = {
-  teamMemberId: string;
-  teamId: string;
-  teamName: string;
-  roles: string[];
-};
+export type { TeamMembership, TeamRosterStatus } from "../team-scope/types";
 
 export type TeamRequest = {
   id: string;

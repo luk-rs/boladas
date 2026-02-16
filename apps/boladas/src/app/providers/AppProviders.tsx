@@ -1,14 +1,17 @@
 import type { ReactNode } from "react";
 import { AuthProvider } from "../../features/auth/useAuth";
 import { PreferencesProvider } from "../../features/preferences/usePreferences";
-import { TeamsProvider } from "../../features/teams/useTeams";
+import { TeamScopeProvider } from "../../features/team-scope/context/TeamScopeContext";
+import { TeamManagementProvider } from "../../features/teams/context/TeamManagementContext";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
-      <TeamsProvider>
-        <PreferencesProvider>{children}</PreferencesProvider>
-      </TeamsProvider>
+      <TeamScopeProvider>
+        <TeamManagementProvider>
+          <PreferencesProvider>{children}</PreferencesProvider>
+        </TeamManagementProvider>
+      </TeamScopeProvider>
     </AuthProvider>
   );
 }

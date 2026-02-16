@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../features/auth/useAuth";
-import { useTeams } from "../../features/teams/useTeams";
+import { useTeamScopeContext } from "../../features/team-scope/context/TeamScopeContext";
+import { getInviteInfo } from "../../features/team-scope/services/team-scope.service";
 import {
   AUTH_ENABLED_PROVIDERS_ENV_VAR,
   hasEnabledProviders,
@@ -17,7 +17,10 @@ export function JoinPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { isAuthed, sessionEmail } = useAuth();
-  const { acceptInvite, error: acceptError } = useTeams();
+  const {
+    state: { error: acceptError },
+    actions: { acceptInvite },
+  } = useTeamScopeContext();
 
   const [teamInfo, setTeamInfo] = useState<{
     team_name: string;
@@ -33,26 +36,24 @@ export function JoinPage() {
   const hasConfiguredProviders = hasEnabledProviders();
 
   useEffect(() => {
-    if (!token || !supabase) {
-      if (!supabase)
-        setPageError("Erro de configuração: Supabase não inicializado.");
+    if (!token) {
+      setPageError("Convite inválido ou expirado.");
+      setLoading(false);
       return;
     }
+
     const loadInfo = async () => {
-      // Use direct client for public call
-      const { data, error } = await supabase!.rpc("get_invite_info", {
-        p_token: token,
-      });
-      if (error) {
-        setPageError(error.message);
-      } else if (data && data.length > 0) {
-        setTeamInfo(data[0]);
+      const result = await getInviteInfo(token);
+      if (result.error) {
+        setPageError(result.error);
+      } else if (result.data) {
+        setTeamInfo(result.data);
       } else {
         setPageError("Convite inválido ou expirado.");
       }
       setLoading(false);
     };
-    loadInfo();
+    void loadInfo();
   }, [token]);
 
   const handleJoin = async () => {
@@ -89,7 +90,6 @@ export function JoinPage() {
   }, [isAuthed, token, loading, pageError, teamInfo, attemptedAutoJoin]);
 
   const handleLogin = async (providerId: OAuthProviderId) => {
-    if (!supabase) return;
     if (!isProviderEnabled(providerId)) {
       setAuthError("Este método de login não está disponível neste ambiente.");
       return;

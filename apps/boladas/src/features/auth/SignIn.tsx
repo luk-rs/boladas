@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "../../lib/supabase";
 import { RegistrationForm } from "./RegistrationForm";
 import {
   AUTH_ENABLED_PROVIDERS_ENV_VAR,
@@ -9,6 +8,7 @@ import {
 } from "./oauthProviders";
 import { startLoginOAuth } from "./oauthFlow";
 import { OAuthIconButtons } from "./OAuthIconButtons";
+import { isAuthClientConfigured } from "./services/auth.service";
 import {
   REGISTRATION_ERROR_KEY,
   REGISTRATION_LOCK_KEY,
@@ -35,6 +35,7 @@ export function SignIn({
   );
   const [authError, setAuthError] = useState<string | null>(null);
   const hasConfiguredProviders = hasEnabledProviders();
+  const hasAuthClient = isAuthClientConfigured();
 
   const providerConfigError = useMemo(() => {
     if (hasConfiguredProviders) return null;
@@ -53,7 +54,7 @@ export function SignIn({
 
   // Standard redirect login for normal sign-in (not creating a team)
   const signInWithProvider = async (providerId: OAuthProviderId) => {
-    if (!supabase) return;
+    if (!hasAuthClient) return;
     if (!isProviderEnabled(providerId)) {
       setAuthError("Este método de login não está disponível neste ambiente.");
       return;
@@ -129,7 +130,7 @@ export function SignIn({
             </p>
           </header>
 
-          {!supabase ? (
+          {!hasAuthClient ? (
             <SurfaceTile
               variant="danger"
               className="border-red-200 p-4 text-center text-sm text-red-600"

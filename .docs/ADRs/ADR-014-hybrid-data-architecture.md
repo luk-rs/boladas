@@ -1,54 +1,62 @@
-# ADR-014: Hybrid Data Architecture Strategy
+# ADR-014: Hybrid Data Architecture & Frontend Service Mediation
 
 ## Status
 
 Accepted
 
+## Date
+
+2026-02-16 (updated)
+
 ## Context
 
-As the application scales, we face the risk of **Supabase Resource Exhaustion** (specifically Connection Limits and CPU usage) and **522 Timeouts** when relying solely on direct client-side database connections.
+The hybrid architecture decision (API for read-heavy/public, direct Supabase for authenticated writes/realtime) remains valid. However, direct Supabase usage from page/component code created coupling and inconsistent data-flow boundaries.
 
-We originally built the application using a "Backend-as-a-Service" (BaaS) pattern, where the frontend connects directly to Supabase. This provides speed and simplicity but exposes the database to unfiltered traffic surges.
+To keep the hybrid model maintainable at scale, frontend data access needs a strict mediation layer.
 
 ## Decision
 
-We will adopt a **Hybrid Data Architecture** that splits data access logic into two distinct paths:
+We keep the hybrid data strategy and add a mandatory frontend layering rule:
 
-### 1. API Path (Read-Heavy / Public)
+### 1. Data access path selection remains hybrid
 
-**Use Cloudflare Workers API for high-frequency public reads.**
+- **API Path**: high-frequency/public reads with caching.
+- **Direct Path**: authenticated writes, RPC business logic, and realtime.
 
-- **Target Criteria**: high-volume public reads, data that tolerates eventual consistency (caching), and aggregations or lists accessed by unauthenticated or loosely authenticated users.
-- **Technology**: Cloudflare Workers + Caching API + Supavisor Connection Pooling (Port 6543).
-- **Rationale**:
-  - **Caching**: A single worker can serve 10,000 requests/sec with a 60s cache policy, hitting the DB only once.
-  - **Protection**: Workers act as a shield against DDoS or "Refresh Spam".
+### 2. Frontend service-layer mediation is mandatory
 
-### 2. Direct Path (Write-Heavy / Authenticated / Realtime)
+- Supabase client usage (`from`, `rpc`, `channel`, auth data calls) must live in `services` files.
+- Pages and presentational components must not import Supabase directly.
+- Contexts orchestrate service calls and expose domain behavior.
 
-**Keep using Supabase Direct Client for Writes, Auth, and Subscriptions.**
+### 3. Context contracts are standardized
 
-- **Target Criteria**: Authenticated transactional writes, complex business logic (RPCs), real-time subscriptions, or data requiring strict consistency (no staleness).
-- **Technology**: `@supabase/supabase-js`.
-- **Rationale**:
-  - **Atomicity**: RPCs guarantee transactional integrity better than distributed API calls.
-  - **Simplicity**: Supabase Auth (HttpOnly cookies) is complex to proxy. Direct usage is standard and secure.
-  - **Latency**: Removes the extra "Worker" hop for actions that cannot be cached anyway.
+Domain contexts expose:
+
+- `{ state, actions }`
+
+This enforces a consistent UI integration surface and isolates orchestration from rendering.
+
+### 4. Transitional compatibility
+
+When migrating legacy modules, compatibility wrappers/adapters may be used temporarily as long as they preserve the service/context boundary.
 
 ## Consequences
 
 ### Positive
 
-- **Resilience**: The application will not go down (522) during traffic spikes on public pages.
-- **Cost**: Drastically reduces Database Compute usage by offloading reads to the CDN edge.
+- Stronger separation of concerns and easier testing of data operations.
+- Safer refactors with explicit service contracts.
+- Reduced risk of duplicated query/RPC logic across UI code.
 
 ### Negative
 
-- **Complexity**: Developers must decide "API vs Direct" for every new feature.
-- **Consistency**: API data may be up to 60s stale (acceptable for Standings, not for Chat).
+- More files per feature (services + contexts + UI).
+- Slightly higher upfront setup for small changes.
 
 ## Implementation Guide
 
-- **New Reads**: Default to API (`fetch('/api/...')`).
-- **New Writes**: Default to RPC (`supabase.rpc(...)`).
-- **New Realtime**: Default to Direct (`supabase.channel(...)`).
+- New direct data calls go into `features/*/services/*.service.ts`.
+- Pages/components call context actions or read context state.
+- Contexts compose services and domain rules.
+- Keep route URLs stable unless explicitly changed by product requirements.

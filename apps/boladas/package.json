@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc -p tsconfig.json --noEmit",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "lint": "pnpm run typecheck && pnpm run lint:arch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint:arch": "rm -rf .tmp/arch-check && tsc scripts/architecture-check.cts --target ES2022 --module NodeNext --moduleResolution NodeNext --outDir .tmp/arch-check --pretty false && node .tmp/arch-check/architecture-check.cjs && rm -rf .tmp/arch-check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",

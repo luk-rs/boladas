@@ -1,28 +1,39 @@
 import {
-  createContext,
   createElement,
+  createContext,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../shared/api/supabase/client";
+import type { ContextModel } from "../../shared/types/context";
 import { REGISTRATION_STORAGE_KEY } from "./registrationStorage";
+import {
+  ensureCurrentAuthUserProfile,
+  loadUserAccess,
+} from "./services/auth.service";
 
-type AuthContextValue = {
+type AuthState = {
   isAuthed: boolean;
   sessionUserId: string | null;
   sessionEmail: string | null;
   isSystemAdmin: boolean;
   loading: boolean;
   error: string | null;
+};
+
+type AuthActions = {
   signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+type AuthModel = ContextModel<AuthState, AuthActions>;
 
-function useAuthState(): AuthContextValue {
+const AuthContext = createContext<AuthModel | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionUserId, setSessionUserId] = useState<string | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [isSystemAdmin, setIsSystemAdmin] = useState(false);
@@ -42,60 +53,35 @@ function useAuthState(): AuthContextValue {
     return Boolean(params.get("invite"));
   }, []);
 
-  // Handle post-login access check
   const checkAccess = useCallback(
     async (userId: string) => {
-      if (!supabase) return;
-
-      // Access Check: Must be System Admin OR belong to a team
-      // 1. Check System Admin
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_system_admin")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (profile?.is_system_admin) {
-        setIsSystemAdmin(true);
-        setLoading(false);
-        return; // Success
-      }
-
-      // 2. Check Team Membership
-      const { count, error: countError } = await supabase
-        .from("team_members")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
-
-      if (countError) {
-        setError(countError.message);
+      const accessResult = await loadUserAccess(userId);
+      if (accessResult.error) {
+        setError(accessResult.error);
         setLoading(false);
         return;
       }
 
-      if (count === 0) {
-        // Strict Mode Logic:
-        // Users MUST have a team.
-        // Exception: They are currently in the middle of a registration flow (Pending Registration).
-        // Exception: They are accepting an invite and will gain membership in this flow.
+      if (accessResult.data.isSystemAdmin) {
+        setIsSystemAdmin(true);
+        setLoading(false);
+        return;
+      }
+      setIsSystemAdmin(false);
+
+      if (accessResult.data.membershipCount === 0) {
         const pendingReg = localStorage.getItem(REGISTRATION_STORAGE_KEY);
         const pendingInvite = isInviteFlow();
 
         if (pendingReg || pendingInvite) {
-          // Allow temporary access to complete registration
           setLoading(false);
         } else {
-          // Unauthorized: No team and no pending registration
-          console.warn(
-            "⛔ Acesso negado: utilizador sem equipas e sem registo pendente.",
-          );
           setError(
             "Acesso negado. Tens de pertencer a pelo menos uma equipa para iniciar sessão.",
           );
           await signOut();
         }
       } else {
-        // Success
         setLoading(false);
       }
     },
@@ -109,7 +95,6 @@ function useAuthState(): AuthContextValue {
       return;
     }
 
-    // Initial session check
     client.auth.getSession().then(({ data }) => {
       const user = data.session?.user;
       setSessionEmail(user?.email ?? null);
@@ -121,14 +106,13 @@ function useAuthState(): AuthContextValue {
       }
     });
 
-    // Auth state listener
     const { data: sub } = client.auth.onAuthStateChange((event, session) => {
       const user = session?.user;
       setSessionEmail(user?.email ?? null);
       setSessionUserId(user?.id ?? null);
 
       if (event === "SIGNED_IN" && user?.id) {
-        setLoading(true); // Set loading while we verify
+        setLoading(true);
         void checkAccess(user.id);
       } else if (event === "SIGNED_OUT") {
         setIsSystemAdmin(false);
@@ -141,55 +125,51 @@ function useAuthState(): AuthContextValue {
     };
   }, [checkAccess]);
 
-  // Sync profile (only if it doesn't exist)
   useEffect(() => {
-    const client = supabase;
-    if (!client || !sessionUserId) return;
+    if (!sessionUserId) return;
+
     const upsertProfile = async () => {
-      const { data: userData } = await client.auth.getUser();
-      const user = userData.user;
-      if (!user) return;
-
-      // Check if profile exists first
-      const { data: existing } = await client
-        .from("profiles")
-        .select("id")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      // Only upsert if profile doesn't exist
-      if (!existing) {
-        await client.from("profiles").upsert({
-          id: user.id,
-          email: user.email,
-          display_name:
-            user.user_metadata?.full_name ?? user.user_metadata?.name ?? null,
-        });
+      const result = await ensureCurrentAuthUserProfile();
+      if (result.error) {
+        console.error("Falha ao garantir perfil do utilizador:", result.error);
       }
     };
+
     void upsertProfile();
   }, [sessionUserId]);
 
-  return {
-    isAuthed: Boolean(sessionUserId),
-    sessionUserId,
-    sessionEmail,
-    isSystemAdmin,
-    loading,
-    error,
-    signOut,
-  };
-}
+  const value = useMemo<AuthModel>(
+    () => ({
+      state: {
+        isAuthed: Boolean(sessionUserId),
+        sessionUserId,
+        sessionEmail,
+        isSystemAdmin,
+        loading,
+        error,
+      },
+      actions: {
+        signOut,
+      },
+    }),
+    [sessionUserId, sessionEmail, isSystemAdmin, loading, error, signOut],
+  );
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const value = useAuthState();
   return createElement(AuthContext.Provider, { value }, children);
 }
 
-export function useAuth() {
+export function useAuthContext() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth tem de ser usado dentro de AuthProvider.");
+    throw new Error("useAuthContext tem de ser usado dentro de AuthProvider.");
   }
   return context;
+}
+
+export function useAuth() {
+  const { state, actions } = useAuthContext();
+  return {
+    ...state,
+    ...actions,
+  };
 }

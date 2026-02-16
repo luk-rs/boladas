@@ -1,4 +1,4 @@
-# ADR-008: Vertical Slice Architecture & Registration Flow
+# ADR-008: Vertical Slice Architecture & Domain Boundaries
 
 ## Status
 
@@ -6,51 +6,65 @@ Accepted
 
 ## Date
 
-2026-01-23
+2026-02-16 (updated)
 
 ## Context
 
-The application structure was monolithic, and the login flow was too permissive. We needed to refactor the architecture for scalability and introduce strict login controls and a team registration flow.
+The initial vertical-slice split improved maintainability, but the `features/teams/dashboard` layer became a cross-domain orchestration surface that coupled same-level business domains (`games`, `convocations`, and team management).
+
+This created unclear ownership and made feature evolution slower because route-level pages depended on a shared dashboard context/composition layer instead of domain-specific contexts.
 
 ## Decision
 
-### 1. Vertical Slice Architecture
+### 1. Same-level domain ownership
 
-We refactored both the PWA (`apps/boladas`) and API (`apps/api`) to key feature slices:
+Frontend feature ownership is now:
 
-- **PWA**: `auth`, `teams`, `members`, `install`, `health`.
-- **API**: `random`, `team-registration` (via RPC).
+- `features/games`: games listing and game-related accept/cancel flows.
+- `features/convocations`: convocations listing, vote/status actions, and convocation creation flow.
+- `features/teams`: management-only concerns (roster roles, invites, create/delete/request/admin flows).
+- `features/profile`: profile header metrics and profile-specific orchestration.
+- `features/team-scope`: shared team membership and active-team state/actions used by all domains.
 
-### 2. Team Registration Flow
+### 2. Remove dashboard orchestration layer
 
-Instead of generic sign-up, users must "Create a Team" to register.
+`features/teams/dashboard` is removed. Its previous responsibilities are split into domain contexts and components under their owning feature slices.
 
-- **Form**: Collects Team Name, Season Start, and Holiday Start.
-- **Persistence**: Data is saved to `localStorage` before OAuth redirect.
-- **Registration**: On callback, if registration data exists, the `register_team` RPC is called.
-- **RPC**: A secure specific PostgreSQL function creates the team and assigns the creator as `team_admin`, `manager`, `secretary`, and `accountant`.
+### 3. Shared foundations under `src/shared`
 
-### 3. Login Restrictions
+Cross-domain building blocks are consolidated under `src/shared` by shared purpose:
 
-Login is no longer open to everyone.
+- `shared/layout`
+- `shared/ui`
+- `shared/api`
+- `shared/types`
+- `shared/utils`
 
-- **System Admins**: Always allowed.
-- **Team Members**: Allowed only if they belong to at least one team.
-- **Others**: Access denied immediately upon login.
+### 4. URL stability with internal realignment
+
+User-facing routes remain stable (`/games`, `/convocations`, `/teams`, `/profile`, `/admin`) while route components are aligned to the new feature ownership.
+
+### 5. Context API consistency
+
+All new/updated contexts follow the same shape:
+
+- `{ state, actions }`
+
+Temporary adapter hooks are allowed to preserve backward compatibility while imports are migrated.
 
 ## Consequences
 
 ### Positive
 
-- **Secure Access**: Only authorized team members can access the app.
-- **Structured Onboarding**: New users immediately have a context (their team) and roles.
-- **Maintainability**: Features are isolated and easy to navigate.
+- Clear domain ownership and reduced cross-feature coupling.
+- Better scalability for independent feature changes.
+- Consistent context API across the app.
 
 ### Negative
 
-- **Complexity**: The auth flow now handles registration data persistence and post-login verification steps.
-- **Schema**: Added specific business logic (Season/Holiday start) to the `teams` table.
+- Transitional compatibility wrappers add temporary indirection.
+- Initial migration requires broader import churn.
 
 ## Compliance
 
-This ADR documents the architectural changes and the new business rules for access control.
+This ADR roll-forward supersedes prior `dashboard`-centric composition by defining stable same-level domain boundaries and removing `features/teams/dashboard`.

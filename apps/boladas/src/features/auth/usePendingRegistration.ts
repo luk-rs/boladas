@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "../../lib/supabase";
 import { useAuth } from "./useAuth";
+import {
+  checkProfileExists,
+  isAuthClientConfigured,
+  registerTeamFromPending,
+  signOutLocal,
+} from "./services/auth.service";
 import {
   REGISTRATION_ERROR_KEY,
   REGISTRATION_LOCK_KEY,
@@ -43,7 +48,9 @@ export function usePendingRegistration() {
 
   useEffect(() => {
     // 1. Pre-checks: Must be logged in, not already processing, and have data
-    if (!supabase || !sessionUserId || processingRef.current) return;
+    if (!isAuthClientConfigured() || !sessionUserId || processingRef.current) {
+      return;
+    }
 
     // Invite onboarding should never trigger pending registration side effects.
     const isInviteFlow =
@@ -64,7 +71,6 @@ export function usePendingRegistration() {
     localStorage.setItem(REGISTRATION_LOCK_KEY, "1");
 
     const executeRegistration = async () => {
-      if (!supabase) return;
       processingRef.current = true;
       setStatus("processing");
       console.log(
@@ -77,13 +83,12 @@ export function usePendingRegistration() {
         // This is safer than assuming it exists immediately after auth.
         let profileExists = false;
         for (let i = 0; i < 5; i++) {
-          const { data } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("id", sessionUserId)
-            .maybeSingle();
+          const profileResult = await checkProfileExists(sessionUserId);
+          if (profileResult.error) {
+            throw new Error(profileResult.error);
+          }
 
-          if (data) {
+          if (profileResult.data) {
             profileExists = true;
             break;
           }
@@ -103,14 +108,13 @@ export function usePendingRegistration() {
 
         console.log("🚀 A executar registo pendente:", { name });
 
-        const { error: rpcError } = await supabase.rpc("register_team", {
-          p_name: name,
-          p_season_start: String(seasonStart),
-          p_holiday_start: holidayStart ? String(holidayStart) : null,
-          p_game_definitions: gameDefinitions || [],
+        const registerResult = await registerTeamFromPending({
+          name: String(name),
+          seasonStart: String(seasonStart),
+          holidayStart: holidayStart ? String(holidayStart) : null,
+          gameDefinitions: gameDefinitions || [],
         });
-
-        if (rpcError) throw rpcError;
+        if (registerResult.error) throw new Error(registerResult.error);
 
         // 4. Success
         console.log("✅ Registo concluído com sucesso!");
@@ -142,7 +146,13 @@ export function usePendingRegistration() {
         localStorage.setItem(REGISTRATION_ERROR_KEY, message);
         localStorage.removeItem(REGISTRATION_LOCK_KEY);
         try {
-          await supabase.auth.signOut({ scope: "local" });
+          const signOutResult = await signOutLocal();
+          if (signOutResult.error) {
+            console.error(
+              "❌ Falha ao terminar sessão após erro de registo:",
+              signOutResult.error,
+            );
+          }
         } catch (signOutError) {
           console.error(
             "❌ Falha ao terminar sessão após erro de registo:",

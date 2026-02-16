@@ -1,4 +1,3 @@
-import { supabase } from "../../lib/supabase";
 import {
   clearPendingRegistrationData,
   clearRegistrationErrorAndLock,
@@ -6,6 +5,7 @@ import {
   type PendingRegistrationData,
 } from "./registrationStorage";
 import { getOAuthProvider, type OAuthProviderId } from "./oauthProviders";
+import { signInWithOAuth } from "./services/auth.service";
 
 type ManualNavigation = "assign" | "popup" | "none";
 
@@ -57,43 +57,38 @@ function openCenteredPopup(url: string, popupName: string) {
 async function startOAuthFlow(
   params: StartOAuthFlowParams,
 ): Promise<OAuthStartResult> {
-  if (!supabase) {
-    return { ok: false, error: "Supabase auth não está configurado." };
-  }
-
   const provider = getOAuthProvider(params.provider);
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
+  const oauthResult = await signInWithOAuth({
     provider: provider.id,
-    options: {
-      redirectTo: params.redirectTo,
-      skipBrowserRedirect: params.skipBrowserRedirect,
-      queryParams: provider.scopes ? { scope: provider.scopes } : undefined,
-    },
+    redirectTo: params.redirectTo,
+    skipBrowserRedirect: params.skipBrowserRedirect,
+    scope: provider.scopes,
   });
-
-  if (error) {
-    return { ok: false, error: error.message };
+  if (oauthResult.error) {
+    return { ok: false, error: oauthResult.error };
   }
 
   if (!params.skipBrowserRedirect) {
     return { ok: true };
   }
 
-  if (!data?.url) {
+  if (!oauthResult.data.url) {
     return { ok: false, error: `Não foi possível iniciar login com ${provider.label}.` };
   }
 
   if (params.navigation === "popup") {
-    const popup = openCenteredPopup(data.url, params.popupName ?? "oauth-auth");
+    const popup = openCenteredPopup(
+      oauthResult.data.url,
+      params.popupName ?? "oauth-auth",
+    );
     if (!popup) {
-      window.location.assign(data.url);
+      window.location.assign(oauthResult.data.url);
     }
     return { ok: true };
   }
 
   if (params.navigation === "assign") {
-    window.location.assign(data.url);
+    window.location.assign(oauthResult.data.url);
   }
 
   return { ok: true };

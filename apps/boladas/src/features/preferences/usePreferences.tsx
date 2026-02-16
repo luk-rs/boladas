@@ -7,16 +7,22 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { ContextModel } from "../../shared/types/context";
 
 export type ThemeMode = "light" | "dark";
 export type MenuPosition = "left" | "right";
 
-type PreferencesContextValue = {
+type PreferencesState = {
   theme: ThemeMode;
   menuPosition: MenuPosition;
+};
+
+type PreferencesActions = {
   setTheme: (value: ThemeMode) => void;
   setMenuPosition: (value: MenuPosition) => void;
 };
+
+type PreferencesModel = ContextModel<PreferencesState, PreferencesActions>;
 
 const THEME_STORAGE_KEY = "theme";
 const MENU_POSITION_STORAGE_KEY = "menu-position";
@@ -47,9 +53,7 @@ function applyTheme(theme: ThemeMode) {
   }
 }
 
-const PreferencesContext = createContext<PreferencesContextValue | undefined>(
-  undefined,
-);
+const PreferencesContext = createContext<PreferencesModel | undefined>(undefined);
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
@@ -80,10 +84,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      theme,
-      menuPosition,
-      setTheme,
-      setMenuPosition,
+      state: {
+        theme,
+        menuPosition,
+      },
+      actions: {
+        setTheme,
+        setMenuPosition,
+      },
     }),
     [theme, menuPosition, setTheme, setMenuPosition],
   );
@@ -95,12 +103,20 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function usePreferences() {
+export function usePreferencesContext() {
   const context = useContext(PreferencesContext);
   if (!context) {
     throw new Error(
-      "usePreferences tem de ser usado dentro de PreferencesProvider.",
+      "usePreferencesContext tem de ser usado dentro de PreferencesProvider.",
     );
   }
   return context;
+}
+
+export function usePreferences() {
+  const { state, actions } = usePreferencesContext();
+  return {
+    ...state,
+    ...actions,
+  };
 }

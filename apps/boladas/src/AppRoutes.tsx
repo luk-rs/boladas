@@ -4,15 +4,15 @@ import { PublicRoute } from "./components/layout/PublicRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { SystemAdminPage } from "./features/teams/pages/SystemAdminPage";
 import { AppShell } from "./components/layout/AppShell";
-import { GamesPage } from "./features/teams/pages/GamesPage";
-import { ConvocationsPage } from "./features/teams/pages/ConvocationsPage";
+import { GamesPage } from "./features/games/pages/GamesPage";
+import { ConvocationsPage } from "./features/convocations/pages/ConvocationsPage";
 import { StandingsPage } from "./features/teams/pages/StandingsPage";
 import { StatsPage } from "./features/teams/pages/StatsPage";
-import { ProfilePage } from "./features/teams/pages/ProfilePage";
+import { ProfilePage } from "./features/profile/pages/ProfilePage";
 import { SettingsPage } from "./features/teams/pages/SettingsPage";
-import { TeamsPage } from "./features/teams/pages/TeamsPage";
-import { GameFormPage } from "./features/teams/pages/GameFormPage";
-import { ConvocationFormPage } from "./features/teams/pages/ConvocationFormPage";
+import { TeamManagementPage } from "./features/teams/pages/TeamManagementPage";
+import { GameFormPage } from "./features/games/pages/GameFormPage";
+import { ConvocationFormPage } from "./features/convocations/pages/ConvocationFormPage";
 import { JoinPage } from "./features/invites/JoinPage";
 
 export function AppRoutes() {
@@ -38,7 +38,7 @@ export function AppRoutes() {
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/teams" element={<TeamManagementPage />} />
           <Route
             path="/team-management"
             element={<Navigate to="/teams" replace />}
