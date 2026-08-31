@@ -15,6 +15,7 @@ import {
   ensureCurrentAuthUserProfile,
   loadUserAccess,
 } from "./services/auth.service";
+import { debounce } from "../../shared/utils/debounce";
 
 type AuthState = {
   isAuthed: boolean;
@@ -88,6 +89,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [isInviteFlow, signOut],
   );
 
+  const checkAccessDebounced = useMemo(
+    () =>
+      debounce((userId: string) => {
+        void checkAccess(userId);
+      }, 500),
+    [checkAccess],
+  );
+
   useEffect(() => {
     const client = supabase;
     if (!client) {
@@ -100,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSessionEmail(user?.email ?? null);
       setSessionUserId(user?.id ?? null);
       if (user?.id) {
-        void checkAccess(user.id);
+        checkAccessDebounced(user.id);
       } else {
         setLoading(false);
       }
@@ -113,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === "SIGNED_IN" && user?.id) {
         setLoading(true);
-        void checkAccess(user.id);
+        checkAccessDebounced(user.id);
       } else if (event === "SIGNED_OUT") {
         setIsSystemAdmin(false);
         setLoading(false);
@@ -123,15 +132,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       sub.subscription.unsubscribe();
     };
-  }, [checkAccess]);
+  }, [checkAccessDebounced]);
 
   useEffect(() => {
     if (!sessionUserId) return;
+
+    const key = `profile_ensured_${sessionUserId}`;
+    if (localStorage.getItem(key) === "true") return;
 
     const upsertProfile = async () => {
       const result = await ensureCurrentAuthUserProfile();
       if (result.error) {
         console.error("Falha ao garantir perfil do utilizador:", result.error);
+      } else {
+        localStorage.setItem(key, "true");
       }
     };
 
