@@ -1,7 +1,7 @@
 import { useAuth } from "../../auth/useAuth";
 import { SystemAdminTeams } from "../SystemAdminTeams";
 import { Navigate } from "react-router-dom";
-import { PageScaffold } from "../../../components/layout/PageScaffold";
+import { PageScaffold } from "../../../shared/layout/PageScaffold";
 import { useTeamManagementContext } from "../context/TeamManagementContext";
 
 export function SystemAdminPage() {

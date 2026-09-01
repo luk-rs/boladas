@@ -1,7 +1,7 @@
 # ADR-005: Deployment Strategy
 
-**Status**: Active (Pending Configuration)  
-**Date**: 2026-01-22  
+**Status**: Active  
+**Date**: 2026-01-22 (Updated 2026-09-01)  
 **Decision Makers**: Project team
 
 ## Context
@@ -64,32 +64,19 @@ Requirements:
 
 ### ✅ Completed
 - Monorepo build scripts (`pnpm build`)
-- Wrangler configuration
-- Frontend Vite build pipeline
-
-### ⚠️ Pending Configuration
-The following must be configured in GitHub repository settings:
-
-**Required Secrets**:
-1. `CLOUDFLARE_API_TOKEN`
-   - Create at: Cloudflare Dashboard → My Profile → API Tokens
-   - Required permissions:
-     - Account → Workers Scripts → Edit
-     - Account → Cloudflare Pages → Edit
-     - User → User Details → Read (recommended)
-
-2. `CLOUDFLARE_ACCOUNT_ID`
-   - Found at: Cloudflare Dashboard → Workers & Pages → Account ID
-
-3. `CLOUDFLARE_PAGES_PROJECT`
-   - Value: `boladas` (suspected from project context)
-   - Must match project name created in Cloudflare Pages
-
-**Setup Steps**:
-1. Create Cloudflare Pages project named `boladas`
-2. Generate API token with required permissions
-3. Add all three secrets to GitHub repository
-4. Push to main to trigger first deployment
+- Wrangler configuration and GitHub Actions workflow (`deploy-workers.yml`)
+- Frontend Vite build pipeline and GitHub Actions workflow (`deploy-pages.yml`)
+- Automated production Supabase auth URL configuration (`configure-prod-auth.sh`)
+- GitHub Secrets configured:
+  - `CLOUDFLARE_API_TOKEN`
+  - `CLOUDFLARE_ACCOUNT_ID`
+  - `CLOUDFLARE_PAGES_PROJECT`
+  - `SUPABASE_ACCESS_TOKEN`
+  - `SUPABASE_DB_PASSWORD`
+  - `SUPABASE_PROJECT_ID`
+  - `VITE_API_URL`
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_ANON_KEY`
 
 ## Consequences
 

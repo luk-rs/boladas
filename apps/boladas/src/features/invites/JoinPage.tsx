@@ -11,7 +11,7 @@ import {
 } from "../../features/auth/oauthProviders";
 import { startJoinOAuth } from "../../features/auth/oauthFlow";
 import { OAuthIconButtons } from "../../features/auth/OAuthIconButtons";
-import { SurfaceTile } from "../../components/layout/SurfaceTile";
+import { SurfaceTile } from "../../shared/layout/SurfaceTile";
 
 export function JoinPage() {
   const { token } = useParams<{ token: string }>();

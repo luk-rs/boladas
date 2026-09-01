@@ -12,15 +12,14 @@ export interface Env {
 const app = new Hono<{ Bindings: Env }>({ strict: false });
 
 // Enable CORS for all routes
-app.use("*", async (c, next) => {
-  const origin = c.env.ALLOWED_ORIGIN || "*";
-  const corsMiddleware = cors({
-    origin,
+app.use(
+  "*",
+  cors({
+    origin: (origin, c) => c.env.ALLOWED_ORIGIN || "*",
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
-  });
-  return corsMiddleware(c, next);
-});
+  }),
+);
 
 app.get("/random", (c) => {
   return handleRandom(c.req.raw, c.env.ALLOWED_ORIGIN);

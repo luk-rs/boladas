@@ -31,29 +31,30 @@ Add these three secrets:
 
 Edit `supabase/config.toml` and replace `YOUR_PROJECT_REF` with your actual project reference ID.
 
-## How It Works
+## Migration Workflow (Free Tier Strategy - ADR-009)
 
-- Database schema is defined in `supabase/migrations/`
-- When you push to `main`, GitHub Actions automatically:
-  1. Installs Supabase CLI
-  2. Runs `supabase db push` to apply migrations to your hosted database
-  3. Builds and deploys your app
+Due to Supabase free tier connection constraints (10-connection limit and transaction pooler prepared statement limitations), database migrations are **NOT** run automatically during CI/CD runs.
 
-## Manual Migration
+### Deployment Process
 
-To run migrations manually:
+1. Create and test migration locally:
+   ```bash
+   supabase migration new your_migration_name
+   # edit migration file in supabase/migrations/
+   supabase db reset # or supabase migration up
+   ```
 
-```bash
-supabase link --project-ref YOUR_PROJECT_REF
-supabase db push
-```
+2. Push migrations to production database before committing:
+   ```bash
+   SUPABASE_PROJECT_ID=jqvynvxpnotjnfdxmdwj SUPABASE_DB_PASSWORD=your_password bash .github/scripts/push-migrations.sh
+   ```
 
-## Creating New Migrations
+3. Commit migration files to Git and push to `main`:
+   - CI builds and deploys the app safely while migrations are already live in the database.
 
-When you need to change the schema:
+### Local Development
 
-```bash
-supabase migration new your_migration_name
-```
+- Start local stack: `supabase start`
+- Stop local stack: `supabase stop`
+- View local dashboard: `http://localhost:54323`
 
-This creates a new file in `supabase/migrations/` where you can write your SQL changes.

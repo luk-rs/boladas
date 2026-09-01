@@ -1,9 +1,9 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { ProtectedRoute } from "./components/layout/ProtectedRoute";
-import { PublicRoute } from "./components/layout/PublicRoute";
+import { ProtectedRoute } from "./shared/layout/ProtectedRoute";
+import { PublicRoute } from "./shared/layout/PublicRoute";
 import { LoginPage } from "./features/auth/pages/LoginPage";
 import { SystemAdminPage } from "./features/teams/pages/SystemAdminPage";
-import { AppShell } from "./components/layout/AppShell";
+import { AppShell } from "./shared/layout/AppShell";
 import { GamesPage } from "./features/games/pages/GamesPage";
 import { ConvocationsPage } from "./features/convocations/pages/ConvocationsPage";
 import { StandingsPage } from "./features/teams/pages/StandingsPage";

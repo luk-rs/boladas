@@ -13,7 +13,7 @@ import {
   REGISTRATION_ERROR_KEY,
   REGISTRATION_LOCK_KEY,
 } from "./registrationStorage";
-import { SurfaceTile } from "../../components/layout/SurfaceTile";
+import { SurfaceTile } from "../../shared/layout/SurfaceTile";
 
 export function SignIn({
   inviteToken,

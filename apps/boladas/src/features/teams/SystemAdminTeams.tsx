@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Team, TeamRequest } from "./types";
-import { SectionShell } from "../../components/layout/SectionShell";
-import { SurfaceTile } from "../../components/layout/SurfaceTile";
+import { SectionShell } from "../../shared/layout/SectionShell";
+import { SurfaceTile } from "../../shared/layout/SurfaceTile";
 
 interface SystemAdminTeamsProps {
   allTeams: Team[];

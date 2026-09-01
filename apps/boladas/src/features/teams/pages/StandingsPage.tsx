@@ -1,6 +1,6 @@
-import { PageScaffold } from "../../../components/layout/PageScaffold";
-import { SectionShell } from "../../../components/layout/SectionShell";
-import { SurfaceTile } from "../../../components/layout/SurfaceTile";
+import { PageScaffold } from "../../../shared/layout/PageScaffold";
+import { SectionShell } from "../../../shared/layout/SectionShell";
+import { SurfaceTile } from "../../../shared/layout/SurfaceTile";
 
 export function StandingsPage() {
   return (

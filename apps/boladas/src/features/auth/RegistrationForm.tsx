@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { WheelDatePicker } from "../../components/ui/WheelDatePicker";
-import { WheelTimePicker } from "../../components/ui/WheelTimePicker";
-import { WheelDayOfWeekPicker } from "../../components/ui/WheelDayOfWeekPicker";
-import { BottomSheet } from "../../components/ui/BottomSheet";
+import { WheelDatePicker } from "../../shared/ui/WheelDatePicker";
+import { WheelTimePicker } from "../../shared/ui/WheelTimePicker";
+import { WheelDayOfWeekPicker } from "../../shared/ui/WheelDayOfWeekPicker";
+import { BottomSheet } from "../../shared/ui/BottomSheet";
 import {
   AUTH_ENABLED_PROVIDERS_ENV_VAR,
   getOAuthProvider,
@@ -13,7 +13,7 @@ import {
 import { startRegistrationOAuth } from "./oauthFlow";
 import type { PendingRegistrationData } from "./registrationStorage";
 import { OAuthIconButtons } from "./OAuthIconButtons";
-import { SurfaceTile } from "../../components/layout/SurfaceTile";
+import { SurfaceTile } from "../../shared/layout/SurfaceTile";
 import {
   isAuthClientConfigured,
   subscribeAuthStateChange,

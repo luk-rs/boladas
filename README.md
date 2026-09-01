@@ -59,11 +59,13 @@ Provider availability is environment-driven with:
 
 ## Supabase
 
-Run schema:
-- Apply `supabase/schema.sql` in Supabase SQL editor
+Local stack:
+- `supabase start` / `supabase stop` / `supabase status`
 
-Optional seed:
-- Run `supabase/seed.sql`
+Migrations (Free Tier Strategy - see ADR-009):
+- Schema migrations live in `supabase/migrations/`
+- Applied locally with `supabase start` or `supabase db reset`
+- Applied to remote database via `bash .github/scripts/push-migrations.sh`
 
 ## Deploy (Cloudflare)
 You’ll need:
