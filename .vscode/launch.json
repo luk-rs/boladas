@@ -2,18 +2,40 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Open Boladas App",
+      "name": "App: Preview (http://localhost:5173)",
       "type": "pwa-chrome",
       "request": "launch",
       "url": "http://localhost:5173",
       "webRoot": "${workspaceFolder}/apps/boladas"
+    },
+    {
+      "name": "Dev: Start Full Stack & Launch Browser",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/boladas",
+      "preLaunchTask": "Dev: Full Stack"
+    },
+    {
+      "name": "Dev: Start Services & Launch Browser",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/boladas",
+      "preLaunchTask": "Dev: Services"
+    },
+    {
+      "name": "Supabase: Studio (http://localhost:54323)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:54323"
     }
   ],
   "compounds": [
     {
-      "name": "Dev: API + App",
-      "configurations": ["Open Boladas App"],
-      "preLaunchTask": "Dev: App"
+      "name": "Full Dev Stack (Supabase + API + App)",
+      "configurations": ["App: Preview (http://localhost:5173)"],
+      "preLaunchTask": "Dev: Full Stack"
     }
   ]
 }

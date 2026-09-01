@@ -2,32 +2,123 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Dev: API",
+      "label": "Dev: Full Stack",
       "type": "shell",
       "command": "pnpm",
-      "args": ["-C", "apps/api", "dev"],
+      "args": ["dev"],
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": {
+        "pattern": [{ "regexp": "." }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*(Starting|vite|wrangler).*",
+          "endsPattern": ".*(Local:|Ready|http://localhost:5173).*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Dev: Services",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["dev:services"],
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [{ "regexp": "." }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*(vite|wrangler).*",
+          "endsPattern": ".*(Local:|Ready|http://localhost:5173).*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
     },
     {
       "label": "Dev: App",
       "type": "shell",
       "command": "pnpm",
-      "args": ["-C", "apps/boladas", "dev"],
+      "args": ["dev:app"],
       "isBackground": true,
-      "problemMatcher": []
+      "problemMatcher": {
+        "pattern": [{ "regexp": "." }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*vite.*",
+          "endsPattern": ".*Local:.*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Dev: API",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["dev:api"],
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [{ "regexp": "." }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*wrangler.*",
+          "endsPattern": ".*Ready on http://localhost:8787.*"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Supabase: Start",
+      "type": "shell",
+      "command": "supabase",
+      "args": ["start"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Supabase: Stop",
+      "type": "shell",
+      "command": "supabase",
+      "args": ["stop"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Build: All",
+      "type": "shell",
+      "command": "pnpm",
+      "args": ["build"],
+      "group": "build"
     },
     {
       "label": "Build: App",
       "type": "shell",
       "command": "pnpm",
-      "args": ["-C", "apps/boladas", "build"]
+      "args": ["-C", "apps/boladas", "build"],
+      "group": "build"
     },
     {
       "label": "Build: API",
       "type": "shell",
       "command": "pnpm",
-      "args": ["-C", "apps/api", "build"]
+      "args": ["-C", "apps/api", "build"],
+      "group": "build"
     }
   ]
 }
