@@ -1,4 +1,4 @@
-# ADR-016: Database Connection Pooling for Supabase Free Tier
+# ADR-016: Database Connection Lifecycle & Optimization for Supabase Free Tier
 
 ## Status
 
@@ -6,134 +6,100 @@ Accepted
 
 ## Date
 
-2026-01-27
+2026-01-27 (Updated 2026-08-31)
 
 ## Context
 
-Supabase free tier enforces a **10-connection limit** across the entire project. Initial API implementation created a new database connection for every request and closed it immediately:
+Supabase free tier enforces a **10-connection limit** across the entire project. In serverless environments, database connection management is critical to prevent connection starvation and pool exhaustion.
 
-```typescript
-const sql = postgres(env.SUPABASE_DB_URL);
-// ... query ...
-await sql.end();
-```
+Initially, a module-level cached singleton connection pool was considered. However, the **Cloudflare Workers runtime enforces strict I/O isolation**:
+- Reusing open TCP socket objects across separate request events triggers runtime exceptions (`Cannot perform I/O on behalf of a different request`).
+- Serverless worker instances can spin down or handle requests concurrently across isolated contexts.
 
-This pattern would exhaust the 10-connection limit at ~10 concurrent requests, making the free tier tier unsuitable for even small production apps.
-
-Additionally:
-- Cloudflare Workers run on serverless infrastructure where connection caching is beneficial
-- Connection churn (create/close per request) increases latency
-- `postgres.js` library supports built-in connection pooling
+Therefore, connection management must comply with Cloudflare Workers' execution model while strictly respecting Supabase Free Tier's 10-connection limit.
 
 ## Decision
 
-Implement a **singleton connection pool pattern** for database access:
+Implement a **lightweight per-request client lifecycle with explicit termination**:
 
-1. **Singleton Client**: Create one `postgres` client instance per Worker environment and cache it in module-level state
-2. **Pool Configuration**:
-   - `max: 3` — Conservative pool size (3 out of 10 connections max)
-   - `idle_timeout: 30` — Close idle connections after 30 seconds
-   - `connection_timeout: 5` — 5-second timeout for acquiring connections
-   - `prepare: false` — Disable prepared statements to reduce memory overhead
-3. **Shared Access**: All request handlers access the pool via `getDb(dbUrl)` function
-4. **No Per-Request Cleanup**: Don't call `.end()` on the pool; let it persist across requests
-5. **Location**: Centralized in `apps/api/src/shared/db.ts` for reuse across all Worker handlers
+1. **Per-Request Client Creation**: Handlers obtain a database client on demand via `getDb(dbUrl)`.
+2. **Minimal Pool Constraints**:
+   - `max: 1` — Exactly 1 connection per active request context.
+   - `idle_timeout: 10` — Aggressive idle release.
+   - `connect_timeout: 5` — 5-second connection acquisition timeout.
+   - `prepare: false` — Disable prepared statements to reduce memory and prevent transaction pooler conflicts.
+3. **Explicit Handler Cleanup**: Every handler calling `getDb` must execute `closeDb(sql)` inside a `finally` block to immediately release the connection upon request completion.
+4. **Centralized Implementation**: Managed in `apps/api/src/shared/db.ts`.
+5. **Complementary Frontend Caching & Debouncing**: Frontend features (e.g. `useAuth`) debounce access checks and cache profile existence flags in `localStorage` to drastically reduce unnecessary database queries.
 
 ## Rationale
 
-### Efficiency
-- **Reuses connections** across multiple requests instead of creating/destroying per request
-- **Reduces latency** by keeping connections warm and ready
-- **Conserves free tier resources** by limiting total connections to 3 instead of unlimited
+### Cloudflare Workers Runtime Compatibility
+- Creating the client within the request context and closing it at handler termination avoids cross-request TCP socket reuse errors.
 
-### Serverless Compatibility
-- **Cloudflare Workers** automatically preserve module-level state across requests within the same execution context
-- **Connection pooling** becomes effectively free with this architecture
-- **No external cache** needed (unlike traditional servers where pooling requires Redis)
+### Free Tier Connection Conservation
+- With `max: 1` and immediate `closeDb(sql)` execution in `finally` blocks, connections are held only for the brief duration of the SQL execution (milliseconds).
+- Even under multiple concurrent incoming requests, connections are rapidly released back to PostgreSQL.
 
-### Safety
-- **Pool size limits** prevent exhaustion even with high concurrency
-- **Idle timeout** prevents stale connections from consuming limits
-- **Disabled prepared statements** reduce memory overhead per connection
-
-### Scaling
-With 3 connections, the API can handle:
-- Dozens of concurrent users (typical usage pattern)
-- Brief traffic spikes (pooling absorbs connection churn)
-- Multiple simultaneous request handlers
+### Safety & Resilience
+- `prepare: false` ensures compatibility with connection poolers (e.g. Supabase PgBouncer / Supavisor) and direct connections alike.
+- Deterministic error handling in `try...catch...finally` guarantees connections are not leaked on query failure.
 
 ## Implementation
 
-### Before (Per-Request Connection)
+### Helper Module (`apps/api/src/shared/db.ts`)
 ```typescript
-export async function handleGetGames(request: Request, env: any) {
-  const sql = postgres(env.SUPABASE_DB_URL); // New connection
+import postgres from "postgres";
+
+export function getDb(dbUrl: string): ReturnType<typeof postgres> {
+  return postgres(dbUrl, {
+    max: 1,
+    idle_timeout: 10,
+    connect_timeout: 5,
+    prepare: false,
+  });
+}
+
+export async function closeDb(
+  sql: ReturnType<typeof postgres>,
+): Promise<void> {
+  await sql.end({ timeout: 5 });
+}
+```
+
+### Handler Pattern (`apps/api/src/features/...`)
+```typescript
+export async function handleGetConvocationTeams(request: Request, env: Env, convocationId: string) {
+  const sql = getDb(env.SUPABASE_DB_URL);
   try {
-    // ... query ...
+    const data = await sql`...`;
+    return Response.json(data);
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   } finally {
-    await sql.end(); // Close immediately
+    await closeDb(sql);
   }
 }
 ```
-
-**Problem**: 10 concurrent requests = exhausted free tier
-
-### After (Singleton Pool)
-```typescript
-// shared/db.ts
-let cachedSql: ReturnType<typeof postgres> | null = null;
-export function getDb(dbUrl: string) {
-  if (!cachedSql) {
-    cachedSql = postgres(dbUrl, {
-      max: 3,
-      idle_timeout: 30,
-      prepare: false,
-    });
-  }
-  return cachedSql;
-}
-
-// features/games/get-games.ts
-export async function handleGetGames(request: Request, env: any) {
-  const sql = getDb(env.SUPABASE_DB_URL); // Reuses cached pool
-  try {
-    // ... query ...
-  }
-  // No cleanup; pool persists
-}
-```
-
-**Benefit**: 100+ concurrent requests possible with 3 connections
 
 ## Consequences
 
 ### Positive
-- **Free Tier Sustainable**: Scales to production-grade usage on free tier
-- **Lower Latency**: Eliminates connection setup overhead per request
-- **Reduced Database Load**: Fewer connect/disconnect cycles
-- **Simpler Code**: Single `getDb()` function replaces per-handler setup
-- **Future Ready**: Easy to migrate to higher-tier databases later
+- **Fully Compatible with Cloudflare Workers**: Zero cross-request I/O errors.
+- **Connection Leak Prevention**: Explicit `finally { await closeDb(sql); }` guarantees predictable teardown.
+- **Free Tier Compliant**: Transient 1-connection footprint per active query allows handling typical traffic spikes without reaching the 10-connection limit.
 
 ### Negative
-- **Module State Dependency**: Relies on Cloudflare Worker's execution model (not portable to other runtimes without changes)
-- **Connection Reuse Risk**: If a connection becomes corrupted, it affects all requests (rare but possible)
-- **Memory Persistence**: Pool state persists in Worker memory; may accumulate over time in long-running processes
+- **Per-request connection handshake latency**: Opening a connection per request introduces slight connection overhead compared to a warm persistent connection pool.
+- **Developer discipline**: Handlers must remember to call `closeDb` in `finally` blocks.
 
 ### Mitigations
-- Pool `idle_timeout` cleans up stale connections automatically
-- Monitor pool health via error logging (implement in future)
-- Design for connection pool migration path if upgrading to higher tier
-- Document the singleton pattern for future maintainers
+- Cloudflare Hyperdrive can be introduced in the future to provide pooled, low-latency edge database acceleration without application code changes.
+- Automated linting and code review checks ensure proper `try...finally` teardown patterns.
 
 ## Related Decisions
 
-- **ADR-003** (Backend API): Workers architecture
-- **ADR-005** (Deployment): Cloudflare Workers deployment
+- **ADR-003** (Backend API): Cloudflare Workers & Hono architecture
+- **ADR-005** (Deployment): Deployment strategy
 - **ADR-009** (Migration Management): Free tier database constraints
-- **ADR-014** (Hybrid Data Architecture): Client vs. server data access patterns
-
-## Future Enhancements
-
-- Add connection pool health metrics and monitoring
-- Implement graceful shutdown for Worker process termination
-- Consider upgrade path for Supabase Pro tier (higher connection limits)
+- **ADR-014** (Hybrid Data Architecture): Direct vs API access boundaries

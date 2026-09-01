@@ -1,7 +1,7 @@
 # ADR-003: Backend API Architecture
 
 **Status**: Active  
-**Date**: 2026-01-22  
+**Date**: 2026-01-22 (Updated 2026-08-31)  
 **Decision Makers**: Project team
 
 ## Context
@@ -13,10 +13,11 @@ Need a serverless API solution that:
 - Keeps costs low at small scale
 
 ## Decision
-Use **Cloudflare Workers** as the backend API runtime.
+Use **Cloudflare Workers** as the backend API runtime, paired with **Hono** as the lightweight routing and middleware framework.
 
 ### Technology Stack
 - **Cloudflare Workers**: Serverless edge compute platform
+- **Hono (v4.13+)**: Lightweight Web-standard routing and middleware framework
 - **Wrangler 4.60.0**: Official CLI for development and deployment
 - **TypeScript 5.7.3**: Type-safe API development
 - **@cloudflare/workers-types**: TypeScript definitions for Workers API
@@ -40,6 +41,12 @@ Use **Cloudflare Workers** as the backend API runtime.
 - Pay-per-use pricing model
 - No server maintenance or patching
 
+### Hono Framework over Manual Request Parsing
+- **Web-standard API**: Native compatibility with Fetch API Request/Response and Cloudflare Workers
+- **Type-safe routing**: Clean parameter binding (e.g. `c.req.param("id")`) and structured middleware pipeline
+- **Zero overhead**: Ultra-fast routing with negligible bundle impact
+- **Built-in middleware**: Standardized CORS, logger, and error handling out of the box
+
 ### TypeScript
 - Shared language with frontend reduces context switching
 - Workers runtime has excellent TS support
@@ -50,6 +57,7 @@ Use **Cloudflare Workers** as the backend API runtime.
 ### Positive
 - Extremely low latency from edge deployment
 - No cold start delays for users
+- Declarative and maintainable route structure replacing regex matching
 - Scales automatically without configuration
 - Simple deployment via Wrangler CLI
 - Free tier sufficient for early development
@@ -62,6 +70,7 @@ Use **Cloudflare Workers** as the backend API runtime.
 
 ## Implementation
 - API code located in `apps/api/`
+- Main entry point configured with Hono router (`apps/api/src/index.ts`)
 - Wrangler configuration at `apps/api/wrangler.toml`
 - TypeScript with Workers types
 - Deployment via `wrangler deploy` (manual or CI/CD)
