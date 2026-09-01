@@ -1,7 +1,7 @@
-import { Toggle } from "../../../components/ui/Toggle";
-import { PageScaffold } from "../../../components/layout/PageScaffold";
-import { SectionShell } from "../../../components/layout/SectionShell";
-import { SurfaceTile } from "../../../components/layout/SurfaceTile";
+import { Toggle } from "../../../shared/ui/Toggle";
+import { PageScaffold } from "../../../shared/layout/PageScaffold";
+import { SectionShell } from "../../../shared/layout/SectionShell";
+import { SurfaceTile } from "../../../shared/layout/SurfaceTile";
 import {
   usePreferences,
   type MenuPosition,

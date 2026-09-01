@@ -1,89 +1,34 @@
 # Supabase Resource Optimization
 
-## ✅ Applied (In Current PR)
-- Added database indexes for frequently queried columns
-- Optimized SELECT queries to use specific columns instead of *
+## ✅ Applied
 
-## 🔴 Critical - Should Apply Next
-
-### 1. Debounce Auth State Queries
-The `useAuth` hook triggers DB queries on every auth state change. Add debouncing:
-
-```typescript
-// In useAuth.ts
-const checkAccessDebounced = useMemo(
-  () => debounce(checkAccess, 500),
-  [checkAccess]
-);
-```
-
-### 2. Remove Unnecessary Profile Upsert
-Lines 114-128 in `useAuth.ts` upsert profile on EVERY session. This should only run once after signup:
-
-```typescript
-// Only upsert if profile doesn't exist
-const { data: existing } = await client.from("profiles")
-  .select("id")
-  .eq("id", user.id)
-  .single();
-
-if (!existing) {
-  await client.from("profiles").upsert({ ... });
-}
-```
-
-### 3. Fix useTeams Dependency Loop
-Remove `activeTeamId` from `loadMemberships` dependencies (line 52):
-
-```typescript
-// Change from:
-}, [userId, activeTeamId]);
-
-// To:
-}, [userId]);
-```
-
-### 4. Replace Page Reload with State Update
-In `App.tsx` line 88, replace `window.location.reload()` with proper state management:
-
-```typescript
-// Instead of:
-window.location.reload();
-
-// Use:
-navigate('/dashboard');
-// or trigger a refetch without full reload
-```
+- **Database Indexes & Query Optimization**: Added database indexes for frequently queried columns and limited SELECT projections.
+- **1. Debounce Auth State Queries**: Implemented in `useAuth.ts` via `debounce(..., 500)` to debounce `checkAccess` calls.
+- **2. Cached Profile Upsert**: Implemented in `useAuth.ts` using `localStorage` caching key (`profile_ensured_${userId}`) to avoid redundant writes.
+- **3. Fixed Dependency Loops**: `refreshMemberships` in `TeamScopeContext.tsx` depends cleanly only on `[sessionUserId]`.
+- **4. Eliminated Full Page Reload**: In `App.tsx`, invite handler cleans URL params via `history.replaceState` without triggering `window.location.reload()`.
+- **5. Worker Database Client Lifecycle**: API (`apps/api/src/shared/db.ts` and handlers) uses transient `max: 1` connections with deterministic `closeDb` in `finally` blocks (ADR-016).
 
 ## 🟡 Important - Consider for Future
 
-### 5. Implement Connection Pooling
-Use Supabase's connection pooler for your production app. Update your env vars:
+### 1. Managed Connection Pooling
+Use Supabase's connection pooler for production workloads to mitigate connection limits.
 
-```bash
-# Instead of direct database URL, use pooler:
-VITE_SUPABASE_URL=https://[project].supabase.co
-# Pooler is automatically used by the JS client
-```
+### 2. Client-side Query Caching
+Implement React Query or SWR to cache Supabase responses, reducing redundant fetches and improving route transition performance.
 
-### 6. Add Query Caching
-Consider using React Query or SWR to cache Supabase queries and reduce redundant fetches.
+### 3. Auth Check Optimization
+Cache `checkAccess` permissions in `localStorage` with a TTL (e.g., 5 minutes) to avoid redundant remote checks during rapid session state changes.
 
-### 7. Reduce Auth Check Frequency
-The `checkAccess` function runs on every auth state change. Consider:
-- Caching the result in localStorage with a TTL
-- Only re-checking when explicitly needed
+### 4. Cloudflare Hyperdrive
+If traffic scales significantly, utilize Cloudflare Hyperdrive for low-latency pooled PostgreSQL access from Workers.
 
 ## 📊 Expected Impact
 
-**Current Optimizations (Indexes + Query Optimization):**
+**Current Optimizations (Indexes + Query Optimization + Debouncing + Transient Pool):**
 - 60-80% reduction in query execution time
 - 30-40% reduction in bandwidth usage
-- Should resolve DB CPU/memory issues if that's the bottleneck
-
-**If Connection Limit is the Issue:**
-- Current optimizations won't directly help
-- Need to implement recommendations #1-4 to reduce connection count
+- Prevention of connection pool exhaustion under concurrent traffic spikes on the Supabase free tier
 
 ## Next Steps
 
