@@ -1,42 +1,38 @@
+import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { handleRandom } from "./features/random";
 import { handleGetGames } from "./features/games/get-games";
 import { handleGetConvocationTeams } from "./features/convocations/get-convocation-teams";
-import { corsHeaders } from "./shared/cors";
 
 export interface Env {
   ALLOWED_ORIGIN?: string;
   SUPABASE_DB_URL?: string;
 }
 
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-    const origin = env.ALLOWED_ORIGIN;
+const app = new Hono<{ Bindings: Env }>({ strict: false });
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders(origin) });
-    }
+// Enable CORS for all routes
+app.use("*", async (c, next) => {
+  const origin = c.env.ALLOWED_ORIGIN || "*";
+  const corsMiddleware = cors({
+    origin,
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  });
+  return corsMiddleware(c, next);
+});
 
-    if (url.pathname === "/random" || url.pathname === "/random/") {
-      return handleRandom(request, origin);
-    }
+app.get("/random", (c) => {
+  return handleRandom(c.req.raw, c.env.ALLOWED_ORIGIN);
+});
 
-    if (url.pathname === "/games" || url.pathname === "/games/") {
-      return handleGetGames(request, env);
-    }
+app.get("/games", (c) => {
+  return handleGetGames(c.req.raw, c.env);
+});
 
-    const convocationTeamsMatch = url.pathname.match(
-      /^\/convocations\/([^/]+)\/teams\/?$/,
-    );
-    if (convocationTeamsMatch) {
-      return handleGetConvocationTeams(
-        request,
-        env,
-        convocationTeamsMatch[1],
-        origin,
-      );
-    }
+app.get("/convocations/:id/teams", (c) => {
+  const id = c.req.param("id");
+  return handleGetConvocationTeams(c.req.raw, c.env, id, c.env.ALLOWED_ORIGIN);
+});
 
-    return new Response("Not found", { status: 404 });
-  },
-};
+export default app;

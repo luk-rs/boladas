@@ -45,7 +45,7 @@ boladas/
 ### Tech Stack
 
 - **Frontend**: React 18, Vite, TypeScript, PWA (vite-plugin-pwa)
-- **Backend**: Cloudflare Workers, Wrangler
+- **Backend**: Cloudflare Workers, Hono, Wrangler
 - **Database**: Supabase (PostgreSQL)
 - **Package Manager**: pnpm with workspace (monorepo)
 - **Node**: >= 20.0.0
@@ -83,10 +83,10 @@ boladas/
 
 **Database Connections** (Free Tier Optimization - see ADR-016):
 - Free tier: Maximum 10 concurrent connections total
-- API uses singleton connection pool (max 3 connections) cached in Worker module state
-- Pool reuses connections across requests instead of creating/destroying per request
-- This allows dozens of concurrent users with only 3 connections
-- **Key file**: `apps/api/src/shared/db.ts` — All database access goes through `getDb()` function
+- API uses lightweight per-request database clients (`max: 1`) closed explicitly in handler `finally` blocks
+- Complies with Cloudflare Workers I/O isolation rules (no cross-request socket reuse)
+- Frontend caches profile existence and debounces access queries to minimize connection pressure
+- **Key file**: `apps/api/src/shared/db.ts` — Database access via `getDb()` and teardown via `closeDb()`
 
 ## Development Guidelines
 
