@@ -31,18 +31,21 @@ The deployment workflow automatically configures auth URLs **after** deployment:
 ```yaml
 - name: Deploy to Cloudflare Pages
   id: deploy
-  uses: cloudflare/pages-action@v1
-  ...
+  uses: cloudflare/wrangler-action@v4
+  with:
+    apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    command: pages deploy apps/boladas/dist --project-name=${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
 
 - name: Configure Supabase auth URLs
   env:
     SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
     SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-    PRODUCTION_URL: ${{ steps.deploy.outputs.url }}
+    PRODUCTION_URL: ${{ steps.deploy.outputs.deployment-url }}
   run: bash .github/scripts/configure-prod-auth.sh
 ```
 
-The production URL is automatically detected from the Cloudflare Pages deployment output, eliminating the need for manual configuration.
+The production URL is taken from the Wrangler Pages deployment output (`deployment-url`, the replacement for the archived `pages-action` `url` output), eliminating the need for manual configuration.
 
 ### Configuration Applied
 - **Site URL**: Set to `$PRODUCTION_URL`
