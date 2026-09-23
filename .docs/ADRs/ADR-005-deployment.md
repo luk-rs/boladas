@@ -1,7 +1,7 @@
 # ADR-005: Deployment Strategy
 
 **Status**: Active  
-**Date**: 2026-01-22 (Updated 2026-09-01)  
+**Date**: 2026-01-22 (Updated 2026-09-23)  
 **Decision Makers**: Project team
 
 ## Context
@@ -36,8 +36,10 @@ Requirements:
 **Tool**: GitHub Actions
 - Trigger on push to `main` and pull requests
 - Build both apps in parallel
-- Deploy frontend to Cloudflare Pages
+- Deploy frontend to Cloudflare Pages with `cloudflare/wrangler-action` (`wrangler pages deploy`)
 - Deploy API via Wrangler CLI
+
+`cloudflare/pages-action` is archived. Pages direct upload uses `cloudflare/wrangler-action@v4` with the existing Cloudflare API token, account ID, and Pages project name. The action's `deployment-url` output is the deployment URL previously exposed as `pages-action`'s `url`.
 
 ## Rationale
 
@@ -65,7 +67,7 @@ Requirements:
 ### ✅ Completed
 - Monorepo build scripts (`pnpm build`)
 - Wrangler configuration and GitHub Actions workflow (`deploy-workers.yml`)
-- Frontend Vite build pipeline and GitHub Actions workflow (`deploy-pages.yml`)
+- Frontend Vite build pipeline and GitHub Actions workflow (`deploy-pages.yml`) via `cloudflare/wrangler-action@v4`
 - Automated production Supabase auth URL configuration (`configure-prod-auth.sh`)
 - GitHub Secrets configured:
   - `CLOUDFLARE_API_TOKEN`
