@@ -5,3 +5,10 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ALLOWED_ORIGIN = "*"
+
+# Secrets (set with `wrangler secret put`, not committed):
+# SUPABASE_DB_URL          required
+# SUPABASE_JWT_SECRET      verifies HS256 Supabase access tokens locally
+# SUPABASE_URL             fallback: GoTrue GET /auth/v1/user (with SUPABASE_ANON_KEY)
+# SUPABASE_ANON_KEY        fallback: public anon key used as the apikey header
+# If SUPABASE_JWT_SECRET is unset, the API reads app.settings.jwt_secret from the database.

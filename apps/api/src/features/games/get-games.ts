@@ -1,45 +1,47 @@
-export async function handleGetGames(request: Request, env: any) {
-  if (!env.SUPABASE_DB_URL) {
-    return new Response("Missing DB Configuration", { status: 500 });
+import type postgres from "postgres";
+import { authenticateRequest, withUserContext } from "../../shared/auth";
+import { closeDb, getDb } from "../../shared/db";
+import { jsonError, jsonResponse } from "../../shared/http";
+import type { Env } from "../../index";
+import { mapGame, type GameRow } from "./types";
+
+type Sql = ReturnType<typeof postgres>;
+
+export async function handleGetGames(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  if (request.method !== "GET") {
+    return jsonError(405, "Method not allowed", env.ALLOWED_ORIGIN);
   }
+
+  if (!env.SUPABASE_DB_URL) {
+    return jsonError(500, "Missing DB configuration", env.ALLOWED_ORIGIN);
+  }
+
+  const dbUrl = env.SUPABASE_DB_URL;
+  let sql: Sql | null = null;
+  const getSql = () => {
+    if (!sql) sql = getDb(dbUrl);
+    return sql;
+  };
 
   try {
-    // Basic query to verify connection
-    // In the future this should fetch from a real 'games' table
-    // For now we return the same mock structure as the frontend to verify the pipeline
-    const games = [
-      {
-        id: "game-1",
-        date: "18 Dez 2022",
-        time: "13:00",
-        opponent: "Team B",
-        isNext: true,
-      },
-      {
-        id: "game-2",
-        date: "14 Dez 2022",
-        result: "2-1",
-        isPrevious: true,
-      },
-    ];
+    const auth = await authenticateRequest(request, env, getSql);
+    if (auth instanceof Response) return auth;
 
-    // NOTE: In a real implementation we would do:
-    // const games = await sql`SELECT * FROM games ORDER BY date DESC`;
-
-    // Cache for 60 seconds at the edge
-    return new Response(JSON.stringify(games), {
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, max-age=60, s-maxage=60",
-        "Access-Control-Allow-Origin": "*",
-      },
+    const games = await withUserContext(getSql(), auth.userId, async (tx) => {
+      const rows = await tx<GameRow[]>`
+        select * from public.list_visible_games()
+      `;
+      return rows.map(mapGame);
     });
-  } catch (error: any) {
+
+    return jsonResponse({ games }, 200, env.ALLOWED_ORIGIN);
+  } catch (error: unknown) {
     console.error("Database Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonError(500, "Failed to load games", env.ALLOWED_ORIGIN);
+  } finally {
+    if (sql) await closeDb(sql);
   }
-  // No cleanup needed - singleton client persists across requests
 }
