@@ -12,8 +12,15 @@ export function GamesPage() {
 
 function GamesPageView() {
   const {
-    state: { games, loading, canManageByTeamId, cancellingGameId },
-    actions: { cancelGame },
+    state: {
+      games,
+      loading,
+      loadError,
+      canManageByTeamId,
+      cancellingGameId,
+      recordingGameId,
+    },
+    actions: { cancelGame, recordResult },
   } = useGamesContext();
 
   return (
@@ -21,11 +28,14 @@ function GamesPageView() {
       <GamesSection
         games={games}
         loading={loading}
+        loadError={loadError}
         canManageByTeamId={canManageByTeamId}
         cancellingGameId={cancellingGameId}
+        recordingGameId={recordingGameId}
         onCancelGame={(game) => {
           void cancelGame(game);
         }}
+        onRecordResult={recordResult}
       />
     </PageScaffold>
   );

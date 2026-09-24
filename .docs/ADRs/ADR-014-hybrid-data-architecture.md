@@ -6,7 +6,7 @@ Accepted
 
 ## Date
 
-2026-02-16 (updated)
+2026-02-16 (updated 2026-09-24)
 
 ## Context
 
@@ -40,6 +40,14 @@ This enforces a consistent UI integration surface and isolates orchestration fro
 ### 4. Transitional compatibility
 
 When migrating legacy modules, compatibility wrappers/adapters may be used temporarily as long as they preserve the service/context boundary.
+
+### 5. Game list and result recording go through the Worker
+
+`GET /games` and `PUT /games/:id/result` are per-user. Visibility and the score write are enforced in Postgres by the games-result API (ADR-017, landed with that backend change). The frontend does not query or update `games` for that flow.
+
+`features/games/services/games.service.ts` calls both routes with `Authorization: Bearer <supabase access token>` — the same Supabase session the app already holds. `GamesContext` orchestrates the calls. Pages and components do not fetch. There is no direct client update of a game row, because a general `UPDATE` policy would also allow rewriting lineups and kickoff time.
+
+This extends the hybrid model: use the Worker when the read is per-user or the write has no general RLS policy. Convocation accept/cancel remains on the existing Supabase RPC path.
 
 ## Consequences
 
