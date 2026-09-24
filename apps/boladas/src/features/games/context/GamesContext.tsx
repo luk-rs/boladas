@@ -70,7 +70,7 @@ export function GamesProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     setLoadError(null);
-    const result = await listGames(sessionUserId);
+    const result = await listGames();
     if (result.error) {
       setLoadError(result.error);
       setLoading(false);
@@ -105,7 +105,7 @@ export function GamesProvider({ children }: { children: ReactNode }) {
   const recordResult = useCallback(
     async (gameId: string, scores: GameResultScores) => {
       setRecordingGameId(gameId);
-      const result = await recordGameResult(gameId, scores, sessionUserId);
+      const result = await recordGameResult(gameId, scores);
       if (result.error || !result.data) {
         setRecordingGameId(null);
         return result.error ?? "Falha ao registar resultado.";
@@ -119,7 +119,7 @@ export function GamesProvider({ children }: { children: ReactNode }) {
         ]),
       );
 
-      const refreshed = await listGames(sessionUserId);
+      const refreshed = await listGames();
       if (!refreshed.error) {
         setGames(refreshed.data);
         setLoadError(null);
@@ -128,7 +128,7 @@ export function GamesProvider({ children }: { children: ReactNode }) {
 
       return null;
     },
-    [sessionUserId],
+    [],
   );
 
   const value = useMemo<GamesModel>(

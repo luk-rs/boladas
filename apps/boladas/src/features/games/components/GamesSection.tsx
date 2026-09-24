@@ -1,9 +1,28 @@
 import { useState } from "react";
-import type { Game, GameResultScores } from "../types";
+import type { Game, GameLineupPlayer, GameResultScores } from "../types";
 import { formatSchedule, hasRecordedScore } from "../utils";
-import { EmojiStack } from "../../team-scope/components/EmojiStack";
+import {
+  EmojiStack,
+  type EmojiStackItem,
+} from "../../team-scope/components/EmojiStack";
 import { SurfaceTile } from "../../../shared/layout/SurfaceTile";
 import { RecordResultSheet } from "./RecordResultSheet";
+
+function lineupStack(
+  players: GameLineupPlayer[],
+  sessionUserId: string | null,
+): EmojiStackItem[] {
+  return [...players]
+    .sort(
+      (left, right) =>
+        (left.slot ?? Number.MAX_SAFE_INTEGER) - (right.slot ?? Number.MAX_SAFE_INTEGER),
+    )
+    .map((player, index) => ({
+      id: player.id ?? `lineup-${index}`,
+      label: player.name,
+      isSelf: Boolean(player.id && player.id === sessionUserId),
+    }));
+}
 
 export type GamesSectionProps = {
   games: Game[];
@@ -12,6 +31,7 @@ export type GamesSectionProps = {
   canManageByTeamId: Map<string, boolean>;
   cancellingGameId: string | null;
   recordingGameId: string | null;
+  sessionUserId: string | null;
   onCancelGame: (game: Game) => void;
   onRecordResult: (gameId: string, scores: GameResultScores) => Promise<string | null>;
 };
@@ -23,6 +43,7 @@ export function GamesSection({
   canManageByTeamId,
   cancellingGameId,
   recordingGameId,
+  sessionUserId,
   onCancelGame,
   onRecordResult,
 }: GamesSectionProps) {
@@ -134,7 +155,7 @@ export function GamesSection({
                           </span>
                           {game.shirtsLineup.length > 0 ? (
                             <EmojiStack
-                              items={game.shirtsLineup}
+                              items={lineupStack(game.shirtsLineup, sessionUserId)}
                               showTooltip
                               className="text-sm"
                             />
@@ -153,7 +174,7 @@ export function GamesSection({
                           </span>
                           {game.coletesLineup.length > 0 ? (
                             <EmojiStack
-                              items={game.coletesLineup}
+                              items={lineupStack(game.coletesLineup, sessionUserId)}
                               showTooltip
                               className="text-sm"
                             />

@@ -1,6 +1,5 @@
-import type { EmojiStackItem } from "../../team-scope/components/EmojiStack";
 import { supabase } from "../../../shared/api/supabase/client";
-import type { Game, GameResultScores, GameStatus } from "../types";
+import type { Game, GameLineupPlayer, GameResultScores, GameStatus } from "../types";
 
 type ServiceResult<T> = {
   data: T;
@@ -18,8 +17,8 @@ type ApiGame = {
   shirtsScore?: number | null;
   coletesScore?: number | null;
   completedAt?: string | null;
-  shirtsLineup?: unknown;
-  coletesLineup?: unknown;
+  shirtsLineup?: GameLineupPlayer[];
+  coletesLineup?: GameLineupPlayer[];
   canRecordResult?: boolean;
 };
 
@@ -68,36 +67,21 @@ function asScore(value: unknown): number | null {
     : null;
 }
 
-function toEmojiStack(
-  lineup: unknown,
-  keyPrefix: string,
-  sessionUserId: string | null,
-): EmojiStackItem[] {
-  if (!Array.isArray(lineup)) return [];
-
-  return lineup
-    .map((entry, index) => {
-      const player = entry as {
-        id?: string;
-        name?: string;
-        slot?: number;
-      };
-      const playerId = player.id ?? `${keyPrefix}-${index}`;
-      const label = player.name ?? "Jogador";
-      const slotValue = Number(player.slot);
-
-      return {
-        id: `${keyPrefix}-${playerId}`,
-        label,
-        isSelf: player.id === sessionUserId,
-        slot: Number.isNaN(slotValue) ? index + 1 : slotValue,
-      };
-    })
-    .sort((left, right) => left.slot - right.slot)
-    .map(({ slot: _slot, ...item }) => item);
+function asLineup(value: unknown): GameLineupPlayer[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const player = entry as GameLineupPlayer;
+    const lineupPlayer: GameLineupPlayer = {};
+    if (typeof player.id === "string") lineupPlayer.id = player.id;
+    if (typeof player.name === "string") lineupPlayer.name = player.name;
+    if (typeof player.slot === "number") lineupPlayer.slot = player.slot;
+    if (typeof player.isGuest === "boolean") lineupPlayer.isGuest = player.isGuest;
+    return [lineupPlayer];
+  });
 }
 
-function mapApiGame(value: unknown, sessionUserId: string | null): Game | null {
+function mapApiGame(value: unknown): Game | null {
   if (!value || typeof value !== "object") return null;
   const row = value as ApiGame;
   if (typeof row.id !== "string" || typeof row.teamId !== "string") return null;
@@ -116,8 +100,8 @@ function mapApiGame(value: unknown, sessionUserId: string | null): Game | null {
     shirtsScore: asScore(row.shirtsScore),
     coletesScore: asScore(row.coletesScore),
     completedAt: typeof row.completedAt === "string" ? row.completedAt : null,
-    shirtsLineup: toEmojiStack(row.shirtsLineup, `${row.id}-shirts`, sessionUserId),
-    coletesLineup: toEmojiStack(row.coletesLineup, `${row.id}-coletes`, sessionUserId),
+    shirtsLineup: asLineup(row.shirtsLineup),
+    coletesLineup: asLineup(row.coletesLineup),
     canRecordResult: row.canRecordResult === true,
   };
 }
@@ -139,9 +123,7 @@ export type TeamsResponse = {
   };
 };
 
-export async function listGames(
-  sessionUserId: string | null,
-): Promise<ServiceResult<Game[]>> {
+export async function listGames(): Promise<ServiceResult<Game[]>> {
   const auth = await authorizedHeaders();
   if (!auth.ok) {
     return { data: [], error: auth.error };
@@ -175,7 +157,7 @@ export async function listGames(
 
   return {
     data: games.flatMap((game) => {
-      const mapped = mapApiGame(game, sessionUserId);
+      const mapped = mapApiGame(game);
       return mapped ? [mapped] : [];
     }),
     error: null,
@@ -185,7 +167,6 @@ export async function listGames(
 export async function recordGameResult(
   gameId: string,
   scores: GameResultScores,
-  sessionUserId: string | null,
 ): Promise<ServiceResult<Game | null>> {
   const auth = await authorizedHeaders();
   if (!auth.ok) {
@@ -220,7 +201,7 @@ export async function recordGameResult(
     return { data: null, error: "Falha ao registar resultado." };
   }
 
-  const game = mapApiGame(payload, sessionUserId);
+  const game = mapApiGame(payload);
   if (!game) {
     return { data: null, error: "Falha ao registar resultado." };
   }

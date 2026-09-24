@@ -1,4 +1,5 @@
 import { PageScaffold } from "../../../shared/layout/PageScaffold";
+import { useAuth } from "../../auth/useAuth";
 import { GamesSection } from "../components/GamesSection";
 import { GamesProvider, useGamesContext } from "../context/GamesContext";
 
@@ -22,6 +23,7 @@ function GamesPageView() {
     },
     actions: { cancelGame, recordResult },
   } = useGamesContext();
+  const { sessionUserId } = useAuth();
 
   return (
     <PageScaffold title="Jogos" className="space-y-4">
@@ -32,6 +34,7 @@ function GamesPageView() {
         canManageByTeamId={canManageByTeamId}
         cancellingGameId={cancellingGameId}
         recordingGameId={recordingGameId}
+        sessionUserId={sessionUserId}
         onCancelGame={(game) => {
           void cancelGame(game);
         }}
