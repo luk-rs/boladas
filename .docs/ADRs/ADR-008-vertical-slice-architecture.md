@@ -6,7 +6,7 @@ Accepted
 
 ## Date
 
-2026-02-16 (updated)
+2026-02-16 (updated 2026-09-24)
 
 ## Context
 
@@ -20,7 +20,7 @@ This created unclear ownership and made feature evolution slower because route-l
 
 Frontend feature ownership is now:
 
-- `features/games`: games listing and game-related accept/cancel flows.
+- `features/games`: games listing, manager result recording, and game-related accept/cancel flows.
 - `features/convocations`: convocations listing, vote/status actions, and convocation creation flow.
 - `features/teams`: management-only concerns (roster roles, invites, create/delete/request/admin flows).
 - `features/profile`: profile header metrics and profile-specific orchestration.
