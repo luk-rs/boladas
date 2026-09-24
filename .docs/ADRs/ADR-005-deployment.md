@@ -1,7 +1,7 @@
 # ADR-005: Deployment Strategy
 
 **Status**: Active  
-**Date**: 2026-01-22 (Updated 2026-09-23)  
+**Date**: 2026-01-22 (Updated 2026-09-24)  
 **Decision Makers**: Project team
 
 ## Context
@@ -39,7 +39,7 @@ Requirements:
 - Deploy frontend to Cloudflare Pages with `cloudflare/wrangler-action` (`wrangler pages deploy`)
 - Deploy API via Wrangler CLI
 
-`cloudflare/pages-action` is archived. Pages direct upload uses `cloudflare/wrangler-action@v4` with the existing Cloudflare API token, account ID, and Pages project name. The action's `deployment-url` output is the deployment URL previously exposed as `pages-action`'s `url`.
+`cloudflare/pages-action` is archived. Pages direct upload uses `cloudflare/wrangler-action@v4` with the existing Cloudflare API token, account ID, and Pages project name. The action runs in `apps/api`, where Wrangler is already installed for the Worker, and uploads `apps/boladas/dist`. Running it at the repo root makes the action try `pnpm add wrangler` there, which pnpm rejects in a workspace. The action's `deployment-url` output is the deployment URL previously exposed as `pages-action`'s `url`.
 
 ## Rationale
 
