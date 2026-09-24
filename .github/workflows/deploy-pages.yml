@@ -36,6 +36,7 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/api
           command: pages deploy ../boladas/dist --project-name=${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
+      # No-op comment so merging this file re-runs the Pages deploy; it does not change behavior.
       - name: Configure Supabase auth URLs
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
