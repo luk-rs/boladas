@@ -35,7 +35,8 @@ The deployment workflow automatically configures auth URLs **after** deployment:
   with:
     apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-    command: pages deploy apps/boladas/dist --project-name=${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
+    workingDirectory: apps/api
+    command: pages deploy ../boladas/dist --project-name=${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
 
 - name: Configure Supabase auth URLs
   env:
