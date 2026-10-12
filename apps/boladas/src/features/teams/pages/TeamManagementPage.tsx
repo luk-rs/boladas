@@ -11,6 +11,7 @@ import { PageScaffold } from "../../../shared/layout/PageScaffold";
 import { SurfaceTile } from "../../../shared/layout/SurfaceTile";
 import { useAuth } from "../../auth/useAuth";
 import { TeamsSection } from "../components/TeamsSection";
+import { TeamSettingsSection } from "../components/TeamSettingsSection";
 import {
   ROLE_TOGGLE_OPTIONS,
   type ExtraRole,
@@ -221,6 +222,12 @@ function TeamsPageView() {
 
       {selectedTeamCanManage ? (
         <>
+          {selectedTeam && (
+            <TeamSettingsSection
+              teamId={selectedTeam.teamId}
+            />
+          )}
+
           <section className="rounded-2xl bg-[var(--bg-app)]/70 p-4">
             <header className="mb-3">
               <p className="ui-section-title">Atribuir funções no elenco</p>

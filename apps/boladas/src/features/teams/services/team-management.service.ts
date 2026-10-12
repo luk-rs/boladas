@@ -379,3 +379,73 @@ export async function clearRoleFromOtherMembers(
 
   return { data: null, error: null };
 }
+
+export type TeamSettingsData = {
+  name: string;
+  seasonStart: string | null;
+  holidayStart: string | null;
+  gameDefinitions: Array<{ dayOfWeek: number; startTime: string }>;
+};
+
+export async function fetchTeamSettings(
+  teamId: string,
+): Promise<ServiceResult<TeamSettingsData | null>> {
+  if (!supabase || !teamId) {
+    return { data: null, error: "Cliente Supabase indisponível." };
+  }
+
+  const { data, error } = await supabase
+    .from("teams")
+    .select("name, season_start, holiday_start, game_definitions")
+    .eq("id", teamId)
+    .maybeSingle();
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  if (!data) {
+    return { data: null, error: "Equipa não encontrada." };
+  }
+
+  return {
+    data: {
+      name: data.name,
+      seasonStart: data.season_start ? String(data.season_start).split("T")[0] : null,
+      holidayStart: data.holiday_start ? String(data.holiday_start).split("T")[0] : null,
+      gameDefinitions: Array.isArray(data.game_definitions)
+        ? (data.game_definitions as Array<{ dayOfWeek: number; startTime: string }>)
+        : [],
+    },
+    error: null,
+  };
+}
+
+export async function updateTeamSettings(payload: {
+  teamId: string;
+  name: string;
+  seasonStart: string | null;
+  holidayStart: string | null;
+  gameDefinitions: Array<{ dayOfWeek: number; startTime: string }>;
+}): Promise<ServiceResult<null>> {
+  if (!supabase || !payload.teamId) {
+    return { data: null, error: "Cliente Supabase indisponível." };
+  }
+
+  const { error } = await supabase
+    .from("teams")
+    .update({
+      name: payload.name.trim(),
+      season_start: payload.seasonStart || null,
+      holiday_start: payload.holidayStart || null,
+      game_definitions: payload.gameDefinitions,
+    })
+    .eq("id", payload.teamId);
+
+  if (error) {
+    return { data: null, error: error.message };
+  }
+
+  return { data: null, error: null };
+}
+
