@@ -91,54 +91,19 @@ function ProfilePageView() {
       },
       {
         label: "Vitórias",
-        value: "—",
-        available: false,
+        value: String(stats.wins),
+        available: true,
       },
       {
         label: "% Vit.",
-        value: "—",
-        available: false,
+        value: `${stats.winRate}%`,
+        available: true,
       },
     ],
-    [stats.attendanceRate, stats.confirmed],
+    [stats.attendanceRate, stats.confirmed, stats.wins, stats.winRate],
   );
 
-  const rollingFive = useMemo(
-    () => [
-      {
-        id: "m1",
-        symbol: "−",
-        label: "Jogo 1: sem resultado",
-        className: "bg-slate-500 text-slate-50",
-      },
-      {
-        id: "m2",
-        symbol: "×",
-        label: "Jogo 2: derrota",
-        className: "bg-red-500 text-white",
-      },
-      {
-        id: "m3",
-        symbol: "✓",
-        label: "Jogo 3: vitória",
-        className: "bg-emerald-500 text-white",
-      },
-      {
-        id: "m4",
-        symbol: "✓",
-        label: "Jogo 4: vitória",
-        className: "bg-emerald-500 text-white",
-      },
-      {
-        id: "m5",
-        symbol: "◌",
-        label: "Jogo 5: por disputar",
-        className:
-          "bg-transparent text-slate-300 ring-1 ring-slate-300 dark:text-slate-400 dark:ring-slate-500",
-      },
-    ],
-    [],
-  );
+  const rollingFive = stats.recentForm;
 
   return (
     <PageScaffold className="space-y-6">
