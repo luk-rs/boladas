@@ -4,6 +4,7 @@ node_modules
 # Build outputs
 dist
 apps/boladas/dev-dist
+.screenshots
 
 # Environment files
 .env
