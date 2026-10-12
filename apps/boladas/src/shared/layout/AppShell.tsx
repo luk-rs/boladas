@@ -112,7 +112,6 @@ export function AppShell() {
         </svg>
       ),
       path: "/standings",
-      disabled: true,
     },
     {
       id: "stats",
