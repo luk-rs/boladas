@@ -66,6 +66,7 @@ type GameFormContextValue = {
     suffix: string;
   }>;
   addGuest: (team: "shirts" | "coletes") => void;
+  shuffleTeams: () => void;
   handleRejectGame: () => Promise<void>;
   handleAcceptGame: () => Promise<void>;
 };
@@ -401,6 +402,26 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const shuffleTeams = useCallback(() => {
+    setTeamPlayers((prev) => {
+      const allPlayers = [...prev.shirts, ...prev.coletes];
+      if (allPlayers.length < 2) return prev;
+
+      const shuffled = [...allPlayers];
+      for (let i = shuffled.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      const midpoint = Math.ceil(shuffled.length / 2);
+      return {
+        shirts: shuffled.slice(0, midpoint),
+        coletes: shuffled.slice(midpoint),
+      };
+    });
+    setActionMessage("Equipas baralhadas! 🎲");
+  }, []);
+
   const value = useMemo(
     () => ({
       convocationId,
@@ -423,6 +444,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       error,
       statRows,
       addGuest,
+      shuffleTeams,
       handleRejectGame,
       handleAcceptGame,
     }),
@@ -441,6 +463,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       statRows,
+      shuffleTeams,
       handleRejectGame,
       handleAcceptGame,
     ],

@@ -39,6 +39,7 @@ function GameFormPageView() {
     error,
     statRows,
     addGuest,
+    shuffleTeams,
     handleRejectGame,
     handleAcceptGame,
   } = useGameFormContext();
@@ -195,10 +196,21 @@ function GameFormPageView() {
         </SurfaceTile>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center justify-center gap-3 text-sm font-semibold text-[var(--text-secondary)]">
-            <span className="text-lg">👕</span>
-            <span>vs</span>
-            <span className="text-lg">🦺</span>
+          <div className="flex items-center justify-between gap-3 px-1">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[var(--text-secondary)]">
+              <span>👕 Camisolas ({teamPlayers.shirts.length})</span>
+              <span>vs</span>
+              <span>🦺 Coletes ({teamPlayers.coletes.length})</span>
+            </div>
+            <button
+              type="button"
+              onClick={shuffleTeams}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)] shadow-sm transition-all hover:border-primary-500 hover:text-primary-600 active:scale-95 dark:hover:text-primary-400"
+              title="Baralhar e sortear jogadores entre as duas equipas"
+            >
+              <span aria-hidden>🎲</span>
+              <span>Sortear</span>
+            </button>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <SurfaceTile variant="soft" className="flex h-full flex-col">

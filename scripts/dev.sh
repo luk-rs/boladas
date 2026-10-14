@@ -42,6 +42,17 @@ VITE_SUPABASE_ANON_KEY=$LOCAL_ANON_KEY
 VITE_AUTH_ENABLED_PROVIDERS=google,azure,facebook
 EOF
   fi
+
+  API_VARS_FILE="apps/api/.dev.vars"
+  if [ ! -f "$API_VARS_FILE" ]; then
+    echo "⚙️ A configurar $API_VARS_FILE para a API local..."
+    cat <<EOF > "$API_VARS_FILE"
+SUPABASE_DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+SUPABASE_JWT_SECRET=super-secret-jwt-token-with-at-least-32-characters-long
+SUPABASE_URL=http://localhost:54321
+SUPABASE_ANON_KEY=$LOCAL_ANON_KEY
+EOF
+  fi
 fi
 
 # 4. Clean up stale processes on ports 5173 / 8787 if any
