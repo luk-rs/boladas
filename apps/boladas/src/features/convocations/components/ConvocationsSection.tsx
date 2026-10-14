@@ -50,6 +50,7 @@ export type ConvocationsSectionProps = {
   onCreateConvocation: () => void;
   onVoteChange: (id: string, state: PlayerState) => void;
   onStatusChange: (id: string, status: ConvocationStatus) => void;
+  onGenerateUpcoming?: () => void | Promise<void>;
   holdProgressById: Record<string, HoldProgress>;
   onHoldProgress: (id: string, intent: HoldIntent, progress: number) => void;
 };
@@ -67,6 +68,7 @@ export function ConvocationsSection({
   onCreateConvocation,
   onVoteChange,
   onStatusChange,
+  onGenerateUpcoming,
   holdProgressById,
   onHoldProgress,
 }: ConvocationsSectionProps) {
@@ -350,11 +352,24 @@ export function ConvocationsSection({
                 </span>
               </div>
             </div>
-            <span
-              className={`rounded-full px-3 py-1 text-[10px] font-semibold ${statusLabelClass}`}
-            >
-              {STATUS_LABELS[convocation.status]}
-            </span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {isOpen && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide ${
+                    canAccept
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200 border border-emerald-500/30"
+                      : "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 border border-amber-500/30"
+                  }`}
+                >
+                  {canAccept ? "🎉 Quórum OK" : `⏳ ${convocation.ballVotes.length}/${minTeamMembers}`}
+                </span>
+              )}
+              <span
+                className={`rounded-full px-3 py-1 text-[10px] font-semibold ${statusLabelClass}`}
+              >
+                {STATUS_LABELS[convocation.status]}
+              </span>
+            </div>
           </div>
           <div className="mt-2 flex items-center gap-2">
             <span
@@ -519,40 +534,53 @@ export function ConvocationsSection({
     <section className="rounded-2xl p-5">
       <div className="space-y-4">
         {canCreateConvocation && (
-          <>
-            <button
-              type="button"
-              onClick={onCreateConvocation}
-              disabled={!canClickCreateConvocation}
-              className={`flex w-full items-center justify-between rounded-xl border border-dashed px-3 py-2 text-left text-sm font-semibold text-[var(--text-primary)] transition-all ${
-                canClickCreateConvocation
-                  ? "border-primary-500/60 bg-[var(--bg-app)] hover:border-primary-500 active:scale-[0.99]"
-                  : "cursor-not-allowed border-[var(--border-color)] bg-[var(--bg-app)]/60 opacity-60"
-              }`}
-              title={
-                canClickCreateConvocation
-                  ? "Nova convocatória"
-                  : `Precisas de pelo menos uma equipa completa (${minTeamMembers} jogadores).`
-              }
-              aria-label="Nova convocatória"
-            >
-              <span className="inline-flex items-center gap-2">
-                <span className="text-base" aria-hidden>
-                  ⚡
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onCreateConvocation}
+                disabled={!canClickCreateConvocation}
+                className={`flex flex-1 items-center justify-between rounded-xl border border-dashed px-3 py-2 text-left text-sm font-semibold text-[var(--text-primary)] transition-all ${
+                  canClickCreateConvocation
+                    ? "border-primary-500/60 bg-[var(--bg-app)] hover:border-primary-500 active:scale-[0.99]"
+                    : "cursor-not-allowed border-[var(--border-color)] bg-[var(--bg-app)]/60 opacity-60"
+                }`}
+                title={
+                  canClickCreateConvocation
+                    ? "Nova convocatória"
+                    : `Precisas de pelo menos uma equipa completa (${minTeamMembers} jogadores).`
+                }
+                aria-label="Nova convocatória"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <span className="text-base" aria-hidden>
+                    ⚡
+                  </span>
+                  Nova convocatória
                 </span>
-                Nova convocatória
-              </span>
-              <span className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">
-                Criar
-              </span>
-            </button>
+                <span className="text-xs uppercase tracking-wide text-[var(--text-secondary)]">
+                  Criar
+                </span>
+              </button>
+              {onGenerateUpcoming && canClickCreateConvocation && (
+                <button
+                  type="button"
+                  onClick={() => void onGenerateUpcoming()}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-emerald-500/60 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300 transition-all hover:border-emerald-500 active:scale-[0.99]"
+                  title="Gerar próxima convocatória automática a partir da agenda habitual da equipa"
+                >
+                  <span aria-hidden>🔄</span>
+                  <span>Automática</span>
+                </button>
+              )}
+            </div>
             {!canClickCreateConvocation && (
               <p className="text-xs text-[var(--text-secondary)]">
                 Precisas de pelo menos uma equipa completa ({minTeamMembers}{" "}
                 jogadores) para criar convocatória.
               </p>
             )}
-          </>
+          </div>
         )}
         {loading ? (
           <>

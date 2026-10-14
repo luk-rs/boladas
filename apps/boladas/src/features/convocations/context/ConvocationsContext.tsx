@@ -22,6 +22,7 @@ import type {
   VoteEntry,
 } from "../types";
 import {
+  generateUpcomingConvocations,
   listConvocations,
   setConvocationStatus,
   updateConvocationVote,
@@ -45,6 +46,7 @@ type ConvocationsActions = {
   createConvocation: () => void;
   voteChange: (id: string, state: PlayerState) => Promise<void>;
   statusChange: (id: string, status: ConvocationStatus) => Promise<void>;
+  generateUpcoming: () => Promise<void>;
   holdProgress: (id: string, intent: HoldIntent, progress: number) => void;
 };
 
@@ -257,6 +259,11 @@ export function ConvocationsProvider({ children }: { children: ReactNode }) {
     navigate("/convocations/new");
   }, [canClickCreateConvocation, navigate]);
 
+  const generateUpcoming = useCallback(async () => {
+    await generateUpcomingConvocations();
+    await refreshConvocations();
+  }, [refreshConvocations]);
+
   const value = useMemo<ConvocationsModel>(
     () => ({
       state: {
@@ -276,6 +283,7 @@ export function ConvocationsProvider({ children }: { children: ReactNode }) {
         createConvocation,
         voteChange,
         statusChange,
+        generateUpcoming,
         holdProgress,
       },
     }),
@@ -292,6 +300,7 @@ export function ConvocationsProvider({ children }: { children: ReactNode }) {
       createConvocation,
       voteChange,
       statusChange,
+      generateUpcoming,
       holdProgress,
     ],
   );

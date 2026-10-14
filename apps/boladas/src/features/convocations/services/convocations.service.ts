@@ -362,3 +362,28 @@ export async function listTeamSchedules(
 
   return { data: byId, error: null };
 }
+
+export async function generateUpcomingConvocations(): Promise<
+  ServiceResult<{ success: boolean; createdCount: number }>
+> {
+  const apiUrl = (import.meta.env.VITE_API_URL as string) || "http://localhost:8787";
+  try {
+    const res = await fetch(`${apiUrl}/convocations/generate-upcoming`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      return {
+        data: { success: false, createdCount: 0 },
+        error: `Erro da API: ${res.status}`,
+      };
+    }
+    const data = (await res.json()) as { success: boolean; createdCount: number };
+    return { data, error: null };
+  } catch (err: any) {
+    return {
+      data: { success: false, createdCount: 0 },
+      error: err?.message || "Falha ao gerar convocatórias.",
+    };
+  }
+}
+
