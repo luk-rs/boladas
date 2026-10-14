@@ -47,22 +47,27 @@ begin
   -- 1. Create Auth Users
   insert into auth.users (
     id, instance_id, email, encrypted_password, email_confirmed_at,
+    confirmation_token, recovery_token, email_change_token_new, email_change,
     raw_app_meta_data, raw_user_meta_data, role, aud, created_at, updated_at
   ) values
-    (v_admin_id, '00000000-0000-0000-0000-000000000000', 'admin@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Administrador Sistema"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_gestor_id, '00000000-0000-0000-0000-000000000000', 'gestor@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Tiago Gestor"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_jogador_id, '00000000-0000-0000-0000-000000000000', 'jogador@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Bernardo Jogador"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_u4, '00000000-0000-0000-0000-000000000000', 'rui@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Rui Pedro"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_u5, '00000000-0000-0000-0000-000000000000', 'joao@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"João Santos"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_u6, '00000000-0000-0000-0000-000000000000', 'goncalo@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Gonçalo Ramos"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_u7, '00000000-0000-0000-0000-000000000000', 'andre@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"André Horta"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_u8, '00000000-0000-0000-0000-000000000000', 'miguel@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Miguel Lourenço"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_u9, '00000000-0000-0000-0000-000000000000', 'diogo@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Diogo Jota"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_u10, '00000000-0000-0000-0000-000000000000', 'pedro@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Pedro Neto"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_u11, '00000000-0000-0000-0000-000000000000', 'nuno@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Nuno Mendes"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
-    (v_u12, '00000000-0000-0000-0000-000000000000', 'rafael@boladas.pt', v_pwd_hash, now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Rafael Leão"}'::jsonb, 'authenticated', 'authenticated', now(), now())
+    (v_admin_id, '00000000-0000-0000-0000-000000000000', 'admin@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Administrador Sistema"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_gestor_id, '00000000-0000-0000-0000-000000000000', 'gestor@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Tiago Gestor"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_jogador_id, '00000000-0000-0000-0000-000000000000', 'jogador@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Bernardo Jogador"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_u4, '00000000-0000-0000-0000-000000000000', 'rui@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Rui Pedro"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_u5, '00000000-0000-0000-0000-000000000000', 'joao@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"João Santos"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_u6, '00000000-0000-0000-0000-000000000000', 'goncalo@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Gonçalo Ramos"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_u7, '00000000-0000-0000-0000-000000000000', 'andre@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"André Horta"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_u8, '00000000-0000-0000-0000-000000000000', 'miguel@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Miguel Lourenço"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_u9, '00000000-0000-0000-0000-000000000000', 'diogo@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Diogo Jota"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_u10, '00000000-0000-0000-0000-000000000000', 'pedro@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Pedro Neto"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_u11, '00000000-0000-0000-0000-000000000000', 'nuno@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Nuno Mendes"}'::jsonb, 'authenticated', 'authenticated', now(), now()),
+    (v_u12, '00000000-0000-0000-0000-000000000000', 'rafael@boladas.pt', v_pwd_hash, now(), '', '', '', '', '{"provider":"email","providers":["email"]}'::jsonb, '{"display_name":"Rafael Leão"}'::jsonb, 'authenticated', 'authenticated', now(), now())
   on conflict (id) do update set
     encrypted_password = excluded.encrypted_password,
+    confirmation_token = '',
+    recovery_token = '',
+    email_change_token_new = '',
+    email_change = '',
     email_confirmed_at = now();
 
   -- 2. Create / Update Profiles
@@ -117,13 +122,7 @@ begin
   on conflict (team_id, user_id) do nothing;
 
   -- 5. Team Roles for Team 1
-  -- Base roles (member + player) for everyone in Team 1
-  insert into public.team_member_roles (team_member_id, role)
-  select tm.id, 'member'
-  from public.team_members tm
-  where tm.team_id = v_team1_id
-  on conflict (team_member_id, role) do nothing;
-
+  -- Base role (player) for everyone in Team 1
   insert into public.team_member_roles (team_member_id, role)
   select tm.id, 'player'
   from public.team_members tm
@@ -152,9 +151,9 @@ begin
     on conflict (team_member_id, role) do nothing;
   end if;
 
-  -- Team 2 Roles
+  -- Team 2 Roles (base role player)
   insert into public.team_member_roles (team_member_id, role)
-  select tm.id, 'member'
+  select tm.id, 'player'
   from public.team_members tm
   where tm.team_id = v_team2_id
   on conflict (team_member_id, role) do nothing;
@@ -171,8 +170,8 @@ begin
 
   -- 6. Convocations for Team 1
   -- Convocation 1: Open upcoming convocation with votes
-  insert into public.convocations (id, team_id, title, scheduled_at, status, created_by) values
-    (v_conv1_id, v_team1_id, 'Futebolada das Terças', now() + interval '2 days', 'open', v_gestor_id)
+  insert into public.convocations (id, team_id, title, scheduled_at, status, created_by, game_definition_key) values
+    (v_conv1_id, v_team1_id, 'Futebolada das Terças', now() + interval '2 days', 'open', v_gestor_id, 'day:2-20:30')
   on conflict (id) do nothing;
 
   -- Votes for Convocation 1
@@ -189,8 +188,8 @@ begin
   on conflict (convocation_id, user_id) do update set state = excluded.state;
 
   -- Convocation 2: Accepted convocation (transitioned to game)
-  insert into public.convocations (id, team_id, title, scheduled_at, status, created_by) values
-    (v_conv2_id, v_team1_id, 'Futebolada das Terças', now() - interval '7 days', 'accepted', v_gestor_id)
+  insert into public.convocations (id, team_id, title, scheduled_at, status, created_by, game_definition_key) values
+    (v_conv2_id, v_team1_id, 'Futebolada das Terças', now() - interval '7 days', 'accepted', v_gestor_id, 'day:2-20:30')
   on conflict (id) do nothing;
 
   -- 7. Real Games for Team 1

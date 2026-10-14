@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+unset SUPABASE_PROJECT_ID 2>/dev/null || true
+
 echo "🚀 Iniciando ambiente de desenvolvimento do Boladas..."
 
 # 1. Ensure Docker is running
