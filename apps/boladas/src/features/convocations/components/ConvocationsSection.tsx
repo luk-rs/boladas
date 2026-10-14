@@ -453,10 +453,11 @@ export function ConvocationsSection({
                 <button
                   type="button"
                   onClick={() => onStatusChange(convocation.id, "accepted")}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-base text-white transition-all active:scale-95"
-                  title="Aceitar"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-emerald-500 active:scale-95"
+                  title="Quórum atingido! Formar equipas"
                 >
-                  📝
+                  <span aria-hidden>📝</span>
+                  <span>Formar Equipas</span>
                 </button>
               ) : (
                 <HoldActionButton
@@ -473,7 +474,31 @@ export function ConvocationsSection({
             </div>
           )}
 
-          {canManage && canReopen && (
+          {canManage && convocation.status === "accepted" && (
+            <div className="mt-2.5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => onStatusChange(convocation.id, "accepted")}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-500 active:scale-95"
+                title="Organizar equipas e criar jogo"
+              >
+                <span aria-hidden>👕</span>
+                <span>Organizar Equipas</span>
+              </button>
+              {canReopen && (
+                <button
+                  type="button"
+                  onClick={() => onStatusChange(convocation.id, "open")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] text-base text-[var(--text-primary)] transition-all active:scale-95"
+                  title="Reabrir"
+                >
+                  🥅
+                </button>
+              )}
+            </div>
+          )}
+
+          {canManage && canReopen && convocation.status !== "accepted" && (
             <div className="mt-2.5 flex items-center justify-end">
               <button
                 type="button"
