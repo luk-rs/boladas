@@ -7,6 +7,7 @@ import {
 } from "../../team-scope/components/EmojiStack";
 import { SurfaceTile } from "../../../shared/layout/SurfaceTile";
 import { RecordResultSheet } from "./RecordResultSheet";
+import { LiveMatchModal } from "./LiveMatchModal";
 
 function lineupStack(
   players: GameLineupPlayer[],
@@ -48,6 +49,7 @@ export function GamesSection({
   onRecordResult,
 }: GamesSectionProps) {
   const [resultGame, setResultGame] = useState<Game | null>(null);
+  const [liveGame, setLiveGame] = useState<Game | null>(null);
   const now = Date.now();
   const nextGameId =
     games.find((game) => {
@@ -190,12 +192,23 @@ export function GamesSection({
 
                   {(game.canRecordResult || canCancel) && (
                     <div className="flex items-center justify-end gap-2">
+                      {game.canRecordResult && game.status !== "completed" && (
+                        <button
+                          type="button"
+                          onClick={() => setLiveGame(game)}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-500 active:scale-[0.99]"
+                          title="Acompanhar jogo em direto com cronómetro e placar"
+                        >
+                          <span aria-hidden>▶️</span>
+                          <span>Em Direto</span>
+                        </button>
+                      )}
                       {game.canRecordResult && (
                         <button
                           type="button"
                           onClick={() => setResultGame(game)}
                           disabled={recordingGameId === game.id}
-                          className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary-600/20 active:scale-[0.99] disabled:opacity-60"
+                          className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-3.5 py-2 text-sm font-semibold text-[var(--text-primary)] shadow-sm hover:border-primary-500 active:scale-[0.99] disabled:opacity-60"
                         >
                           Registar resultado
                         </button>
@@ -239,6 +252,19 @@ export function GamesSection({
           if (!resultGame) return "Jogo não encontrado.";
           const error = await onRecordResult(resultGame.id, scores);
           if (!error) setResultGame(null);
+          return error;
+        }}
+      />
+
+      <LiveMatchModal
+        key={liveGame?.id ?? "live-closed"}
+        game={liveGame}
+        isOpen={liveGame !== null}
+        onClose={() => setLiveGame(null)}
+        onFinishMatch={async (scores) => {
+          if (!liveGame) return "Jogo não encontrado.";
+          const error = await onRecordResult(liveGame.id, scores);
+          if (!error) setLiveGame(null);
           return error;
         }}
       />
