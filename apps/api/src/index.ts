@@ -4,6 +4,7 @@ import { handleRandom } from "./features/random";
 import { handleGetGames } from "./features/games/get-games";
 import { handleRecordGameResult } from "./features/games/record-game-result";
 import { handleGetConvocationTeams } from "./features/convocations/get-convocation-teams";
+import { handleGenerateUpcomingConvocations } from "./features/convocations/generate-upcoming";
 
 export interface Env {
   ALLOWED_ORIGIN?: string;
@@ -43,6 +44,10 @@ app.put("/games/:id/result", (c) => {
 app.get("/convocations/:id/teams", (c) => {
   const id = c.req.param("id");
   return handleGetConvocationTeams(c.req.raw, c.env, id, c.env.ALLOWED_ORIGIN);
+});
+
+app.post("/convocations/generate-upcoming", (c) => {
+  return handleGenerateUpcomingConvocations(c.req.raw, c.env, c.env.ALLOWED_ORIGIN);
 });
 
 export default app;

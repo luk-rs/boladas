@@ -31,6 +31,7 @@ function ConvocationsPageView() {
       createConvocation,
       voteChange,
       statusChange,
+      generateUpcoming,
       holdProgress,
     },
   } = useConvocationsContext();
@@ -54,6 +55,7 @@ function ConvocationsPageView() {
         onStatusChange={(id, status) => {
           void statusChange(id, status);
         }}
+        onGenerateUpcoming={generateUpcoming}
         holdProgressById={holdProgressById}
         onHoldProgress={holdProgress}
       />
