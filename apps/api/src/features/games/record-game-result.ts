@@ -49,11 +49,14 @@ export async function handleRecordGameResult(
     if (auth instanceof Response) return auth;
 
     const game = await withUserContext(getSql(), auth.userId, async (tx) => {
+      const matchEventsParam = tx.json(parsed.matchEvents as never);
       const rows = await tx<{ game: GameRow | string | null }[]>`
         select public.record_game_result(
           ${parsedId}::uuid,
           ${parsed.shirtsScore}::integer,
-          ${parsed.coletesScore}::integer
+          ${parsed.coletesScore}::integer,
+          ${parsed.durationSeconds}::integer,
+          ${matchEventsParam}
         ) as game
       `;
       return asGameRow(rows[0]?.game);

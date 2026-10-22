@@ -75,6 +75,26 @@ export async function signInWithOAuth(
   };
 }
 
+export async function signInWithPassword(credentials: {
+  email: string;
+  password: string;
+}): Promise<ServiceResult<void>> {
+  if (!supabase) {
+    return { data: undefined, error: SUPABASE_UNAVAILABLE_ERROR };
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email: credentials.email,
+    password: credentials.password,
+  });
+
+  if (error) {
+    return { data: undefined, error: error.message };
+  }
+
+  return { data: undefined, error: null };
+}
+
 export async function signOutLocal(): Promise<ServiceResult<void>> {
   if (!supabase) {
     return { data: undefined, error: SUPABASE_UNAVAILABLE_ERROR };

@@ -8,6 +8,15 @@ export type GameLineupPlayer = {
   isGuest?: boolean;
 };
 
+export type GoalEvent = {
+  id: string;
+  team: "shirts" | "coletes";
+  elapsedSeconds: number;
+  timeLabel: string;
+  minute: number;
+  playerName?: string;
+};
+
 export type Game = {
   id: string;
   convocationId: string | null;
@@ -18,6 +27,8 @@ export type Game = {
   status: GameStatus;
   shirtsScore: number | null;
   coletesScore: number | null;
+  durationSeconds: number | null;
+  matchEvents: GoalEvent[];
   completedAt: string | null;
   shirtsLineup: GameLineupPlayer[];
   coletesLineup: GameLineupPlayer[];
@@ -27,4 +38,6 @@ export type Game = {
 export type GameResultScores = {
   shirtsScore: number;
   coletesScore: number;
+  durationSeconds?: number | null;
+  matchEvents?: GoalEvent[];
 };

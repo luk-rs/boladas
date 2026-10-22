@@ -174,7 +174,7 @@ begin
     (v_conv1_id, v_team1_id, 'Futebolada das Terças', now() + interval '2 days', 'open', v_gestor_id, 'day:2-20:30')
   on conflict (id) do nothing;
 
-  -- Votes for Convocation 1
+  -- Votes for Convocation 1 (10 ball votes -> Quorum reached ready to accept)
   insert into public.convocation_votes (convocation_id, user_id, state) values
     (v_conv1_id, v_gestor_id, 'ball'),
     (v_conv1_id, v_jogador_id, 'ball'),
@@ -182,9 +182,11 @@ begin
     (v_conv1_id, v_u5, 'ball'),
     (v_conv1_id, v_u6, 'ball'),
     (v_conv1_id, v_u7, 'ball'),
-    (v_conv1_id, v_u8, 'couch'),
-    (v_conv1_id, v_u9, 'couch'),
-    (v_conv1_id, v_u10, 'hospital')
+    (v_conv1_id, v_u8, 'ball'),
+    (v_conv1_id, v_u9, 'ball'),
+    (v_conv1_id, v_u10, 'ball'),
+    (v_conv1_id, v_u11, 'ball'),
+    (v_conv1_id, v_u12, 'couch')
   on conflict (convocation_id, user_id) do update set state = excluded.state;
 
   -- Convocation 2: Accepted convocation (transitioned to game)

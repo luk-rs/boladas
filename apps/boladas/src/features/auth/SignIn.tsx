@@ -8,7 +8,7 @@ import {
 } from "./oauthProviders";
 import { startLoginOAuth } from "./oauthFlow";
 import { OAuthIconButtons } from "./OAuthIconButtons";
-import { isAuthClientConfigured } from "./services/auth.service";
+import { isAuthClientConfigured, signInWithPassword } from "./services/auth.service";
 import {
   REGISTRATION_ERROR_KEY,
   REGISTRATION_LOCK_KEY,
@@ -34,6 +34,9 @@ export function SignIn({
     null,
   );
   const [authError, setAuthError] = useState<string | null>(null);
+  const [devEmail, setDevEmail] = useState("gestor@boladas.pt");
+  const [devPassword, setDevPassword] = useState("boladas123");
+  const [devLoading, setDevLoading] = useState(false);
   const hasConfiguredProviders = hasEnabledProviders();
   const hasAuthClient = isAuthClientConfigured();
 
@@ -76,6 +79,23 @@ export function SignIn({
         err instanceof Error ? err.message : "Erro ao iniciar login OAuth",
       );
       setLoadingProvider(null);
+    }
+  };
+
+  const handleDevLogin = async (emailToUse?: string, passwordToUse?: string) => {
+    const e = emailToUse ?? devEmail;
+    const p = passwordToUse ?? devPassword;
+    try {
+      setDevLoading(true);
+      setAuthError(null);
+      const res = await signInWithPassword({ email: e, password: p });
+      if (res.error) {
+        setAuthError(res.error);
+      }
+    } catch (err: unknown) {
+      setAuthError(err instanceof Error ? err.message : "Erro no login de desenvolvimento");
+    } finally {
+      setDevLoading(false);
     }
   };
 
@@ -161,6 +181,77 @@ export function SignIn({
                 <p className="text-sm font-medium text-red-500 text-center">
                   {error || authError}
                 </p>
+              )}
+
+              {import.meta.env.DEV && (
+                <div className="mt-4 pt-4 border-t border-[var(--border-color)] space-y-3 text-left">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-primary-500">
+                      🛠️ Dev Quick Login
+                    </span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">Seed users</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      disabled={devLoading}
+                      onClick={() => void handleDevLogin("gestor@boladas.pt", "boladas123")}
+                      className="rounded-lg border border-primary-500/30 bg-primary-500/10 px-2 py-1.5 text-center text-xs font-semibold text-primary-600 dark:text-primary-300 transition-all hover:bg-primary-500/20 active:scale-95 disabled:opacity-50"
+                      title="Entrar como Tiago Gestor (Admin & Manager)"
+                    >
+                      👑 Gestor
+                    </button>
+                    <button
+                      type="button"
+                      disabled={devLoading}
+                      onClick={() => void handleDevLogin("admin@boladas.pt", "boladas123")}
+                      className="rounded-lg border border-purple-500/30 bg-purple-500/10 px-2 py-1.5 text-center text-xs font-semibold text-purple-600 dark:text-purple-300 transition-all hover:bg-purple-500/20 active:scale-95 disabled:opacity-50"
+                      title="Entrar como Administrador de Sistema"
+                    >
+                      🛡️ Admin
+                    </button>
+                    <button
+                      type="button"
+                      disabled={devLoading}
+                      onClick={() => void handleDevLogin("jogador@boladas.pt", "boladas123")}
+                      className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1.5 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-300 transition-all hover:bg-emerald-500/20 active:scale-95 disabled:opacity-50"
+                      title="Entrar como Bernardo Jogador"
+                    >
+                      ⚽ Jogador
+                    </button>
+                  </div>
+
+                  <form
+                    onSubmit={(ev) => {
+                      ev.preventDefault();
+                      void handleDevLogin();
+                    }}
+                    className="space-y-2 pt-1"
+                  >
+                    <input
+                      type="email"
+                      value={devEmail}
+                      onChange={(e) => setDevEmail(e.target.value)}
+                      placeholder="email@boladas.pt"
+                      className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-app)] px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    <input
+                      type="password"
+                      value={devPassword}
+                      onChange={(e) => setDevPassword(e.target.value)}
+                      placeholder="password"
+                      className="w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-app)] px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={devLoading}
+                      className="w-full rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-500 active:scale-95 disabled:opacity-50"
+                    >
+                      {devLoading ? "A autenticar..." : "Entrar com Credenciais"}
+                    </button>
+                  </form>
+                </div>
               )}
             </div>
           )}
