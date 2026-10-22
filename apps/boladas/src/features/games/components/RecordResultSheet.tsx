@@ -112,6 +112,20 @@ export function RecordResultSheet({
     const parsedColetes = parseScoreField(coletes);
     if (!parsedShirts.ok || !parsedColetes.ok) return;
 
+    if (parsedShirts.value < assignedShirtsCount) {
+      setFormError(
+        `O resultado das Camisolas (${parsedShirts.value}) não pode ser inferior aos golos atribuídos aos jogadores (${assignedShirtsCount}).`
+      );
+      return;
+    }
+
+    if (parsedColetes.value < assignedColetesCount) {
+      setFormError(
+        `O resultado dos Coletes (${parsedColetes.value}) não pode ser inferior aos golos atribuídos aos jogadores (${assignedColetesCount}).`
+      );
+      return;
+    }
+
     // Build matchEvents array
     const matchEvents: GoalEvent[] = [];
 
@@ -244,10 +258,25 @@ export function RecordResultSheet({
                   setShirts(event.target.value);
                   setFormError(null);
                 }}
-                aria-invalid={Boolean(formError)}
+                onBlur={() => {
+                  const val = parseInt(shirts, 10);
+                  if (Number.isNaN(val) || val < assignedShirtsCount) {
+                    setShirts(String(assignedShirtsCount));
+                  }
+                }}
+                aria-invalid={Boolean(formError || parsedShirtsVal < assignedShirtsCount)}
                 aria-describedby={formError ? errorId : undefined}
-                className="h-14 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] text-center text-2xl font-bold tabular-nums text-[var(--text-primary)] outline-none focus:border-primary-400"
+                className={`h-14 w-full rounded-xl border bg-[var(--bg-surface)] text-center text-2xl font-bold tabular-nums text-[var(--text-primary)] outline-none focus:border-primary-400 ${
+                  parsedShirtsVal < assignedShirtsCount
+                    ? "border-rose-500 text-rose-500"
+                    : "border-[var(--border-color)]"
+                }`}
               />
+              {parsedShirtsVal < assignedShirtsCount && (
+                <span className="block text-center text-[10px] text-rose-500 font-medium">
+                  Mínimo: {assignedShirtsCount} {assignedShirtsCount === 1 ? "golo" : "golos"}
+                </span>
+              )}
             </label>
             <span className="pb-4 text-sm font-semibold text-[var(--text-secondary)]">
               vs
@@ -265,10 +294,25 @@ export function RecordResultSheet({
                   setColetes(event.target.value);
                   setFormError(null);
                 }}
-                aria-invalid={Boolean(formError)}
+                onBlur={() => {
+                  const val = parseInt(coletes, 10);
+                  if (Number.isNaN(val) || val < assignedColetesCount) {
+                    setColetes(String(assignedColetesCount));
+                  }
+                }}
+                aria-invalid={Boolean(formError || parsedColetesVal < assignedColetesCount)}
                 aria-describedby={formError ? errorId : undefined}
-                className="h-14 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] text-center text-2xl font-bold tabular-nums text-[var(--text-primary)] outline-none focus:border-primary-400"
+                className={`h-14 w-full rounded-xl border bg-[var(--bg-surface)] text-center text-2xl font-bold tabular-nums text-[var(--text-primary)] outline-none focus:border-primary-400 ${
+                  parsedColetesVal < assignedColetesCount
+                    ? "border-rose-500 text-rose-500"
+                    : "border-[var(--border-color)]"
+                }`}
               />
+              {parsedColetesVal < assignedColetesCount && (
+                <span className="block text-center text-[10px] text-rose-500 font-medium">
+                  Mínimo: {assignedColetesCount} {assignedColetesCount === 1 ? "golo" : "golos"}
+                </span>
+              )}
             </label>
           </div>
 
