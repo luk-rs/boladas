@@ -160,6 +160,11 @@ export function GamesSection({
                 >
                   <span>{evt.team === "shirts" ? "👕" : "🦺"}</span>
                   <span>{evt.minute ? `${evt.minute}'` : evt.timeLabel}</span>
+                  {evt.playerName && (
+                    <span className="font-bold border-l border-current/30 pl-1">
+                      {evt.playerName}
+                    </span>
+                  )}
                 </span>
               ))}
             </div>
