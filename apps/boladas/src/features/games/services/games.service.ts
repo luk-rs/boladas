@@ -1,5 +1,5 @@
 import { supabase } from "../../../shared/api/supabase/client";
-import type { Game, GameLineupPlayer, GameResultScores, GameStatus } from "../types";
+import type { Game, GameLineupPlayer, GameResultScores, GameStatus, GoalEvent } from "../types";
 
 type ServiceResult<T> = {
   data: T;
@@ -16,6 +16,8 @@ type ApiGame = {
   status?: GameStatus;
   shirtsScore?: number | null;
   coletesScore?: number | null;
+  durationSeconds?: number | null;
+  matchEvents?: unknown[];
   completedAt?: string | null;
   shirtsLineup?: GameLineupPlayer[];
   coletesLineup?: GameLineupPlayer[];
@@ -81,6 +83,19 @@ function asLineup(value: unknown): GameLineupPlayer[] {
   });
 }
 
+function asMatchEvents(value: unknown): GoalEvent[] {
+  if (Array.isArray(value)) return value as GoalEvent[];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed as GoalEvent[];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function mapApiGame(value: unknown): Game | null {
   if (!value || typeof value !== "object") return null;
   const row = value as ApiGame;
@@ -99,6 +114,9 @@ function mapApiGame(value: unknown): Game | null {
     status: row.status === "completed" ? "completed" : "scheduled",
     shirtsScore: asScore(row.shirtsScore),
     coletesScore: asScore(row.coletesScore),
+    durationSeconds:
+      typeof row.durationSeconds === "number" ? row.durationSeconds : null,
+    matchEvents: asMatchEvents(row.matchEvents),
     completedAt: typeof row.completedAt === "string" ? row.completedAt : null,
     shirtsLineup: asLineup(row.shirtsLineup),
     coletesLineup: asLineup(row.coletesLineup),
@@ -181,6 +199,8 @@ export async function recordGameResult(
       body: JSON.stringify({
         shirtsScore: scores.shirtsScore,
         coletesScore: scores.coletesScore,
+        durationSeconds: scores.durationSeconds,
+        matchEvents: scores.matchEvents,
       }),
     });
   } catch {

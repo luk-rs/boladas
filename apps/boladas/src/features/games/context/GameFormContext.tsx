@@ -96,6 +96,46 @@ const GameFormContext = createContext<GameFormContextValue | undefined>(
   undefined,
 );
 
+function getPlayerMetrics(player: Player) {
+  let hash = 0;
+  const str = `${player.id}-${player.name}`;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const posHash = Math.abs(hash);
+  const points = (posHash % 12) + 2; // 2 to 13 points
+  const winPct = 40 + (posHash % 45); // 40% to 84%
+  const xg = 0.8 + ((posHash % 25) / 10);
+  const xga = 0.7 + (((posHash >> 3) % 25) / 10);
+  return { points, winPct, xg, xga };
+}
+
+function calculateTeamAggregate(players: Player[]) {
+  if (players.length === 0) {
+    return { points: 0, winPct: 0, xg: "0.00", xga: "0.00" };
+  }
+  let totalPoints = 0;
+  let totalWinPct = 0;
+  let totalXg = 0;
+  let totalXga = 0;
+
+  for (const player of players) {
+    const m = getPlayerMetrics(player);
+    totalPoints += m.points;
+    totalWinPct += m.winPct;
+    totalXg += m.xg;
+    totalXga += m.xga;
+  }
+
+  return {
+    points: totalPoints,
+    winPct: Math.round(totalWinPct / players.length),
+    xg: (totalXg / players.length).toFixed(2),
+    xga: (totalXga / players.length).toFixed(2),
+  };
+}
+
 export function GameFormProvider({ children }: { children: ReactNode }) {
   const { convocationId } = useParams();
   const navigate = useNavigate();
@@ -121,18 +161,11 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
 
   const dateLabel = useMemo(() => formatDate(scheduledAt), [scheduledAt]);
   const teamStats = useMemo(() => {
-    const rng = () => Math.random();
-    const makeStats = () => ({
-      points: Math.floor(10 + rng() * 15),
-      winPct: Math.floor(40 + rng() * 40),
-      xg: (0.8 + rng() * 2.2).toFixed(2),
-      xga: (0.8 + rng() * 2.2).toFixed(2),
-    });
     return {
-      shirts: makeStats(),
-      coletes: makeStats(),
+      shirts: calculateTeamAggregate(teamPlayers.shirts),
+      coletes: calculateTeamAggregate(teamPlayers.coletes),
     };
-  }, []);
+  }, [teamPlayers.shirts, teamPlayers.coletes]);
 
   const statRows = useMemo(
     () => [

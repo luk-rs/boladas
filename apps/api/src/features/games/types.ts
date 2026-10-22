@@ -17,6 +17,8 @@ export type GameJson = {
   status: GameStatus;
   shirtsScore: number | null;
   coletesScore: number | null;
+  durationSeconds: number | null;
+  matchEvents: unknown[];
   completedAt: string | null;
   shirtsLineup: LineupPlayer[];
   coletesLineup: LineupPlayer[];
@@ -33,6 +35,8 @@ export type GameRow = {
   status: string;
   shirts_score: number | null;
   coletes_score: number | null;
+  duration_seconds?: number | null;
+  match_events?: unknown;
   completed_at: string | Date | null;
   shirts_lineup: unknown;
   coletes_lineup: unknown;
@@ -52,6 +56,9 @@ export function mapGame(row: GameRow): GameJson {
     status: row.status === "completed" ? "completed" : "scheduled",
     shirtsScore: row.shirts_score,
     coletesScore: row.coletes_score,
+    durationSeconds:
+      typeof row.duration_seconds === "number" ? row.duration_seconds : null,
+    matchEvents: asMatchEvents(row.match_events),
     completedAt: row.completed_at ? toIso(row.completed_at) : null,
     shirtsLineup: asLineup(row.shirts_lineup),
     coletesLineup: asLineup(row.coletes_lineup),
@@ -62,7 +69,13 @@ export function mapGame(row: GameRow): GameJson {
 export function parseResultBody(
   body: unknown,
 ):
-  | { ok: true; shirtsScore: number; coletesScore: number }
+  | {
+      ok: true;
+      shirtsScore: number;
+      coletesScore: number;
+      durationSeconds: number | null;
+      matchEvents: unknown[];
+    }
   | { ok: false; error: string } {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { ok: false, error: "Request body must be a JSON object" };
@@ -78,7 +91,14 @@ export function parseResultBody(
     return { ok: false, error: coletesScore };
   }
 
-  return { ok: true, shirtsScore, coletesScore };
+  let durationSeconds: number | null = null;
+  if (typeof record.durationSeconds === "number" && record.durationSeconds >= 0) {
+    durationSeconds = Math.round(record.durationSeconds);
+  }
+
+  const matchEvents = Array.isArray(record.matchEvents) ? record.matchEvents : [];
+
+  return { ok: true, shirtsScore, coletesScore, durationSeconds, matchEvents };
 }
 
 export function parseGameId(value: string): string | null {
@@ -102,6 +122,19 @@ function parseScore(value: unknown, field: string): number | string {
     return `${field} must be a non-negative integer`;
   }
   return value;
+}
+
+function asMatchEvents(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 function asLineup(value: unknown): LineupPlayer[] {
