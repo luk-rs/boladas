@@ -478,16 +478,22 @@ export function ConvocationsSection({
                   <span>Formar Equipas</span>
                 </button>
               ) : (
-                <HoldActionButton
-                  label="📝"
-                  durationMs={3000}
-                  onComplete={() => onStatusChange(convocation.id, "accepted")}
-                  onProgress={(progress) =>
-                    onHoldProgress(convocation.id, "accepted", progress)
-                  }
-                  className="h-8 w-8 rounded-full bg-emerald-500 text-base text-white"
-                  title={`Segure 3s para aceitar com menos de ${minTeamMembers} jogadores`}
-                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const confirmed = window.confirm(
+                      `A convocatória tem apenas ${convocation.roster.ball}/${minTeamMembers} jogadores confirmados. Desejas avançar para formar equipas mesmo sem quórum completo?`,
+                    );
+                    if (confirmed) {
+                      onStatusChange(convocation.id, "accepted");
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 shadow-sm transition-all hover:bg-emerald-100 dark:hover:bg-emerald-900/40 active:scale-95"
+                  title="Avançar para formar equipas (mesmo sem quórum)"
+                >
+                  <span aria-hidden>📝</span>
+                  <span>Formar Equipas</span>
+                </button>
               )}
             </div>
           )}
@@ -533,10 +539,11 @@ export function ConvocationsSection({
               <button
                 type="button"
                 onClick={() => onStatusChange(convocation.id, "open")}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] text-base text-[var(--text-primary)] transition-all active:scale-95"
-                title="Reabrir"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 shadow-sm transition-all hover:bg-amber-100 dark:hover:bg-amber-900/40 active:scale-95"
+                title="Reabrir convocatória dispensada"
               >
-                🥅
+                <span aria-hidden>↺</span>
+                <span>Reabrir</span>
               </button>
             </div>
           )}

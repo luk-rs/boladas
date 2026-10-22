@@ -39,6 +39,7 @@ function GameFormPageView() {
     loading,
     error,
     gameExists,
+    convocationStatus,
     handleReopenConvocation,
     statRows,
     addGuest,
@@ -46,6 +47,8 @@ function GameFormPageView() {
     handleRejectGame,
     handleAcceptGame,
   } = useGameFormContext();
+
+  const isLocked = gameExists || convocationStatus === "dismissed";
 
   const renderPlayerRow = (
     player: Player,
@@ -64,9 +67,9 @@ function GameFormPageView() {
     return (
       <div
         key={player.id}
-        draggable={!gameExists}
+        draggable={!isLocked}
         onDragStart={(event) => {
-          if (gameExists) return;
+          if (isLocked) return;
           setDragging({ team, index });
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData(
@@ -221,6 +224,43 @@ function GameFormPageView() {
         </SurfaceTile>
       )}
 
+      {convocationStatus === "dismissed" && (
+        <SurfaceTile
+          variant="soft"
+          className="border border-rose-500/40 bg-rose-50/70 dark:bg-rose-950/20 p-3.5 text-center text-xs text-rose-800 dark:text-rose-200"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-1.5 font-semibold text-sm">
+              <span>💤</span>
+              <span>Esta convocatória foi dispensada</span>
+            </div>
+            <p className="text-xs text-rose-700/80 dark:text-rose-300/80 max-w-md">
+              Não existe nenhum jogo criado. Para poderes sortear equipas e aceitar o jogo, reabre a convocatória.
+            </p>
+            <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+              <Link
+                to="/convocations"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] hover:border-primary-500 transition-all active:scale-95"
+              >
+                <span>📅</span>
+                <span>Ver Convocatórias</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleReopenConvocation();
+                }}
+                disabled={actionState !== "idle"}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-amber-500 active:scale-95 disabled:opacity-50"
+              >
+                <span>↺</span>
+                <span>Reabrir Convocatória</span>
+              </button>
+            </div>
+          </div>
+        </SurfaceTile>
+      )}
+
       {loading ? (
         <div className="space-y-3">
           <div className="flex items-center justify-center gap-3 text-sm font-semibold text-[var(--text-secondary)]">
@@ -248,7 +288,7 @@ function GameFormPageView() {
               <span>vs</span>
               <span>🦺 Coletes ({teamPlayers.coletes.length})</span>
             </div>
-            {!gameExists && (
+            {!isLocked && (
               <button
                 type="button"
                 onClick={shuffleTeams}
@@ -273,7 +313,7 @@ function GameFormPageView() {
                   </p>
                 )}
               </div>
-              {!gameExists && (
+              {!isLocked && (
                 <div className="mt-auto pt-3">
                   <button
                     type="button"
@@ -299,7 +339,7 @@ function GameFormPageView() {
                   </p>
                 )}
               </div>
-              {!gameExists && (
+              {!isLocked && (
                 <div className="mt-auto pt-3">
                   <button
                     type="button"
@@ -342,14 +382,27 @@ function GameFormPageView() {
               ))}
             </div>
             <div className="mt-4 flex w-full items-center justify-end gap-3">
-              {!gameExists ? (
+              {convocationStatus === "dismissed" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleReopenConvocation();
+                  }}
+                  disabled={actionState !== "idle"}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-500 active:scale-95 disabled:opacity-50"
+                  title="Reabrir convocatória dispensada"
+                >
+                  <span aria-hidden>↺</span>
+                  <span>Reabrir Convocatória</span>
+                </button>
+              ) : !gameExists ? (
                 <>
                   <button
                     type="button"
                     onClick={() => void handleRejectGame()}
                     disabled={actionState !== "idle" || !convocationId}
                     className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-base text-rose-700 transition-all active:scale-95 disabled:opacity-60 dark:bg-rose-900/40 dark:text-rose-200"
-                    title="Rejeitar convocatória"
+                    title="Dispensar convocatória"
                   >
                     💤
                   </button>
