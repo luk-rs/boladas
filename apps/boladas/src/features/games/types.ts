@@ -16,6 +16,7 @@ export type GoalEvent = {
   minute: number;
   playerName?: string;
   playerId?: string;
+  isOwnGoal?: boolean;
 };
 
 export type Game = {
