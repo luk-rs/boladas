@@ -302,21 +302,21 @@ export function GamesSection({
               )}
             </div>
 
-            {/* Completed / Past Games Collapsible Expander */}
+            {/* Completed / Past Games Collapsible Expander (Clean transparent header, no card background) */}
             {completedGames.length > 0 && (
-              <details className="group rounded-2xl border border-[var(--border-color)] bg-[var(--bg-surface)] p-4 transition-all">
-                <summary className="flex cursor-pointer items-center justify-between font-semibold text-sm text-[var(--text-primary)] select-none">
+              <details className="group/expander pt-2">
+                <summary className="flex cursor-pointer items-center justify-between py-2 px-1 font-semibold text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] select-none list-none transition-colors">
                   <span className="flex items-center gap-2">
-                    <span>📜 Jogos Anteriores</span>
-                    <span className="rounded-full bg-[var(--bg-app)] px-2 py-0.5 text-xs text-[var(--text-secondary)] font-mono">
+                    <span className="text-xs uppercase font-bold tracking-wider">📜 Jogos Anteriores</span>
+                    <span className="rounded-full bg-[var(--bg-surface)] border border-[var(--border-color)] px-2 py-0.5 text-[11px] font-mono text-[var(--text-secondary)]">
                       {completedGames.length}
                     </span>
                   </span>
-                  <span className="text-xs text-[var(--text-secondary)] transition-transform duration-200 group-open:rotate-180">
+                  <span className="text-xs text-[var(--text-secondary)] transition-transform duration-200 group-open/expander:rotate-180">
                     ▼
                   </span>
                 </summary>
-                <div className="mt-4 space-y-3 pt-2 border-t border-[var(--border-color)]/60">
+                <div className="mt-3 space-y-3">
                   {completedGames.map(renderGameCard)}
                 </div>
               </details>

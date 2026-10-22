@@ -54,7 +54,7 @@ export function EmojiStack({
               type="button"
               title={item.label}
               aria-label={item.label}
-              className="group relative flex h-7 w-7 items-center justify-center text-left"
+              className="group/emoji relative flex h-7 w-7 items-center justify-center text-left"
               style={{ zIndex: items.length - index }}
               onClick={() => onTooltipChange?.(isActive ? null : item.id)}
               onBlur={() => onTooltipChange?.(null)}
@@ -62,7 +62,7 @@ export function EmojiStack({
             >
               {emojiNode}
               <span
-                className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/90 px-2 py-1 text-[10px] font-semibold text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+                className="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-slate-900/95 px-2 py-1 text-[10px] font-semibold text-white opacity-0 transition-opacity duration-150 group-hover/emoji:opacity-100 group-focus-visible/emoji:opacity-100"
                 style={{ opacity: isActive ? 1 : undefined }}
               >
                 {item.label}

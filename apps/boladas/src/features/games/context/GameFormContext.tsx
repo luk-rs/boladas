@@ -57,6 +57,9 @@ type GameFormContextValue = {
   actionMessage: string | null;
   loading: boolean;
   error: string | null;
+  gameExists: boolean;
+  convocationStatus: string | null;
+  handleReopenConvocation: () => Promise<void>;
   statRows: Array<{
     id: string;
     icon: string;
@@ -158,6 +161,8 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [gameExists, setGameExists] = useState(false);
+  const [convocationStatus, setConvocationStatusState] = useState<string | null>(null);
 
   const dateLabel = useMemo(() => formatDate(scheduledAt), [scheduledAt]);
   const teamStats = useMemo(() => {
@@ -402,6 +407,8 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       setTeamName(result.data.teamName ?? "Equipa");
       setScheduledAt(result.data.scheduledAt ?? null);
       setTimeValue(formatTime(result.data.scheduledAt));
+      setGameExists(Boolean(result.data.gameExists));
+      setConvocationStatusState(result.data.convocationStatus ?? null);
       setTeamPlayers({
         shirts: result.data.teams?.shirts ?? [],
         coletes: result.data.teams?.coletes ?? [],
@@ -434,6 +441,24 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       setGuestCountColetes(guestIndex);
     }
   };
+
+  const handleReopenConvocation = useCallback(async () => {
+    if (!convocationId) return;
+    setActionState("accepting");
+    setActionMessage(null);
+    try {
+      const result = await setConvocationStatus(convocationId, "open");
+      if (result.error) {
+        setActionMessage(result.error);
+        return;
+      }
+      setGameExists(false);
+      setConvocationStatusState("open");
+      setActionMessage("Convocatória reaberta com sucesso. Jogo anterior removido.");
+    } finally {
+      setActionState("idle");
+    }
+  }, [convocationId]);
 
   const shuffleTeams = useCallback(() => {
     setTeamPlayers((prev) => {
@@ -475,11 +500,14 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       actionMessage,
       loading,
       error,
+      gameExists,
+      convocationStatus,
       statRows,
       addGuest,
       shuffleTeams,
       handleRejectGame,
       handleAcceptGame,
+      handleReopenConvocation,
     }),
     [
       convocationId,
@@ -495,10 +523,13 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       actionMessage,
       loading,
       error,
+      gameExists,
+      convocationStatus,
       statRows,
       shuffleTeams,
       handleRejectGame,
       handleAcceptGame,
+      handleReopenConvocation,
     ],
   );
 
