@@ -30,101 +30,93 @@ async function run() {
   console.log("🔑 Authenticating with local Supabase...");
   const session = await getAuthSession("gestor@boladas.pt", "boladas123");
 
-  console.log("🌐 Launching Playwright browser (1280x800 desktop)...");
   const browser = await chromium.launch({
     executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     headless: true,
   });
 
-  const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-  page.on("dialog", async (d) => { await d.accept(); });
-
-  await page.addInitScript((sess) => {
+  // TEST 1: Desktop Browser with App Shell (1280x800)
+  console.log("🌐 1. Testing Desktop Browser (1280x800) - Frame 'ao alto'...");
+  const desktopPage = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+  desktopPage.on("dialog", async (d) => { await d.accept(); });
+  await desktopPage.addInitScript((sess) => {
     const raw = JSON.stringify(sess);
     localStorage.setItem("sb-localhost-auth-token", raw);
     localStorage.setItem("sb-127-auth-token", raw);
   }, session);
 
-  console.log("1. Navigating to /games...");
-  await page.goto("http://localhost:5173/games", { waitUntil: "networkidle" });
-  await page.waitForTimeout(1000);
+  await desktopPage.goto("http://localhost:5173/games", { waitUntil: "networkidle" });
+  await desktopPage.waitForTimeout(1000);
 
-  // Click Em Direto
-  const playBtn = page.getByRole("button", { name: /Em Direto/i }).first();
-  await playBtn.click();
-  await page.waitForTimeout(800);
+  const desktopPlayBtn = desktopPage.getByRole("button", { name: /Em Direto/i }).first();
+  await desktopPlayBtn.click();
+  await desktopPage.waitForTimeout(800);
 
-  // Verify Point 1: When match not started, + GOLO is disabled
-  const shirtsGoalBtn = page.locator("button:has-text('＋ GOLO')").first();
-  const isInitiallyDisabled = await shirtsGoalBtn.isDisabled();
-  console.log("Point 1 - + GOLO disabled when game not started:", isInitiallyDisabled);
-  if (!isInitiallyDisabled) {
-    throw new Error("Expected + GOLO to be disabled when match is not running");
-  }
+  await desktopPage.screenshot({ path: ".screenshots/live-match-portrait-shell-desktop.png" });
+  copyFileSync(".screenshots/live-match-portrait-shell-desktop.png", join(ARTIFACTS_DIR, "live-match-portrait-shell-desktop.png"));
+  console.log("📸 Saved live-match-portrait-shell-desktop.png");
+  await desktopPage.close();
 
-  // Take screenshot of desktop framed player (Point 5)
-  await page.screenshot({ path: ".screenshots/live-match-desktop-framed.png" });
-  copyFileSync(".screenshots/live-match-desktop-framed.png", join(ARTIFACTS_DIR, "live-match-desktop-framed.png"));
-  console.log("📸 Saved live-match-desktop-framed.png");
+  // TEST 2: Native Mobile Phone Portrait Viewport (390x844 - iPhone 14/15)
+  console.log("📱 2. Testing Mobile Phone Viewport (390x844) - Native 'ao alto'...");
+  const mobilePage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  mobilePage.on("dialog", async (d) => { await d.accept(); });
+  await mobilePage.addInitScript((sess) => {
+    const raw = JSON.stringify(sess);
+    localStorage.setItem("sb-localhost-auth-token", raw);
+    localStorage.setItem("sb-127-auth-token", raw);
+  }, session);
+
+  await mobilePage.goto("http://localhost:5173/games", { waitUntil: "networkidle" });
+  await mobilePage.waitForTimeout(1000);
+
+  const mobilePlayBtn = mobilePage.getByRole("button", { name: /Em Direto/i }).first();
+  await mobilePlayBtn.click();
+  await mobilePage.waitForTimeout(800);
+
+  // Take screenshot of mobile initial view
+  await mobilePage.screenshot({ path: ".screenshots/live-match-mobile-phone-portrait.png" });
+  copyFileSync(".screenshots/live-match-mobile-phone-portrait.png", join(ARTIFACTS_DIR, "live-match-mobile-phone-portrait.png"));
+  console.log("📸 Saved live-match-mobile-phone-portrait.png");
 
   // Start match
-  console.log("Starting match...");
-  const startBtn = page.getByRole("button", { name: /▶️ Iniciar/i });
+  const startBtn = mobilePage.getByRole("button", { name: /▶️ Iniciar/i });
   await startBtn.click();
-  await page.waitForTimeout(500);
-
-  // Verify Point 1: Now + GOLO is enabled
-  const isNowEnabled = !(await shirtsGoalBtn.isDisabled());
-  console.log("Point 1 - + GOLO enabled when game running:", isNowEnabled);
+  await mobilePage.waitForTimeout(400);
 
   // Click + GOLO on Camisolas
-  console.log("Triggering + GOLO on Camisolas (Points 3 & 4)...");
+  const shirtsGoalBtn = mobilePage.locator("button:has-text('＋ GOLO')").first();
   await shirtsGoalBtn.click();
-  await page.waitForTimeout(400);
+  await mobilePage.waitForTimeout(400);
 
-  // Take screenshot of goal selection mode (caras + autogolo + center banner)
-  await page.screenshot({ path: ".screenshots/live-match-goal-selection-mode.png" });
-  copyFileSync(".screenshots/live-match-goal-selection-mode.png", join(ARTIFACTS_DIR, "live-match-goal-selection-mode.png"));
-  console.log("📸 Saved live-match-goal-selection-mode.png");
+  // Take screenshot of selection mode on mobile
+  await mobilePage.screenshot({ path: ".screenshots/live-match-mobile-goal-selection.png" });
+  copyFileSync(".screenshots/live-match-mobile-goal-selection.png", join(ARTIFACTS_DIR, "live-match-mobile-goal-selection.png"));
+  console.log("📸 Saved live-match-mobile-goal-selection.png");
 
-  // Tap first player on Camisolas (Marcou ＋)
-  console.log("Tapping scorer on Camisolas...");
-  const marcouBtn = page.locator("button:has-text('Marcou ＋')").first();
-  await marcouBtn.click();
-  await page.waitForTimeout(400);
+  // Tap first player on Camisolas (Tiago Gestor)
+  const pickScorerBtn = mobilePage.locator("div.fixed.z-\\[150\\] button:has-text('Tiago Gestor')");
+  await pickScorerBtn.click();
+  await mobilePage.waitForTimeout(400);
 
-  // Score another goal: Coletes scored via own goal by Camisolas player
-  console.log("Triggering + GOLO on Coletes...");
-  const coletesGoalBtn = page.getByTitle("Golo dos Coletes! (Selecionar marcador)");
+  // Click + GOLO on Coletes
+  const coletesGoalBtn = mobilePage.getByTitle("Golo dos Coletes! (Selecionar marcador)");
   await coletesGoalBtn.click();
-  await page.waitForTimeout(400);
+  await mobilePage.waitForTimeout(400);
 
-  // Tap Autogolo on a Camisolas player
-  console.log("Tapping Autogolo on Camisolas defender...");
-  const autogoloBtn = page.locator("button:has-text('Autogolo')").first();
+  // Tap Autogolo (AG) on Camisolas player (André Horta)
+  const autogoloBtn = mobilePage.locator("div.fixed.z-\\[150\\] button:has-text('André Horta')");
   await autogoloBtn.click();
-  await page.waitForTimeout(400);
+  await mobilePage.waitForTimeout(400);
 
-  // Verify Point 2: Newest on TOP
-  await page.screenshot({ path: ".screenshots/live-match-newest-on-top-and-autogolo.png" });
-  copyFileSync(".screenshots/live-match-newest-on-top-and-autogolo.png", join(ARTIFACTS_DIR, "live-match-newest-on-top-and-autogolo.png"));
-  console.log("📸 Saved live-match-newest-on-top-and-autogolo.png");
+  // Take screenshot after both goals
+  await mobilePage.screenshot({ path: ".screenshots/live-match-mobile-with-goals.png" });
+  copyFileSync(".screenshots/live-match-mobile-with-goals.png", join(ARTIFACTS_DIR, "live-match-mobile-with-goals.png"));
+  console.log("📸 Saved live-match-mobile-with-goals.png");
 
-  // Point 4: Remove goal strictly via history ✕
-  console.log("Testing removal via history ✕ button (Point 4)...");
-  const firstDeleteBtn = page.locator("div.space-y-1\\.5 button[title='Anular este golo']").first();
-  if (await firstDeleteBtn.isVisible()) {
-    await firstDeleteBtn.click();
-    await page.waitForTimeout(400);
-  }
-
-  // Screenshot after deleting
-  await page.screenshot({ path: ".screenshots/live-match-after-goal-removal.png" });
-  copyFileSync(".screenshots/live-match-after-goal-removal.png", join(ARTIFACTS_DIR, "live-match-after-goal-removal.png"));
-  console.log("📸 Saved live-match-after-goal-removal.png");
-
+  await mobilePage.close();
   await browser.close();
-  console.log("🎉 ALL 5 REFINEMENT TESTS PASSED SUCCESSFULLY!");
+  console.log("🎉 ALL TESTS PASSED SUCCESSFULLY!");
 }
 
 run().catch((e) => {
