@@ -135,6 +135,8 @@ export type TeamsResponse = {
   convocationId: string;
   teamName: string;
   scheduledAt: string;
+  convocationStatus?: string;
+  gameExists?: boolean;
   teams: {
     shirts: Array<{ id: string; name: string }>;
     coletes: Array<{ id: string; name: string }>;

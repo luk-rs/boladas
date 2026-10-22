@@ -38,7 +38,7 @@ export async function listConvocations(
 
   const { data: convocationRows, error: convocationError } = await supabase
     .from("convocations")
-    .select("id, team_id, title, scheduled_at, status, team:teams(name)")
+    .select("id, team_id, title, scheduled_at, status, team:teams(name), games:games(id, status)")
     .in("team_id", teamIds)
     .gte("scheduled_at", nowIso)
     .order("scheduled_at", { ascending: true });
@@ -178,6 +178,11 @@ export async function listConvocations(
       const couchVotes = [...summary.couchVotes].sort(sortByUpdated);
       const hospitalVotes = [...summary.hospitalVotes].sort(sortByUpdated);
 
+      const gamesField = row.games as { id?: string; status?: string } | { id?: string; status?: string }[] | null;
+      const gameRecord = Array.isArray(gamesField) ? gamesField[0] : gamesField;
+      const gameStatus = gameRecord?.status === "completed" ? "completed" : gameRecord?.status === "scheduled" ? "scheduled" : null;
+      const gameId = gameRecord?.id ?? null;
+
       return {
         id: row.id,
         teamId: row.team_id,
@@ -185,6 +190,8 @@ export async function listConvocations(
         title: row.title ?? null,
         scheduledAt: row.scheduled_at,
         status: normalizeStatus(row.status),
+        gameId,
+        gameStatus,
         roster: {
           ball: ballVotes.length,
           couch: couchVotes.length,

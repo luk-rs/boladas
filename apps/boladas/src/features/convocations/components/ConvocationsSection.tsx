@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { formatSchedule } from "../../games/utils";
 import {
   Convocation,
@@ -270,7 +271,9 @@ export function ConvocationsSection({
       convocation.status === "dismissed" && canManage;
     const { dateLabel, timeLabel } = formatSchedule(convocation.scheduledAt);
     const canReopen =
-      convocation.status === "dismissed" &&
+      (convocation.status === "dismissed" ||
+        (convocation.status === "accepted" &&
+          convocation.gameStatus !== "completed")) &&
       new Date(convocation.scheduledAt).getTime() > Date.now();
     const canAccept = convocation.roster.ball >= minTeamMembers;
     const holdState = holdProgressById[convocation.id];
@@ -491,23 +494,35 @@ export function ConvocationsSection({
 
           {canManage && convocation.status === "accepted" && (
             <div className="mt-2.5 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => onStatusChange(convocation.id, "accepted")}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary-500 active:scale-95"
-                title="Organizar equipas e criar jogo"
+              {convocation.gameStatus === "completed" && (
+                <span className="text-[10px] text-[var(--text-secondary)] font-medium mr-1">
+                  Jogo concluído
+                </span>
+              )}
+              <Link
+                to="/games"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-app)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] shadow-sm transition-all hover:border-primary-500 hover:text-primary-600 active:scale-95 dark:hover:text-primary-400"
+                title="Ver jogo agendado"
               >
-                <span aria-hidden>👕</span>
-                <span>Organizar Equipas</span>
-              </button>
+                <span aria-hidden>⚽</span>
+                <span>Ver Jogo</span>
+              </Link>
               {canReopen && (
                 <button
                   type="button"
-                  onClick={() => onStatusChange(convocation.id, "open")}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--border-color)] bg-[var(--bg-surface)] text-base text-[var(--text-primary)] transition-all active:scale-95"
-                  title="Reabrir"
+                  onClick={() => {
+                    const confirmed = window.confirm(
+                      "Reabrir esta convocatória irá cancelar e remover o jogo agendado associado para que possas voltar a receber votos e organizar novas equipas. Desejas continuar?",
+                    );
+                    if (confirmed) {
+                      onStatusChange(convocation.id, "open");
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 shadow-sm transition-all hover:bg-amber-100 dark:hover:bg-amber-900/40 active:scale-95"
+                  title="Reabrir convocatória (remove o jogo agendado)"
                 >
-                  🥅
+                  <span aria-hidden>↺</span>
+                  <span>Reabrir</span>
                 </button>
               )}
             </div>

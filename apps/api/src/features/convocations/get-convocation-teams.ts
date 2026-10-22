@@ -73,8 +73,11 @@ export async function handleGetConvocationTeams(
       id: string;
       scheduled_at: string;
       team_name: string;
+      convocation_status: string;
+      game_exists: boolean;
     }[]>`
-      select c.id, c.scheduled_at, t.name as team_name
+      select c.id, c.scheduled_at, c.status as convocation_status, t.name as team_name,
+             exists(select 1 from games g where g.convocation_id = c.id) as game_exists
       from convocations c
       join teams t on t.id = c.team_id
       where c.id = ${convocationId}
@@ -112,6 +115,8 @@ export async function handleGetConvocationTeams(
         convocationId,
         teamName: convocationRows[0].team_name,
         scheduledAt: convocationRows[0].scheduled_at,
+        convocationStatus: convocationRows[0].convocation_status,
+        gameExists: Boolean(convocationRows[0].game_exists),
         teams: { shirts, coletes },
       },
       {

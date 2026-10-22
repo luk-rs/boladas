@@ -16,6 +16,8 @@ export type Convocation = {
   title?: string | null;
   scheduledAt: string;
   status: ConvocationStatus;
+  gameId?: string | null;
+  gameStatus?: "scheduled" | "completed" | null;
   roster: {
     ball: number;
     couch: number;

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { WheelTimePicker } from "../../../shared/ui/WheelTimePicker";
 import { BottomSheet } from "../../../shared/ui/BottomSheet";
 import { PageScaffold } from "../../../shared/layout/PageScaffold";
@@ -37,6 +38,8 @@ function GameFormPageView() {
     actionMessage,
     loading,
     error,
+    gameExists,
+    handleReopenConvocation,
     statRows,
     addGuest,
     shuffleTeams,
@@ -61,8 +64,9 @@ function GameFormPageView() {
     return (
       <div
         key={player.id}
-        draggable
+        draggable={!gameExists}
         onDragStart={(event) => {
+          if (gameExists) return;
           setDragging({ team, index });
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData(
@@ -175,6 +179,48 @@ function GameFormPageView() {
         </button>
       </SurfaceTile>
 
+      {gameExists && (
+        <SurfaceTile
+          variant="soft"
+          className="border border-amber-500/40 bg-amber-50/70 dark:bg-amber-950/20 p-3.5 text-center text-xs text-amber-800 dark:text-amber-200"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-1.5 font-semibold text-sm">
+              <span>🔒</span>
+              <span>Jogo já agendado para esta convocatória</span>
+            </div>
+            <p className="text-xs text-amber-700/80 dark:text-amber-300/80 max-w-md">
+              O sorteio e as equipas estão bloqueados. Para reorganizar ou sortear novamente, é necessário reabrir a convocatória (o jogo agendado será removido).
+            </p>
+            <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+              <Link
+                to="/games"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] hover:border-primary-500 transition-all active:scale-95"
+              >
+                <span>⚽</span>
+                <span>Ver Jogo Agendado</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    "Reabrir esta convocatória irá apagar o jogo agendado associado para que possas voltar a sortear as equipas. Desejas continuar?",
+                  );
+                  if (confirmed) {
+                    void handleReopenConvocation();
+                  }
+                }}
+                disabled={actionState !== "idle"}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-amber-500 active:scale-95 disabled:opacity-50"
+              >
+                <span>↺</span>
+                <span>Reabrir Convocatória</span>
+              </button>
+            </div>
+          </div>
+        </SurfaceTile>
+      )}
+
       {loading ? (
         <div className="space-y-3">
           <div className="flex items-center justify-center gap-3 text-sm font-semibold text-[var(--text-secondary)]">
@@ -202,15 +248,17 @@ function GameFormPageView() {
               <span>vs</span>
               <span>🦺 Coletes ({teamPlayers.coletes.length})</span>
             </div>
-            <button
-              type="button"
-              onClick={shuffleTeams}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)] shadow-sm transition-all hover:border-primary-500 hover:text-primary-600 active:scale-95 dark:hover:text-primary-400"
-              title="Baralhar e sortear jogadores entre as duas equipas"
-            >
-              <span aria-hidden>🎲</span>
-              <span>Sortear</span>
-            </button>
+            {!gameExists && (
+              <button
+                type="button"
+                onClick={shuffleTeams}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)] shadow-sm transition-all hover:border-primary-500 hover:text-primary-600 active:scale-95 dark:hover:text-primary-400"
+                title="Baralhar e sortear jogadores entre as duas equipas"
+              >
+                <span aria-hidden>🎲</span>
+                <span>Sortear</span>
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
             <SurfaceTile variant="soft" className="flex h-full flex-col">
@@ -225,16 +273,18 @@ function GameFormPageView() {
                   </p>
                 )}
               </div>
-              <div className="mt-auto pt-3">
-                <button
-                  type="button"
-                  onClick={() => addGuest("shirts")}
-                  className="flex w-full items-center justify-between rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-primary-500/60 hover:text-[var(--text-primary)] active:scale-[0.99]"
-                >
-                  <span>Adicionar convidado</span>
-                  <span className="text-lg">＋</span>
-                </button>
-              </div>
+              {!gameExists && (
+                <div className="mt-auto pt-3">
+                  <button
+                    type="button"
+                    onClick={() => addGuest("shirts")}
+                    className="flex w-full items-center justify-between rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-primary-500/60 hover:text-[var(--text-primary)] active:scale-[0.99]"
+                  >
+                    <span>Adicionar convidado</span>
+                    <span className="text-lg">＋</span>
+                  </button>
+                </div>
+              )}
             </SurfaceTile>
 
             <SurfaceTile variant="soft" className="flex h-full flex-col">
@@ -249,16 +299,18 @@ function GameFormPageView() {
                   </p>
                 )}
               </div>
-              <div className="mt-auto pt-3">
-                <button
-                  type="button"
-                  onClick={() => addGuest("coletes")}
-                  className="flex w-full items-center justify-between rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-primary-500/60 hover:text-[var(--text-primary)] active:scale-[0.99]"
-                >
-                  <span>Adicionar convidado</span>
-                  <span className="text-lg">＋</span>
-                </button>
-              </div>
+              {!gameExists && (
+                <div className="mt-auto pt-3">
+                  <button
+                    type="button"
+                    onClick={() => addGuest("coletes")}
+                    className="flex w-full items-center justify-between rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-primary-500/60 hover:text-[var(--text-primary)] active:scale-[0.99]"
+                  >
+                    <span>Adicionar convidado</span>
+                    <span className="text-lg">＋</span>
+                  </button>
+                </div>
+              )}
             </SurfaceTile>
           </div>
           <div className="space-y-3 text-xs">
@@ -290,24 +342,46 @@ function GameFormPageView() {
               ))}
             </div>
             <div className="mt-4 flex w-full items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => void handleRejectGame()}
-                disabled={actionState !== "idle" || !convocationId}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-base text-rose-700 transition-all active:scale-95 disabled:opacity-60 dark:bg-rose-900/40 dark:text-rose-200"
-                title="Rejeitar convocatória"
-              >
-                💤
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleAcceptGame()}
-                disabled={actionState !== "idle" || !convocationId}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-base text-white transition-all active:scale-95 disabled:opacity-60"
-                title="Aceitar jogo"
-              >
-                📝
-              </button>
+              {!gameExists ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void handleRejectGame()}
+                    disabled={actionState !== "idle" || !convocationId}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 text-base text-rose-700 transition-all active:scale-95 disabled:opacity-60 dark:bg-rose-900/40 dark:text-rose-200"
+                    title="Rejeitar convocatória"
+                  >
+                    💤
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleAcceptGame()}
+                    disabled={actionState !== "idle" || !convocationId}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-base text-white transition-all active:scale-95 disabled:opacity-60"
+                    title="Aceitar jogo"
+                  >
+                    📝
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const confirmed = window.confirm(
+                      "Reabrir esta convocatória irá apagar o jogo agendado associado para que possas voltar a sortear as equipas. Desejas continuar?",
+                    );
+                    if (confirmed) {
+                      void handleReopenConvocation();
+                    }
+                  }}
+                  disabled={actionState !== "idle"}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/30 px-3.5 py-2 text-xs font-semibold text-amber-700 dark:text-amber-300 shadow-sm transition-all hover:bg-amber-100 dark:hover:bg-amber-900/40 active:scale-95 disabled:opacity-50"
+                  title="Reabrir convocatória (remove o jogo agendado)"
+                >
+                  <span aria-hidden>↺</span>
+                  <span>Reabrir Convocatória</span>
+                </button>
+              )}
             </div>
             {actionMessage && (
               <p className="text-center text-[10px] uppercase tracking-[0.2em] text-[var(--text-secondary)]">
