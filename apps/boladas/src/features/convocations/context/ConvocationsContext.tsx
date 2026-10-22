@@ -239,6 +239,7 @@ export function ConvocationsProvider({ children }: { children: ReactNode }) {
 
       const result = await setConvocationStatus(id, nextStatus);
       if (result.error) {
+        window.alert(result.error);
         return;
       }
 

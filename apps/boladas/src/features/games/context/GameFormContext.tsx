@@ -450,11 +450,12 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       const result = await setConvocationStatus(convocationId, "open");
       if (result.error) {
         setActionMessage(result.error);
+        window.alert(result.error);
         return;
       }
       setGameExists(false);
       setConvocationStatusState("open");
-      setActionMessage("Convocatória reaberta com sucesso. Jogo anterior removido.");
+      setActionMessage("Convocatória reaberta com sucesso.");
     } finally {
       setActionState("idle");
     }
