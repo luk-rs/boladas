@@ -43,6 +43,13 @@ export function LiveMatchModal({
   const [error, setError] = useState<string | null>(null);
   const [scorerPickerTeam, setScorerPickerTeam] = useState<"shirts" | "coletes" | null>(null);
   const [vuvuzelaToast, setVuvuzelaToast] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Auto-detect orientation (landscape on desktop and rotated phone; portrait on upright phone)
+  const [isLandscape, setIsLandscape] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(orientation: landscape)").matches;
+  });
 
   const [soundEnabled, setSoundEnabled] = useState(() => {
     try {
@@ -57,6 +64,15 @@ export function LiveMatchModal({
   const lastVuvuzelaSecondRef = useRef<number>(-1);
   const storageKey = game ? `boladas_live_match_${game.id}` : null;
 
+  // Listen to orientation change events (e.g. rotating phone sideways)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(orientation: landscape)");
+    const handler = (e: MediaQueryListEvent) => setIsLandscape(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   const toggleSound = () => {
     setSoundEnabled((prev) => {
       const next = !prev;
@@ -67,6 +83,24 @@ export function LiveMatchModal({
       }
       return next;
     });
+  };
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        if (containerRef.current?.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+          setIsFullscreen(true);
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+          setIsFullscreen(false);
+        }
+      }
+    } catch {
+      setIsFullscreen((prev) => !prev);
+    }
   };
 
   // Restore state from localStorage if available
@@ -252,11 +286,17 @@ export function LiveMatchModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 backdrop-blur-sm p-0 md:p-3 select-none overflow-hidden">
-      {/* App-shell aligned container (max-w-[430px] portrait "ao alto", matching the rest of the app) */}
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/85 backdrop-blur-md p-0 md:p-3 select-none overflow-hidden">
+      {/* Dynamic Shell: Adapts automatically when phone is rotated sideways OR on desktop */}
       <div
         ref={containerRef}
-        className="w-full max-w-[430px] h-full md:max-h-[860px] md:rounded-3xl border-x md:border border-slate-800 bg-slate-950 text-slate-100 flex flex-col shadow-2xl select-none overflow-hidden relative"
+        className={`w-full flex flex-col bg-slate-950 text-slate-100 select-none overflow-hidden transition-all duration-200 relative ${
+          isFullscreen
+            ? "fixed inset-0 z-[160] rounded-none border-0 h-full w-full"
+            : isLandscape
+              ? "max-w-5xl h-full max-h-[720px] rounded-none md:rounded-3xl border-0 md:border border-slate-800 shadow-2xl"
+              : "max-w-[430px] h-full md:max-h-[860px] md:rounded-3xl border-x md:border border-slate-800 shadow-2xl"
+        }`}
       >
         {/* Vuvuzela Checkpoint Toast */}
         {vuvuzelaToast && (
@@ -287,6 +327,16 @@ export function LiveMatchModal({
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
+            {/* Manual orientation switch button */}
+            <button
+              type="button"
+              onClick={() => setIsLandscape((prev) => !prev)}
+              className="flex h-7 items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 text-[11px] font-semibold text-slate-300 hover:text-white transition-all active:scale-95"
+              title={isLandscape ? "Mudar para modo vertical (ao alto)" : "Mudar para modo bancada (horizontal)"}
+            >
+              <span>{isLandscape ? "📱 Vertical" : "🖥️ Horizontal"}</span>
+            </button>
+
             {/* Sound Toggle */}
             <button
               type="button"
@@ -301,6 +351,16 @@ export function LiveMatchModal({
               <span>{soundEnabled ? "🔊 Som" : "🔇 Mudo"}</span>
             </button>
 
+            {/* Fullscreen Button */}
+            <button
+              type="button"
+              onClick={() => void toggleFullscreen()}
+              className="flex h-7 items-center gap-1 rounded-lg border border-slate-700 bg-slate-800 px-2 text-[11px] font-semibold text-slate-300 hover:text-white transition-all active:scale-95"
+              title="Alternar Ecrã Inteiro"
+            >
+              <span>{isFullscreen ? "🗗" : "⛶"}</span>
+            </button>
+
             <button
               type="button"
               onClick={onClose}
@@ -313,388 +373,762 @@ export function LiveMatchModal({
           </div>
         </header>
 
-        {/* 2. Main Pitch Area (Arranged "ao alto" in portrait, two teams side-by-side) */}
-        <main className="flex-1 flex flex-col p-2.5 gap-2 min-h-0 overflow-hidden">
-          {/* A. Digital Timer Header Row */}
-          <div className="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-900/60 px-3 py-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400">
-                Tempo
-              </span>
-              <div className="font-mono text-2xl font-black tracking-wider tabular-nums text-amber-300 drop-shadow-[0_0_12px_rgba(252,211,77,0.35)]">
-                {formatTimer(elapsedSeconds)}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={toggleTimer}
-                className={`flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-bold text-white shadow-md transition-all active:scale-95 ${
-                  isRunning
-                    ? "bg-amber-600 hover:bg-amber-500 shadow-amber-600/30"
-                    : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30"
-                }`}
-              >
-                <span>{isRunning ? "⏸️ Pausar" : "▶️ Iniciar"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsRunning(false);
-                  setElapsedSeconds(0);
-                  setScorerPickerTeam(null);
-                }}
-                className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-300 hover:text-white active:scale-95"
-                title="Reiniciar cronómetro"
-              >
-                ↺
-              </button>
-            </div>
-          </div>
-
-          {/* B. Scoreboard: Camisolas vs Coletes (Two teams facing each other side-by-side) */}
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-2.5 shadow-lg">
-            {/* Camisolas Side */}
-            <div
-              className={`flex flex-col items-center rounded-xl p-2 transition-all ${
+        {/* 2. MAIN ARENA: Switches between Landscape Stadium Player and Portrait Ao Alto */}
+        {isLandscape ? (
+          /* ============================================================== */
+          /* LANDSCAPE STADIUM SCOREBOARD (Active on desktop & rotated phone) */
+          /* ============================================================== */
+          <main className="flex-1 flex flex-row items-stretch justify-between p-3 md:p-4 gap-3 md:gap-4 min-h-0 overflow-hidden">
+            {/* Left Column: Camisolas (👕) */}
+            <section
+              className={`flex-1 flex flex-col justify-between rounded-2xl border p-3.5 transition-all shadow-xl min-h-0 ${
                 scorerPickerTeam === "shirts"
-                  ? "bg-sky-950/80 ring-2 ring-sky-400 border border-sky-400"
-                  : "bg-sky-950/30 border border-sky-500/20"
+                  ? "border-sky-400 bg-sky-950/60 shadow-sky-500/20 ring-2 ring-sky-500/50"
+                  : scorerPickerTeam === "coletes"
+                    ? "border-amber-500/40 bg-slate-900/90"
+                    : "border-sky-500/30 bg-gradient-to-b from-sky-950/40 via-slate-900/60 to-slate-950"
               }`}
             >
-              <span className="text-[11px] font-black tracking-wider uppercase text-sky-400 flex items-center gap-1">
-                <span>👕</span>
-                <span>Camisolas</span>
-              </span>
-              <span className="font-mono text-4xl font-black tabular-nums text-sky-200 my-0.5">
-                {shirtsScore}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isRunning) return;
-                  setScorerPickerTeam((prev) => (prev === "shirts" ? null : "shirts"));
-                }}
-                disabled={!isRunning}
-                className={`w-full py-1 px-2 rounded-lg text-xs font-black transition-all active:scale-95 ${
-                  !isRunning
-                    ? "opacity-35 cursor-not-allowed bg-slate-800 text-slate-500"
-                    : scorerPickerTeam === "shirts"
-                      ? "bg-sky-400 text-slate-950"
-                      : "bg-sky-500 text-slate-950 shadow-md shadow-sky-500/30 hover:bg-sky-400"
-                }`}
-                title={
-                  !isRunning
-                    ? "Inicia o jogo para marcar golos"
-                    : "Golo das Camisolas! (Selecionar marcador)"
-                }
-              >
-                {scorerPickerTeam === "shirts" ? "A escolher..." : "＋ GOLO"}
-              </button>
-            </div>
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2 text-sky-400 text-sm font-black tracking-wider uppercase">
+                  <span className="text-xl" aria-hidden>👕</span>
+                  <span>Camisolas</span>
+                </div>
 
-            {/* VS divider */}
-            <div className="flex flex-col items-center px-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                VS
-              </span>
-            </div>
+                <div className="my-1 font-mono text-5xl md:text-6xl font-black tabular-nums text-sky-200 drop-shadow-[0_0_20px_rgba(56,189,248,0.35)]">
+                  {shirtsScore}
+                </div>
 
-            {/* Coletes Side */}
-            <div
-              className={`flex flex-col items-center rounded-xl p-2 transition-all ${
-                scorerPickerTeam === "coletes"
-                  ? "bg-amber-950/80 ring-2 ring-amber-400 border border-amber-400"
-                  : "bg-amber-950/30 border border-amber-500/20"
-              }`}
-            >
-              <span className="text-[11px] font-black tracking-wider uppercase text-amber-400 flex items-center gap-1">
-                <span>🦺</span>
-                <span>Coletes</span>
-              </span>
-              <span className="font-mono text-4xl font-black tabular-nums text-amber-200 my-0.5">
-                {coletesScore}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isRunning) return;
-                  setScorerPickerTeam((prev) => (prev === "coletes" ? null : "coletes"));
-                }}
-                disabled={!isRunning}
-                className={`w-full py-1 px-2 rounded-lg text-xs font-black transition-all active:scale-95 ${
-                  !isRunning
-                    ? "opacity-35 cursor-not-allowed bg-slate-800 text-slate-500"
-                    : scorerPickerTeam === "coletes"
-                      ? "bg-amber-400 text-slate-950"
-                      : "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30 hover:bg-amber-400"
-                }`}
-                title={
-                  !isRunning
-                    ? "Inicia o jogo para marcar golos"
-                    : "Golo dos Coletes! (Selecionar marcador)"
-                }
-              >
-                {scorerPickerTeam === "coletes" ? "A escolher..." : "＋ GOLO"}
-              </button>
-            </div>
-          </div>
-
-          {!isRunning && (
-            <p className="text-center text-[10px] text-slate-400 italic -mt-1">
-              Inicia o cronómetro para marcar golos
-            </p>
-          )}
-
-          {/* C. Goal Selection Mode Action Banner */}
-          {scorerPickerTeam && (
-            <div className="flex items-center justify-between gap-1.5 rounded-xl border border-amber-500/40 bg-amber-950/80 px-2.5 py-1.5 animate-in fade-in zoom-in-95 shrink-0">
-              <span className="text-[11px] font-black text-amber-300 truncate">
-                ⚽ Golo {scorerPickerTeam === "shirts" ? "Camisolas" : "Coletes"}:
-              </span>
-              <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
-                  onClick={() => addGoal(scorerPickerTeam, null)}
-                  className="rounded-lg bg-amber-500 hover:bg-amber-400 py-1 px-2 text-[10px] font-black text-slate-950 active:scale-95 transition-all shadow-sm"
+                  onClick={() => {
+                    if (!isRunning) return;
+                    setScorerPickerTeam((prev) => (prev === "shirts" ? null : "shirts"));
+                  }}
+                  disabled={!isRunning}
+                  className={`flex h-9 px-5 items-center justify-center gap-1.5 rounded-xl text-xs font-black transition-all shadow-lg active:scale-95 ${
+                    !isRunning
+                      ? "opacity-35 cursor-not-allowed bg-slate-800 text-slate-400 border border-slate-700"
+                      : scorerPickerTeam === "shirts"
+                        ? "bg-sky-400 text-slate-950 ring-4 ring-sky-400/40"
+                        : "bg-sky-500 text-slate-950 shadow-sky-500/30 hover:bg-sky-400"
+                  }`}
+                  title={!isRunning ? "Inicia o jogo para marcar golos" : "Golo das Camisolas!"}
                 >
-                  Sem marcador
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScorerPickerTeam(null)}
-                  className="rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 py-1 px-2 text-[10px] font-semibold text-slate-300 active:scale-95"
-                >
-                  ✕
+                  <span>{scorerPickerTeam === "shirts" ? "✓ A selecionar" : "＋ GOLO"}</span>
                 </button>
               </div>
-            </div>
-          )}
 
-          {/* D. Player Matrices: 2 Columns Side-by-Side (Camisolas on left, Coletes on right) */}
-          <div className="flex-1 grid grid-cols-2 gap-2 min-h-[140px] max-h-56 overflow-hidden">
-            {/* Camisolas Lineup Column */}
-            <div className="flex flex-col rounded-xl border border-sky-500/20 bg-slate-900/60 p-2 min-h-0">
-              <div className="flex items-center justify-between pb-1 border-b border-sky-500/20 text-[10px] font-bold text-sky-400">
-                <span>👕 Plantel</span>
-                <span className="text-[9px] font-mono opacity-80">{game.shirtsLineup.length}</span>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-1 pt-1.5 pr-0.5 scrollbar-thin">
-                {game.shirtsLineup.map((p, i) => {
-                  const count = playerGoalsCount[p.id ?? ""] || playerGoalsCount[p.name ?? ""] || 0;
+              {/* Camisolas Lineup list */}
+              <div className="w-full mt-2 pt-2 border-t border-sky-500/20 flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between mb-1 px-0.5">
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-sky-400/90">
+                    {scorerPickerTeam === "shirts"
+                      ? "⚽ Quem marcou?"
+                      : scorerPickerTeam === "coletes"
+                        ? "⚠️ Quem fez autogolo?"
+                        : "Plantel"}
+                  </p>
+                  <span className="text-[9px] text-sky-400/60 font-mono">
+                    {game.shirtsLineup.length} jog.
+                  </span>
+                </div>
 
-                  // Selection: Camisolas scored
-                  if (scorerPickerTeam === "shirts") {
+                <div className="flex-1 space-y-1 overflow-y-auto pr-0.5 scrollbar-thin">
+                  {game.shirtsLineup.map((p, i) => {
+                    const count = playerGoalsCount[p.id ?? ""] || playerGoalsCount[p.name ?? ""] || 0;
+
+                    if (scorerPickerTeam === "shirts") {
+                      return (
+                        <button
+                          key={p.id ?? i}
+                          type="button"
+                          onClick={() => addGoal("shirts", p, false)}
+                          className="w-full flex items-center justify-between gap-1.5 rounded-lg border border-sky-400 bg-sky-950/90 px-2 py-1 text-left text-xs font-semibold text-sky-100 hover:bg-sky-900 active:scale-95 transition-all shadow-sm"
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-800 text-sky-200 text-[9px] font-black">
+                              {getInitials(p.name)}
+                            </span>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <span className="shrink-0 rounded bg-sky-400 text-slate-950 px-1.5 py-0.2 text-[9px] font-black">
+                            Marcou ＋
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    if (scorerPickerTeam === "coletes") {
+                      return (
+                        <button
+                          key={p.id ?? i}
+                          type="button"
+                          onClick={() => addGoal("coletes", p, true)}
+                          className="w-full flex items-center justify-between gap-1.5 rounded-lg border border-rose-500/50 bg-rose-950/40 px-2 py-1 text-left text-xs font-semibold text-rose-200 hover:bg-rose-900/60 active:scale-95 transition-all shadow-sm"
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-rose-200 text-[9px] font-black">
+                              {getInitials(p.name)}
+                            </span>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <span className="shrink-0 rounded bg-rose-600 text-white px-1.5 py-0.2 text-[9px] font-black">
+                            Autogolo
+                          </span>
+                        </button>
+                      );
+                    }
+
                     return (
-                      <button
+                      <div
                         key={p.id ?? i}
-                        type="button"
-                        onClick={() => addGoal("shirts", p, false)}
-                        className="w-full flex items-center justify-between gap-1 rounded-lg border border-sky-400 bg-sky-950/90 px-1.5 py-1 text-left text-[11px] font-semibold text-sky-100 hover:bg-sky-900 active:scale-95 transition-all shadow-sm group"
+                        className="flex items-center justify-between gap-1.5 rounded-lg border border-slate-800 bg-slate-900/80 px-2 py-1 text-left text-xs text-slate-200"
                       >
-                        <div className="flex items-center gap-1 truncate">
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-800 text-sky-200 text-[9px] font-black">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-950 text-sky-300 border border-sky-800/80 text-[9px] font-bold">
                             {getInitials(p.name)}
                           </span>
-                          <span className="truncate">{p.name}</span>
+                          <span className="truncate font-medium">{p.name}</span>
                         </div>
-                        <span className="shrink-0 rounded bg-sky-400 text-slate-950 px-1 py-0.2 text-[9px] font-black">
-                          ＋
-                        </span>
-                      </button>
-                    );
-                  }
-
-                  // Selection: Coletes scored, Camisolas player made own goal
-                  if (scorerPickerTeam === "coletes") {
-                    return (
-                      <button
-                        key={p.id ?? i}
-                        type="button"
-                        onClick={() => addGoal("coletes", p, true)}
-                        className="w-full flex items-center justify-between gap-1 rounded-lg border border-rose-500/50 bg-rose-950/40 px-1.5 py-1 text-left text-[11px] font-semibold text-rose-200 hover:bg-rose-900/60 active:scale-95 transition-all shadow-sm group"
-                      >
-                        <div className="flex items-center gap-1 truncate">
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-rose-200 text-[9px] font-black">
-                            {getInitials(p.name)}
+                        {count > 0 && (
+                          <span className="shrink-0 rounded-full bg-sky-500 text-slate-950 px-1.5 py-0.2 text-[10px] font-black">
+                            ⚽ {count}
                           </span>
-                          <span className="truncate">{p.name}</span>
-                        </div>
-                        <span className="shrink-0 rounded bg-rose-600 text-white px-1 py-0.2 text-[9px] font-black">
-                          AG
-                        </span>
-                      </button>
-                    );
-                  }
-
-                  // Normal mode
-                  return (
-                    <div
-                      key={p.id ?? i}
-                      className="flex items-center justify-between gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-1.5 py-1 text-left text-[11px] text-slate-200"
-                    >
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-950 text-sky-300 border border-sky-800/80 text-[9px] font-bold">
-                          {getInitials(p.name)}
-                        </span>
-                        <span className="truncate font-medium">{p.name}</span>
+                        )}
                       </div>
-                      {count > 0 && (
-                        <span className="shrink-0 rounded-full bg-sky-500 text-slate-950 px-1.5 py-0.2 text-[9px] font-black">
-                          ⚽ {count}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Coletes Lineup Column */}
-            <div className="flex flex-col rounded-xl border border-amber-500/20 bg-slate-900/60 p-2 min-h-0">
-              <div className="flex items-center justify-between pb-1 border-b border-amber-500/20 text-[10px] font-bold text-amber-400">
-                <span>🦺 Plantel</span>
-                <span className="text-[9px] font-mono opacity-80">{game.coletesLineup.length}</span>
-              </div>
-              <div className="flex-1 overflow-y-auto space-y-1 pt-1.5 pr-0.5 scrollbar-thin">
-                {game.coletesLineup.map((p, i) => {
-                  const count = playerGoalsCount[p.id ?? ""] || playerGoalsCount[p.name ?? ""] || 0;
-
-                  // Selection: Coletes scored
-                  if (scorerPickerTeam === "coletes") {
-                    return (
-                      <button
-                        key={p.id ?? i}
-                        type="button"
-                        onClick={() => addGoal("coletes", p, false)}
-                        className="w-full flex items-center justify-between gap-1 rounded-lg border border-amber-400 bg-amber-950/90 px-1.5 py-1 text-left text-[11px] font-semibold text-amber-100 hover:bg-amber-900 active:scale-95 transition-all shadow-sm group"
-                      >
-                        <div className="flex items-center gap-1 truncate">
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-800 text-amber-200 text-[9px] font-black">
-                            {getInitials(p.name)}
-                          </span>
-                          <span className="truncate">{p.name}</span>
-                        </div>
-                        <span className="shrink-0 rounded bg-amber-400 text-slate-950 px-1 py-0.2 text-[9px] font-black">
-                          ＋
-                        </span>
-                      </button>
                     );
-                  }
-
-                  // Selection: Camisolas scored, Coletes player made own goal
-                  if (scorerPickerTeam === "shirts") {
-                    return (
-                      <button
-                        key={p.id ?? i}
-                        type="button"
-                        onClick={() => addGoal("shirts", p, true)}
-                        className="w-full flex items-center justify-between gap-1 rounded-lg border border-rose-500/50 bg-rose-950/40 px-1.5 py-1 text-left text-[11px] font-semibold text-rose-200 hover:bg-rose-900/60 active:scale-95 transition-all shadow-sm group"
-                      >
-                        <div className="flex items-center gap-1 truncate">
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-rose-200 text-[9px] font-black">
-                            {getInitials(p.name)}
-                          </span>
-                          <span className="truncate">{p.name}</span>
-                        </div>
-                        <span className="shrink-0 rounded bg-rose-600 text-white px-1 py-0.2 text-[9px] font-black">
-                          AG
-                        </span>
-                      </button>
-                    );
-                  }
-
-                  // Normal mode
-                  return (
-                    <div
-                      key={p.id ?? i}
-                      className="flex items-center justify-between gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-1.5 py-1 text-left text-[11px] text-slate-200"
-                    >
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-950 text-amber-300 border border-amber-800/80 text-[9px] font-bold">
-                          {getInitials(p.name)}
-                        </span>
-                        <span className="truncate font-medium">{p.name}</span>
-                      </div>
-                      {count > 0 && (
-                        <span className="shrink-0 rounded-full bg-amber-500 text-slate-950 px-1.5 py-0.2 text-[9px] font-black">
-                          ⚽ {count}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
+                  })}
+                </div>
               </div>
-            </div>
-          </div>
+            </section>
 
-          {/* E. Goal Events Timeline Feed (Recentes no topo) */}
-          <div className="flex-1 flex flex-col min-h-[90px] max-h-36 rounded-xl border border-slate-800 bg-slate-900/80 p-2 overflow-hidden">
-            <div className="flex items-center justify-between pb-1 border-b border-slate-800/80 text-[9px] font-bold uppercase tracking-wider text-slate-400">
-              <span>⚽ Histórico de Golos (Recentes no topo)</span>
-              <span className="tabular-nums font-mono text-slate-500">{goalEvents.length} golos</span>
-            </div>
-            <div className="flex-1 overflow-y-auto space-y-1 pt-1 pr-0.5 scrollbar-thin">
-              {reversedGoalEvents.length === 0 ? (
-                <p className="text-center text-[10px] text-slate-500 py-3 italic">
-                  À espera do primeiro golo da partida...
-                </p>
-              ) : (
-                reversedGoalEvents.map((evt) => (
-                  <div
-                    key={evt.id}
-                    className="flex items-center justify-between rounded-lg bg-slate-950/80 border border-slate-800/80 px-2 py-0.5 text-xs"
+            {/* Center Column: Digital LED Timer, Controls & Match Events Feed */}
+            <section className="w-72 md:w-80 flex flex-col items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/90 p-3 shadow-xl min-h-0">
+              {/* Digital Timer */}
+              <div className="flex flex-col items-center w-full">
+                <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-400">
+                  Tempo de Jogo
+                </span>
+                <div className="my-0.5 font-mono text-4xl md:text-5xl font-black tracking-widest tabular-nums text-amber-300 drop-shadow-[0_0_20px_rgba(252,211,77,0.35)]">
+                  {formatTimer(elapsedSeconds)}
+                </div>
+
+                <div className="flex items-center gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={toggleTimer}
+                    className={`flex items-center gap-1.5 rounded-xl px-4 py-1.5 text-xs font-bold text-white shadow-md transition-all active:scale-95 ${
+                      isRunning
+                        ? "bg-amber-600 hover:bg-amber-500 shadow-amber-600/30"
+                        : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30"
+                    }`}
                   >
-                    <div className="flex items-center gap-1.5 truncate pr-1">
-                      <span className="text-xs shrink-0">
-                        {evt.team === "shirts" ? "👕" : "🦺"}
-                      </span>
-                      <span className="font-semibold text-slate-200 truncate text-[11px]">
-                        {evt.playerName ?? (evt.team === "shirts" ? "Camisolas" : "Coletes")}
-                      </span>
-                      {evt.isOwnGoal && (
-                        <span className="rounded bg-rose-500/20 border border-rose-500/40 text-[8px] text-rose-300 px-1 py-0.1 font-bold uppercase">
-                          AG
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="font-mono text-[10px] font-bold text-amber-300">
-                        ⏱️ {evt.timeLabel} ({evt.minute}')
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeGoalById(evt.id)}
-                        className="text-slate-500 hover:text-rose-400 text-xs px-0.5 font-bold"
-                        title="Anular este golo"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+                    <span>{isRunning ? "⏸️ Pausar" : "▶️ Iniciar"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsRunning(false);
+                      setElapsedSeconds(0);
+                      setScorerPickerTeam(null);
+                    }}
+                    className="rounded-xl border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-300 hover:text-white active:scale-95"
+                    title="Reiniciar cronómetro"
+                  >
+                    ↺ Reset
+                  </button>
+                </div>
+              </div>
 
-          {/* F. Terminar Jogo Button */}
-          <div className="pt-0.5 shrink-0">
-            {error && (
-              <p className="mb-1 text-center text-xs text-rose-400 font-semibold">
-                {error}
+              {/* Goal Registration Center Action Banner */}
+              {scorerPickerTeam && (
+                <div className="w-full my-1.5 flex flex-col items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-950/70 p-2 animate-in fade-in zoom-in-95">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-amber-300">
+                    ⚽ Golo {scorerPickerTeam === "shirts" ? "das Camisolas" : "dos Coletes"}
+                  </span>
+                  <div className="flex items-center gap-1.5 w-full">
+                    <button
+                      type="button"
+                      onClick={() => addGoal(scorerPickerTeam, null)}
+                      className="flex-1 rounded-lg bg-amber-500 hover:bg-amber-400 py-1 px-2 text-[10px] font-black text-slate-950 active:scale-95 transition-all shadow-md"
+                    >
+                      ⚽ Sem marcador
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setScorerPickerTeam(null)}
+                      className="rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 py-1 px-2 text-[10px] font-semibold text-slate-300 active:scale-95"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Goal Events Timeline Feed (Recentes no topo) */}
+              <div className="w-full my-1 flex-1 flex flex-col min-h-[90px] max-h-36 md:max-h-44 rounded-xl border border-slate-800 bg-slate-950/70 p-2 overflow-hidden">
+                <div className="flex items-center justify-between pb-1 border-b border-slate-800/80 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                  <span>⚽ Histórico (Recentes no topo)</span>
+                  <span className="tabular-nums font-mono text-slate-500">{goalEvents.length}</span>
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-1 pt-1 pr-0.5 scrollbar-thin">
+                  {reversedGoalEvents.length === 0 ? (
+                    <p className="text-center text-[10px] text-slate-500 py-3 italic">
+                      À espera de golos...
+                    </p>
+                  ) : (
+                    reversedGoalEvents.map((evt) => (
+                      <div
+                        key={evt.id}
+                        className="flex items-center justify-between rounded-lg bg-slate-900/90 border border-slate-800 px-2 py-0.5 text-xs"
+                      >
+                        <div className="flex items-center gap-1.5 truncate pr-1">
+                          <span className="text-xs shrink-0">
+                            {evt.team === "shirts" ? "👕" : "🦺"}
+                          </span>
+                          <span className="font-semibold text-slate-200 truncate text-[11px]">
+                            {evt.playerName ?? (evt.team === "shirts" ? "Camisolas" : "Coletes")}
+                          </span>
+                          {evt.isOwnGoal && (
+                            <span className="rounded bg-rose-500/20 border border-rose-500/40 text-[8px] text-rose-300 px-1 py-0.1 font-bold uppercase">
+                              AG
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="font-mono text-[10px] font-bold text-amber-300">
+                            ⏱️ {evt.timeLabel} ({evt.minute}')
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeGoalById(evt.id)}
+                            className="text-slate-500 hover:text-rose-400 text-xs px-0.5 font-bold"
+                            title="Anular golo"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Finish Match Button */}
+              <div className="w-full pt-1">
+                {error && (
+                  <p className="mb-1 text-center text-xs text-rose-400 font-semibold">
+                    {error}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void handleFinish()}
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-2 px-3 text-xs font-black text-white shadow-lg shadow-emerald-950/40 hover:from-emerald-500 hover:to-teal-500 active:scale-98 transition-all disabled:opacity-60"
+                >
+                  <span>{submitting ? "A guardar jogo..." : "🏁 Terminar e Gravar Jogo"}</span>
+                </button>
+              </div>
+            </section>
+
+            {/* Right Column: Coletes (🦺) */}
+            <section
+              className={`flex-1 flex flex-col justify-between rounded-2xl border p-3.5 transition-all shadow-xl min-h-0 ${
+                scorerPickerTeam === "coletes"
+                  ? "border-amber-400 bg-amber-950/60 shadow-amber-500/20 ring-2 ring-amber-500/50"
+                  : scorerPickerTeam === "shirts"
+                    ? "border-sky-500/40 bg-slate-900/90"
+                    : "border-amber-500/30 bg-gradient-to-b from-amber-950/40 via-slate-900/60 to-slate-950"
+              }`}
+            >
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2 text-amber-400 text-sm font-black tracking-wider uppercase">
+                  <span className="text-xl" aria-hidden>🦺</span>
+                  <span>Coletes</span>
+                </div>
+
+                <div className="my-1 font-mono text-5xl md:text-6xl font-black tabular-nums text-amber-200 drop-shadow-[0_0_20px_rgba(251,191,36,0.35)]">
+                  {coletesScore}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isRunning) return;
+                    setScorerPickerTeam((prev) => (prev === "coletes" ? null : "coletes"));
+                  }}
+                  disabled={!isRunning}
+                  className={`flex h-9 px-5 items-center justify-center gap-1.5 rounded-xl text-xs font-black transition-all shadow-lg active:scale-95 ${
+                    !isRunning
+                      ? "opacity-35 cursor-not-allowed bg-slate-800 text-slate-400 border border-slate-700"
+                      : scorerPickerTeam === "coletes"
+                        ? "bg-amber-400 text-slate-950 ring-4 ring-amber-400/40"
+                        : "bg-amber-500 text-slate-950 shadow-amber-500/30 hover:bg-amber-400"
+                  }`}
+                  title={!isRunning ? "Inicia o jogo para marcar golos" : "Golo dos Coletes!"}
+                >
+                  <span>{scorerPickerTeam === "coletes" ? "✓ A selecionar" : "＋ GOLO"}</span>
+                </button>
+              </div>
+
+              {/* Coletes Lineup list */}
+              <div className="w-full mt-2 pt-2 border-t border-amber-500/20 flex-1 flex flex-col min-h-0">
+                <div className="flex items-center justify-between mb-1 px-0.5">
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-amber-400/90">
+                    {scorerPickerTeam === "coletes"
+                      ? "⚽ Quem marcou?"
+                      : scorerPickerTeam === "shirts"
+                        ? "⚠️ Quem fez autogolo?"
+                        : "Plantel"}
+                  </p>
+                  <span className="text-[9px] text-amber-400/60 font-mono">
+                    {game.coletesLineup.length} jog.
+                  </span>
+                </div>
+
+                <div className="flex-1 space-y-1 overflow-y-auto pr-0.5 scrollbar-thin">
+                  {game.coletesLineup.map((p, i) => {
+                    const count = playerGoalsCount[p.id ?? ""] || playerGoalsCount[p.name ?? ""] || 0;
+
+                    if (scorerPickerTeam === "coletes") {
+                      return (
+                        <button
+                          key={p.id ?? i}
+                          type="button"
+                          onClick={() => addGoal("coletes", p, false)}
+                          className="w-full flex items-center justify-between gap-1.5 rounded-lg border border-amber-400 bg-amber-950/90 px-2 py-1 text-left text-xs font-semibold text-amber-100 hover:bg-amber-900 active:scale-95 transition-all shadow-sm"
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-800 text-amber-200 text-[9px] font-black">
+                              {getInitials(p.name)}
+                            </span>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <span className="shrink-0 rounded bg-amber-400 text-slate-950 px-1.5 py-0.2 text-[9px] font-black">
+                            Marcou ＋
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    if (scorerPickerTeam === "shirts") {
+                      return (
+                        <button
+                          key={p.id ?? i}
+                          type="button"
+                          onClick={() => addGoal("shirts", p, true)}
+                          className="w-full flex items-center justify-between gap-1.5 rounded-lg border border-rose-500/50 bg-rose-950/40 px-2 py-1 text-left text-xs font-semibold text-rose-200 hover:bg-rose-900/60 active:scale-95 transition-all shadow-sm"
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-rose-200 text-[9px] font-black">
+                              {getInitials(p.name)}
+                            </span>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <span className="shrink-0 rounded bg-rose-600 text-white px-1.5 py-0.2 text-[9px] font-black">
+                            Autogolo
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={p.id ?? i}
+                        className="flex items-center justify-between gap-1.5 rounded-lg border border-slate-800 bg-slate-900/80 px-2 py-1 text-left text-xs text-slate-200"
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-950 text-amber-300 border border-amber-800/80 text-[9px] font-bold">
+                            {getInitials(p.name)}
+                          </span>
+                          <span className="truncate font-medium">{p.name}</span>
+                        </div>
+                        {count > 0 && (
+                          <span className="shrink-0 rounded-full bg-amber-500 text-slate-950 px-1.5 py-0.2 text-[10px] font-black">
+                            ⚽ {count}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          </main>
+        ) : (
+          /* ============================================================== */
+          /* PORTRAIT AO ALTO (Active on mobile held vertically)           */
+          /* ============================================================== */
+          <main className="flex-1 flex flex-col p-2.5 gap-2 min-h-0 overflow-hidden">
+            {/* A. Digital Timer Header Row */}
+            <div className="flex items-center justify-between rounded-xl border border-slate-800/80 bg-slate-900/60 px-3 py-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] uppercase tracking-wider font-bold text-slate-400">
+                  Tempo
+                </span>
+                <div className="font-mono text-2xl font-black tracking-wider tabular-nums text-amber-300 drop-shadow-[0_0_12px_rgba(252,211,77,0.35)]">
+                  {formatTimer(elapsedSeconds)}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={toggleTimer}
+                  className={`flex items-center gap-1 rounded-lg px-3 py-1 text-xs font-bold text-white shadow-md transition-all active:scale-95 ${
+                    isRunning
+                      ? "bg-amber-600 hover:bg-amber-500 shadow-amber-600/30"
+                      : "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30"
+                  }`}
+                >
+                  <span>{isRunning ? "⏸️ Pausar" : "▶️ Iniciar"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsRunning(false);
+                    setElapsedSeconds(0);
+                    setScorerPickerTeam(null);
+                  }}
+                  className="rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-xs font-semibold text-slate-300 hover:text-white active:scale-95"
+                  title="Reiniciar cronómetro"
+                >
+                  ↺
+                </button>
+              </div>
+            </div>
+
+            {/* B. Scoreboard: Camisolas vs Coletes */}
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/80 p-2.5 shadow-lg">
+              {/* Camisolas Side */}
+              <div
+                className={`flex flex-col items-center rounded-xl p-2 transition-all ${
+                  scorerPickerTeam === "shirts"
+                    ? "bg-sky-950/80 ring-2 ring-sky-400 border border-sky-400"
+                    : "bg-sky-950/30 border border-sky-500/20"
+                }`}
+              >
+                <span className="text-[11px] font-black tracking-wider uppercase text-sky-400 flex items-center gap-1">
+                  <span>👕</span>
+                  <span>Camisolas</span>
+                </span>
+                <span className="font-mono text-4xl font-black tabular-nums text-sky-200 my-0.5">
+                  {shirtsScore}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isRunning) return;
+                    setScorerPickerTeam((prev) => (prev === "shirts" ? null : "shirts"));
+                  }}
+                  disabled={!isRunning}
+                  className={`w-full py-1 px-2 rounded-lg text-xs font-black transition-all active:scale-95 ${
+                    !isRunning
+                      ? "opacity-35 cursor-not-allowed bg-slate-800 text-slate-500"
+                      : scorerPickerTeam === "shirts"
+                        ? "bg-sky-400 text-slate-950"
+                        : "bg-sky-500 text-slate-950 shadow-md shadow-sky-500/30 hover:bg-sky-400"
+                  }`}
+                  title={!isRunning ? "Inicia o jogo para marcar golos" : "Golo das Camisolas!"}
+                >
+                  {scorerPickerTeam === "shirts" ? "A escolher..." : "＋ GOLO"}
+                </button>
+              </div>
+
+              {/* VS divider */}
+              <div className="flex flex-col items-center px-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  VS
+                </span>
+              </div>
+
+              {/* Coletes Side */}
+              <div
+                className={`flex flex-col items-center rounded-xl p-2 transition-all ${
+                  scorerPickerTeam === "coletes"
+                    ? "bg-amber-950/80 ring-2 ring-amber-400 border border-amber-400"
+                    : "bg-amber-950/30 border border-amber-500/20"
+                }`}
+              >
+                <span className="text-[11px] font-black tracking-wider uppercase text-amber-400 flex items-center gap-1">
+                  <span>🦺</span>
+                  <span>Coletes</span>
+                </span>
+                <span className="font-mono text-4xl font-black tabular-nums text-amber-200 my-0.5">
+                  {coletesScore}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isRunning) return;
+                    setScorerPickerTeam((prev) => (prev === "coletes" ? null : "coletes"));
+                  }}
+                  disabled={!isRunning}
+                  className={`w-full py-1 px-2 rounded-lg text-xs font-black transition-all active:scale-95 ${
+                    !isRunning
+                      ? "opacity-35 cursor-not-allowed bg-slate-800 text-slate-500"
+                      : scorerPickerTeam === "coletes"
+                        ? "bg-amber-400 text-slate-950"
+                        : "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30 hover:bg-amber-400"
+                  }`}
+                  title={!isRunning ? "Inicia o jogo para marcar golos" : "Golo dos Coletes!"}
+                >
+                  {scorerPickerTeam === "coletes" ? "A escolher..." : "＋ GOLO"}
+                </button>
+              </div>
+            </div>
+
+            {!isRunning && (
+              <p className="text-center text-[10px] text-slate-400 italic -mt-1">
+                Inicia o cronómetro para marcar golos
               </p>
             )}
-            <button
-              type="button"
-              onClick={() => void handleFinish()}
-              disabled={submitting}
-              className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-2 px-3 text-xs font-black text-white shadow-lg shadow-emerald-950/40 hover:from-emerald-500 hover:to-teal-500 active:scale-98 transition-all disabled:opacity-60"
-            >
-              <span>{submitting ? "A guardar jogo..." : "🏁 Terminar e Gravar Jogo"}</span>
-            </button>
-          </div>
-        </main>
+
+            {/* C. Goal Selection Mode Action Banner */}
+            {scorerPickerTeam && (
+              <div className="flex items-center justify-between gap-1.5 rounded-xl border border-amber-500/40 bg-amber-950/80 px-2.5 py-1.5 animate-in fade-in zoom-in-95 shrink-0">
+                <span className="text-[11px] font-black text-amber-300 truncate">
+                  ⚽ Golo {scorerPickerTeam === "shirts" ? "Camisolas" : "Coletes"}:
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => addGoal(scorerPickerTeam, null)}
+                    className="rounded-lg bg-amber-500 hover:bg-amber-400 py-1 px-2 text-[10px] font-black text-slate-950 active:scale-95 transition-all shadow-sm"
+                  >
+                    Sem marcador
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScorerPickerTeam(null)}
+                    className="rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 py-1 px-2 text-[10px] font-semibold text-slate-300 active:scale-95"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* D. Player Matrices: 2 Columns Side-by-Side */}
+            <div className="flex-1 grid grid-cols-2 gap-2 min-h-[140px] max-h-56 overflow-hidden">
+              {/* Camisolas Lineup */}
+              <div className="flex flex-col rounded-xl border border-sky-500/20 bg-slate-900/60 p-2 min-h-0">
+                <div className="flex items-center justify-between pb-1 border-b border-sky-500/20 text-[10px] font-bold text-sky-400">
+                  <span>👕 Plantel</span>
+                  <span className="text-[9px] font-mono opacity-80">{game.shirtsLineup.length}</span>
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-1 pt-1.5 pr-0.5 scrollbar-thin">
+                  {game.shirtsLineup.map((p, i) => {
+                    const count = playerGoalsCount[p.id ?? ""] || playerGoalsCount[p.name ?? ""] || 0;
+
+                    if (scorerPickerTeam === "shirts") {
+                      return (
+                        <button
+                          key={p.id ?? i}
+                          type="button"
+                          onClick={() => addGoal("shirts", p, false)}
+                          className="w-full flex items-center justify-between gap-1 rounded-lg border border-sky-400 bg-sky-950/90 px-1.5 py-1 text-left text-[11px] font-semibold text-sky-100 hover:bg-sky-900 active:scale-95 transition-all shadow-sm group"
+                        >
+                          <div className="flex items-center gap-1 truncate">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-800 text-sky-200 text-[9px] font-black">
+                              {getInitials(p.name)}
+                            </span>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <span className="shrink-0 rounded bg-sky-400 text-slate-950 px-1 py-0.2 text-[9px] font-black">
+                            ＋
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    if (scorerPickerTeam === "coletes") {
+                      return (
+                        <button
+                          key={p.id ?? i}
+                          type="button"
+                          onClick={() => addGoal("coletes", p, true)}
+                          className="w-full flex items-center justify-between gap-1 rounded-lg border border-rose-500/50 bg-rose-950/40 px-1.5 py-1 text-left text-[11px] font-semibold text-rose-200 hover:bg-rose-900/60 active:scale-95 transition-all shadow-sm group"
+                        >
+                          <div className="flex items-center gap-1 truncate">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-rose-200 text-[9px] font-black">
+                              {getInitials(p.name)}
+                            </span>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <span className="shrink-0 rounded bg-rose-600 text-white px-1 py-0.2 text-[9px] font-black">
+                            AG
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={p.id ?? i}
+                        className="flex items-center justify-between gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-1.5 py-1 text-left text-[11px] text-slate-200"
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-950 text-sky-300 border border-sky-800/80 text-[9px] font-bold">
+                            {getInitials(p.name)}
+                          </span>
+                          <span className="truncate font-medium">{p.name}</span>
+                        </div>
+                        {count > 0 && (
+                          <span className="shrink-0 rounded-full bg-sky-500 text-slate-950 px-1.5 py-0.2 text-[9px] font-black">
+                            ⚽ {count}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Coletes Lineup */}
+              <div className="flex flex-col rounded-xl border border-amber-500/20 bg-slate-900/60 p-2 min-h-0">
+                <div className="flex items-center justify-between pb-1 border-b border-amber-500/20 text-[10px] font-bold text-amber-400">
+                  <span>🦺 Plantel</span>
+                  <span className="text-[9px] font-mono opacity-80">{game.coletesLineup.length}</span>
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-1 pt-1.5 pr-0.5 scrollbar-thin">
+                  {game.coletesLineup.map((p, i) => {
+                    const count = playerGoalsCount[p.id ?? ""] || playerGoalsCount[p.name ?? ""] || 0;
+
+                    if (scorerPickerTeam === "coletes") {
+                      return (
+                        <button
+                          key={p.id ?? i}
+                          type="button"
+                          onClick={() => addGoal("coletes", p, false)}
+                          className="w-full flex items-center justify-between gap-1 rounded-lg border border-amber-400 bg-amber-950/90 px-1.5 py-1 text-left text-[11px] font-semibold text-amber-100 hover:bg-amber-900 active:scale-95 transition-all shadow-sm group"
+                        >
+                          <div className="flex items-center gap-1 truncate">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-800 text-amber-200 text-[9px] font-black">
+                              {getInitials(p.name)}
+                            </span>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <span className="shrink-0 rounded bg-amber-400 text-slate-950 px-1 py-0.2 text-[9px] font-black">
+                            ＋
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    if (scorerPickerTeam === "shirts") {
+                      return (
+                        <button
+                          key={p.id ?? i}
+                          type="button"
+                          onClick={() => addGoal("shirts", p, true)}
+                          className="w-full flex items-center justify-between gap-1 rounded-lg border border-rose-500/50 bg-rose-950/40 px-1.5 py-1 text-left text-[11px] font-semibold text-rose-200 hover:bg-rose-900/60 active:scale-95 transition-all shadow-sm group"
+                        >
+                          <div className="flex items-center gap-1 truncate">
+                            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-rose-200 text-[9px] font-black">
+                              {getInitials(p.name)}
+                            </span>
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <span className="shrink-0 rounded bg-rose-600 text-white px-1 py-0.2 text-[9px] font-black">
+                            AG
+                          </span>
+                        </button>
+                      );
+                    }
+
+                    return (
+                      <div
+                        key={p.id ?? i}
+                        className="flex items-center justify-between gap-1 rounded-lg border border-slate-800 bg-slate-900/80 px-1.5 py-1 text-left text-[11px] text-slate-200"
+                      >
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-950 text-amber-300 border border-amber-800/80 text-[9px] font-bold">
+                            {getInitials(p.name)}
+                          </span>
+                          <span className="truncate font-medium">{p.name}</span>
+                        </div>
+                        {count > 0 && (
+                          <span className="shrink-0 rounded-full bg-amber-500 text-slate-950 px-1.5 py-0.2 text-[10px] font-black">
+                            ⚽ {count}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* E. Goal Events Timeline Feed (Recentes no topo) */}
+            <div className="flex-1 flex flex-col min-h-[90px] max-h-36 rounded-xl border border-slate-800 bg-slate-900/80 p-2 overflow-hidden">
+              <div className="flex items-center justify-between pb-1 border-b border-slate-800/80 text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                <span>⚽ Histórico de Golos (Recentes no topo)</span>
+                <span className="tabular-nums font-mono text-slate-500">{goalEvents.length} golos</span>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-1 pt-1 pr-0.5 scrollbar-thin">
+                {reversedGoalEvents.length === 0 ? (
+                  <p className="text-center text-[10px] text-slate-500 py-3 italic">
+                    À espera do primeiro golo da partida...
+                  </p>
+                ) : (
+                  reversedGoalEvents.map((evt) => (
+                    <div
+                      key={evt.id}
+                      className="flex items-center justify-between rounded-lg bg-slate-950/80 border border-slate-800/80 px-2 py-0.5 text-xs"
+                    >
+                      <div className="flex items-center gap-1.5 truncate pr-1">
+                        <span className="text-xs shrink-0">
+                          {evt.team === "shirts" ? "👕" : "🦺"}
+                        </span>
+                        <span className="font-semibold text-slate-200 truncate text-[11px]">
+                          {evt.playerName ?? (evt.team === "shirts" ? "Camisolas" : "Coletes")}
+                        </span>
+                        {evt.isOwnGoal && (
+                          <span className="rounded bg-rose-500/20 border border-rose-500/40 text-[8px] text-rose-300 px-1 py-0.1 font-bold uppercase">
+                            AG
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="font-mono text-[10px] font-bold text-amber-300">
+                          ⏱️ {evt.timeLabel} ({evt.minute}')
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeGoalById(evt.id)}
+                          className="text-slate-500 hover:text-rose-400 text-xs px-0.5 font-bold"
+                          title="Anular este golo"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* F. Terminar Jogo Button */}
+            <div className="pt-0.5 shrink-0">
+              {error && (
+                <p className="mb-1 text-center text-xs text-rose-400 font-semibold">
+                  {error}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => void handleFinish()}
+                disabled={submitting}
+                className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-2 px-3 text-xs font-black text-white shadow-lg shadow-emerald-950/40 hover:from-emerald-500 hover:to-teal-500 active:scale-98 transition-all disabled:opacity-60"
+              >
+                <span>{submitting ? "A guardar jogo..." : "🏁 Terminar e Gravar Jogo"}</span>
+              </button>
+            </div>
+          </main>
+        )}
       </div>
     </div>
   );
