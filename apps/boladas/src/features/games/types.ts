@@ -15,6 +15,7 @@ export type GoalEvent = {
   timeLabel: string;
   minute: number;
   playerName?: string;
+  playerId?: string;
 };
 
 export type Game = {
