@@ -247,8 +247,8 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
     try {
       const cancelResult = await cancelGameFromConvocation(convocationId);
       if (!cancelResult.error) {
-        setActionMessage("Convocatória rejeitada.");
-        navigate("/games", { replace: true });
+        setActionMessage("Convocatória dispensada.");
+        navigate("/convocations", { replace: true });
         return;
       }
 
@@ -265,7 +265,7 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
       if (!currentStatus) return;
 
       if (currentStatus === "dismissed") {
-        setActionMessage("Convocatória já está rejeitada.");
+        setActionMessage("Convocatória já está dispensada.");
         return;
       }
 
@@ -294,16 +294,16 @@ export function GameFormProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setActionMessage("Convocatória rejeitada.");
-        navigate("/games", { replace: true });
+        setActionMessage("Convocatória dispensada.");
+        navigate("/convocations", { replace: true });
         return;
       }
 
       if (rejectResult.error) {
         setActionMessage(rejectResult.error);
       } else {
-        setActionMessage("Convocatória rejeitada.");
-        navigate("/games", { replace: true });
+        setActionMessage("Convocatória dispensada.");
+        navigate("/convocations", { replace: true });
       }
     } finally {
       setActionState("idle");
